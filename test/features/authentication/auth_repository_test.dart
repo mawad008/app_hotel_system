@@ -153,6 +153,40 @@ void main() {
     );
     expect(await store.readAccessToken(), isNotNull);
   });
+
+  test('restoreSession keeps the guest signed in from the saved profile when '
+      'the backend is unreachable (offline cold start)', () async {
+    final TokenStore store = InMemoryTokenStore();
+    final AuthRepositoryImpl firstRun = _repo(tokenStore: store);
+    final OtpAuthenticated authed = await firstRun.verifyOtp(
+      challenge: await firstRun.requestOtp(_phone),
+      code: AuthDemoConfig.acceptedCode,
+    ) as OtpAuthenticated;
+
+    final AuthSession? restored = await _repo(
+      dataSource: _ThrowingDataSource(),
+      tokenStore: store,
+    ).restoreSession();
+
+    expect(restored, isNotNull);
+    expect(restored!.accessToken, authed.session.accessToken);
+    expect(restored.profile.phone.e164, _phone.e164);
+  });
+
+  test('signOut removes the saved profile with the token', () async {
+    final TokenStore store = InMemoryTokenStore();
+    final AuthRepositoryImpl repo = _repo(tokenStore: store);
+    await repo.verifyOtp(
+      challenge: await repo.requestOtp(_phone),
+      code: AuthDemoConfig.acceptedCode,
+    );
+    expect(await store.readProfileSnapshot(), isNotNull);
+
+    await repo.signOut();
+
+    expect(await store.readAccessToken(), isNull);
+    expect(await store.readProfileSnapshot(), isNull);
+  });
 }
 
 class _ThrowingDataSource implements AuthDataSource {

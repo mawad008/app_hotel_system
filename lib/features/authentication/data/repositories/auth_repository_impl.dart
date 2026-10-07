@@ -2,6 +2,8 @@
 // initializing formal would leak the leading underscore into every call site.
 // ignore_for_file: prefer_initializing_formals
 
+import 'dart:convert';
+
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/security/token_store.dart';
 import '../../domain/entities/guest_phone.dart';
@@ -39,8 +41,19 @@ class AuthRepositoryImpl implements AuthRepository {
       if (_current?.accessToken == token) return _current;
       // A token exists but the in-memory session is gone (cold start). Rebuild
       // it from the backend `me` endpoint (Slice 0); a rejected token clears.
-      final AuthSessionModel? model =
-          await _dataSource.fetchCurrentSession(token);
+      final AuthSessionModel? model;
+      try {
+        model = await _dataSource.fetchCurrentSession(token);
+      } catch (_) {
+        // The backend could not be asked (offline, timeout, 5xx, rate limit) —
+        // that says nothing about the token. Keep the guest signed in from the
+        // last confirmed profile; a truly revoked token still ends the session
+        // through the 401 handling on the next authenticated call.
+        final AuthSession? cached = await _cachedSession(token);
+        if (cached == null) rethrow;
+        _current = cached;
+        return cached;
+      }
       if (model == null) {
         await _tokenStore.clear();
         _current = null;
@@ -50,7 +63,7 @@ class AuthRepositoryImpl implements AuthRepository {
         model,
         fallbackPhone: GuestPhone.fromE164(model.phoneE164),
       );
-      _current = restored;
+      await _persist(restored);
       return restored;
     } catch (error) {
       throw ErrorMapper.toFailure(error);
@@ -152,6 +165,35 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<void> _persist(AuthSession session) async {
     _current = session;
     await _tokenStore.writeAccessToken(session.accessToken);
+    await _tokenStore.writeProfileSnapshot(
+      jsonEncode(<String, String?>{
+        'phone': session.profile.phone.e164,
+        'name': session.profile.fullName,
+        'email': session.profile.email,
+      }),
+    );
+  }
+
+  /// The session as last confirmed by the backend, or `null` when no usable
+  /// snapshot was saved (e.g. the token predates snapshots).
+  Future<AuthSession?> _cachedSession(String token) async {
+    try {
+      final String? raw = await _tokenStore.readProfileSnapshot();
+      if (raw == null) return null;
+      final Map<String, dynamic> json = jsonDecode(raw) as Map<String, dynamic>;
+      final String phone = json['phone'] as String? ?? '';
+      if (phone.isEmpty) return null;
+      return AuthSession(
+        accessToken: token,
+        profile: GuestProfile(
+          phone: GuestPhone.fromE164(phone),
+          fullName: json['name'] as String?,
+          email: json['email'] as String?,
+        ),
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<T> _guard<T>(Future<T> Function() body) async {

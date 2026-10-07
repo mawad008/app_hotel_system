@@ -9,5 +9,14 @@ abstract interface class TokenStore {
 
   Future<void> writeAccessToken(String token);
 
+  /// The guest profile last confirmed by the backend, as an opaque JSON
+  /// string saved next to the token. It lets a cold start restore the session
+  /// when the backend cannot be reached (offline, timeout) instead of showing
+  /// a signed-in guest the sign-in screen.
+  Future<String?> readProfileSnapshot();
+
+  Future<void> writeProfileSnapshot(String snapshot);
+
+  /// Removes the token and the profile snapshot.
   Future<void> clear();
 }

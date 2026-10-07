@@ -136,7 +136,7 @@ class _Body extends ConsumerWidget {
     final String location = <String>[
       s.cityName.resolve(locale),
       if (hotel.country != null) hotel.country!.resolve(locale),
-    ].where((String p) => p.isNotEmpty).join('، ');
+    ].where((String p) => p.isNotEmpty).join(locale.languageCode == 'ar' ? '، ' : ', ');
 
     final String description = hotel.description.resolve(locale);
     // Figma `why-section` subtitle is the hotel's one-line tagline; the long

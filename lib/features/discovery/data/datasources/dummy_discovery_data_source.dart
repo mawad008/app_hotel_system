@@ -78,7 +78,9 @@ class DummyDiscoveryDataSource implements DiscoveryDataSource, DummyDataSource {
   /// Design-only fixture for the Home `إقامتك القادمة` card. Not a real
   /// reservation — the reservations feature / Laravel own that.
   static const Json _designUpcomingStay = <String, Object?>{
-    'reservation_id': 'RSV-DEMO-1',
+    // The seeded Palm Hotel booking in `DummyReservationDataSource`, so the
+    // card opens a real demo booking instead of "Booking not found".
+    'reservation_id': 'seed-verified',
     'room_name': <String, Object?>{
       'ar': 'غرفة مزدوجة ديلوكس',
       'en': 'Deluxe Double Room',

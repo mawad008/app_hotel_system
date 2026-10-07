@@ -46,3 +46,6 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Python tooling (tool/generate_store_assets.py)
+__pycache__/

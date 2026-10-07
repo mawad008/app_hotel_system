@@ -86,4 +86,8 @@ class _NoTokens implements TokenStore {
   Future<String?> readAccessToken() async => null;
   @override
   Future<void> writeAccessToken(String token) async {}
+  @override
+  Future<String?> readProfileSnapshot() async => null;
+  @override
+  Future<void> writeProfileSnapshot(String snapshot) async {}
 }

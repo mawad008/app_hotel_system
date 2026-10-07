@@ -1,2 +1,9 @@
 /* Camera permission prompt (identity verification). */
 "NSCameraUsageDescription" = "تُستخدم الكاميرا لتصوير هويتك والتقاط صورة سيلفي مباشرة للتحقق من هويتك قبل تسجيل الدخول إلى الفندق.";
+
+/* Home-screen name. Mirrors `appName` in lib/core/localization/arb. */
+"CFBundleDisplayName" = "فندق سيستم";
+
+/* Never shown: the app does not record audio or read the photo library. */
+"NSMicrophoneUsageDescription" = "لا يُستخدم الميكروفون. التحقق من الهوية يلتقط صورًا ثابتة فقط.";
+"NSPhotoLibraryUsageDescription" = "لا تُستخدم مكتبة الصور. تُلتقط صور الهوية بالكاميرا فقط.";

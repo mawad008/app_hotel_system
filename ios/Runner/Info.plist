@@ -13,8 +13,22 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>The camera is used to photograph your ID and take a live selfie to verify your identity before check-in.</string>
+	<!-- The app never records audio or reads the photo library (identity
+	     capture is stills-only, camera-only). These two strings exist because
+	     the camera / image_picker plugins link those APIs, and App Store
+	     Connect rejects a binary that references them without a purpose
+	     string (ITMS-90683). -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>The microphone is not used. Identity verification only takes still photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>The photo library is not used. Identity photos are taken with the camera only.</string>
+	<!-- Only standard HTTPS/TLS is used, which is exempt from export
+	     compliance documentation; skips the per-build App Store Connect
+	     question. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>CFBundleDisplayName</key>
-	<string>Hotel Guest App</string>
+	<string>Hotel System</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,7 +36,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>hotel_guest_app</string>
+	<string>Hotel System</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

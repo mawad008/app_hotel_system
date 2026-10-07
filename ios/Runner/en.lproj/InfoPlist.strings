@@ -1,2 +1,9 @@
 /* Camera permission prompt (identity verification). */
 "NSCameraUsageDescription" = "The camera is used to photograph your ID and take a live selfie to verify your identity before check-in.";
+
+/* Home-screen name. Mirrors `appName` in lib/core/localization/arb. */
+"CFBundleDisplayName" = "Hotel System";
+
+/* Never shown: the app does not record audio or read the photo library. */
+"NSMicrophoneUsageDescription" = "The microphone is not used. Identity verification only takes still photos.";
+"NSPhotoLibraryUsageDescription" = "The photo library is not used. Identity photos are taken with the camera only.";

@@ -22,6 +22,8 @@ feature.
 - `docs/feature_guide.md` — the per-feature implementation checklist (Steps 1–6).
 - `docs/testing_guide.md` — testing pyramid, unit/widget/integration/E2E scope.
 - `docs/ci_cd_guide.md` — pipeline checks, build configuration.
+- `docs/release_guide.md` — store release: toolchain, signing, production
+  build commands, Play / App Store checklist, how the login session persists.
 - `docs/new_app_checklist.md` — foundation / project-setup checklist.
 - `docs/design-system-tokens.md` — the **canonical token library**: every
   variable value, text style, elevation, and component variant axis extracted
