@@ -41,6 +41,29 @@ the `.fig` into Flutter `Path`s in the 120×120 symbol box: three arched towers 
 onboarding avatar 50). The v1 knockout raster `assets/brand/logo.png` (made for
 the brown splash) and `AppImages.brandMark` were removed.
 
+### Native launch screen (before Flutter's first frame)
+
+The OS launch screen shows the **same vector mark at the same spot** as the
+Flutter splash, so the hand-off is invisible: white field, 120pt/dp mark raised
+20.5 (the mark's offset inside the centred 161-tall mark + gap + wordmark column).
+All are generated from the `BrandMark` paths — regenerate them if the mark changes.
+
+* **Android < 12** — `res/drawable/launch_background.xml` → vector
+  `drawable/launch_logo.xml` (minSdk 24, so no PNG densities).
+* **Android 12+** — the SplashScreen API ignores `windowBackground`; without
+  config it shows the launcher icon (still the Flutter default) upscaled and
+  clipped into a circle. `values-v31` / `values-night-v31` set a white background
+  and `drawable/splash_icon.xml`: a 288dp canvas (the no-icon-background size)
+  with the 120dp mark inside the 192dp mask circle, so nothing is clipped or
+  scaled. Don't set `windowSplashScreenIconBackgroundColor` — it switches the
+  canvas to 240dp and shrinks the mark.
+* **iOS** — `LaunchScreen.storyboard` centres `LaunchImage` (120/240/360 px PNGs
+  rendered from the vector) with a `-20.5` centerY constant.
+* **Web** — blank until Flutter boots; no native logo.
+
+A dashboard-uploaded logo (`/guest/app-content`) can only appear once Flutter
+runs; the native launch screen always shows the bundled mark.
+
 ## Language sheet
 
 * A **centred modal**: black @25% scrim over the splash (Figma
@@ -127,13 +150,19 @@ the **bundled defaults**, used for any field that isn't configured.
 
 `languageSelectedProvider`
 (`lib/features/authentication/presentation/state/language_selection_controller.dart`)
-is an in-memory `bool` — `false` until the guest picks a language. While `false`
-the router sends every unauthenticated location to `/welcome/language` first;
-once `true` the entry flow applies (`splash → onboarding → discover`, then
-browsing is public — see `mobile-deferred-auth.md`). `AppRoutes.language` is
-part of `AppRoutes.authSurface`, so an authenticated guest never sees it.
+is a `bool` — `false` until the guest picks a language. While `false` the router
+sends every unauthenticated location to `/welcome/language` first; once `true`
+the entry flow applies (`splash → onboarding → discover`, then browsing is
+public — see `mobile-deferred-auth.md`). `AppRoutes.language` is part of
+`AppRoutes.authSurface`, so an authenticated guest never sees it.
 
-**Persistence is deferred** (Phase 0 storage layer, like the locale and
-theme-mode controllers): the flag resets on a cold start, so the sheet reappears
-each launch until `core/storage/` lands. Tests bypass it via
+**Language + onboarding are first-run only.** Tapping the onboarding CTA sets
+`onboardingCompletedProvider` (same file), persisted through `AppPreferences`
+(`lib/core/storage/app_preferences.dart`, shared_preferences, loaded in
+`bootstrap()` before the first frame). On every later launch both flags start
+`true`, and a signed-out guest goes `splash → discover` (a signed-in one to the
+app home, as before); `/welcome` and `/welcome/language` redirect to discover.
+The chosen locale is persisted too (`LocaleController`), so skipping the
+language screen keeps the guest's language. Tests use `InMemoryAppPreferences`
+by default and bypass the language screen via
 `authOverrides(languageChosen: …)` / `pumpApp(languageChosen: …)`.

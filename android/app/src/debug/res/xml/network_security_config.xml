@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Debug builds only: permits plaintext HTTP to the local Laravel dev
      backend (Android emulator loopback 10.0.2.2, localhost, or a LAN IP set
-     via --dart-define=API_BASE_URL). This file is not merged into release
+     via the API_BASE_URL dart-define). This file is not merged into release
      builds, so production keeps Android's default HTTPS-only policy. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="true" />

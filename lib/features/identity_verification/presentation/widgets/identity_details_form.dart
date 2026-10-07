@@ -47,7 +47,9 @@ class IdentityDetailsForm extends StatefulWidget {
   /// contradicted — shown with an error so the guest knows what to check.
   final List<String> highlightedFields;
 
-  final void Function(IdentityDocumentType type, IdentityDocumentClaim claim) onSubmit;
+  /// [claim] is null when the chosen type needs no typed details
+  /// (document-only mode).
+  final void Function(IdentityDocumentType type, IdentityDocumentClaim? claim) onSubmit;
   final VoidCallback onBack;
 
   @override
@@ -107,6 +109,10 @@ class _IdentityDetailsFormState extends State<IdentityDetailsForm> {
   }
 
   void _submit() {
+    if (!_option.detailsRequired) {
+      widget.onSubmit(_type, null);
+      return;
+    }
     if (!_valid) {
       setState(() => _showErrors = true);
       return;
@@ -130,7 +136,7 @@ class _IdentityDetailsFormState extends State<IdentityDetailsForm> {
 
     return Scaffold(
       appBar: HotelAppBar(
-        title: l10n.identityDetailsTitle,
+        title: _option.detailsRequired ? l10n.identityDetailsTitle : l10n.identityDocumentTypeLabel,
         leading: IconButton(
           icon: Icon(AppIcons.backFor(Directionality.of(context))),
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
@@ -141,7 +147,10 @@ class _IdentityDetailsFormState extends State<IdentityDetailsForm> {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: <Widget>[
-            Text(l10n.identityDetailsBody, style: theme.textTheme.bodyMedium),
+            Text(
+              _option.detailsRequired ? l10n.identityDetailsBody : l10n.identityDocumentOnlyBody,
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(l10n.identityDocumentTypeLabel, style: theme.textTheme.titleSmall),
             const SizedBox(height: AppSpacing.xs),
@@ -174,54 +183,56 @@ class _IdentityDetailsFormState extends State<IdentityDetailsForm> {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-            AppTextField(
-              key: const ValueKey<String>('idv-name'),
-              label: l10n.identityFullNameLabel,
-              hintText: _type.arabicDocument ? l10n.identityFullNameArabicHint : l10n.identityFullNameHint,
-              controller: _name,
-              errorText: _nameError(l10n),
-              keyboardType: TextInputType.name,
-              textInputAction: TextInputAction.next,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              key: const ValueKey<String>('idv-number'),
-              label: l10n.identityDocumentNumberLabel,
-              controller: _number,
-              errorText: _numberError(l10n),
-              keyboardType: _type == IdentityDocumentType.passport ? TextInputType.visiblePassword : TextInputType.number,
-              textInputAction: TextInputAction.done,
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            if (_type.birthDateInNumber)
-              Text(
-                l10n.identityBirthDateFromNumber,
-                key: const ValueKey<String>('idv-dob-from-number'),
-                style: theme.textTheme.bodySmall,
-              )
-            else ...<Widget>[
-              Text(l10n.identityDateOfBirthLabel, style: theme.textTheme.titleSmall),
-              const SizedBox(height: AppSpacing.xs),
-              InkWell(
-                key: const ValueKey<String>('idv-dob'),
-                onTap: _pickDate,
-                child: InputDecorator(
-                  decoration: InputDecoration(
-                    errorText: dobError
-                        ? (_dob == null ? l10n.identityFieldRequired : l10n.identityMismatchTitle)
-                        : null,
-                  ),
-                  child: Text(
-                    _dob == null ? l10n.identityDateOfBirthHint : DateFormat.yMMMMd(tag).format(_dob!),
-                    style: _dob == null
-                        ? theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor)
-                        : theme.textTheme.bodyLarge,
+            if (_option.detailsRequired) ...<Widget>[
+              const SizedBox(height: AppSpacing.lg),
+              AppTextField(
+                key: const ValueKey<String>('idv-name'),
+                label: l10n.identityFullNameLabel,
+                hintText: _type.arabicDocument ? l10n.identityFullNameArabicHint : l10n.identityFullNameHint,
+                controller: _name,
+                errorText: _nameError(l10n),
+                keyboardType: TextInputType.name,
+                textInputAction: TextInputAction.next,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                key: const ValueKey<String>('idv-number'),
+                label: l10n.identityDocumentNumberLabel,
+                controller: _number,
+                errorText: _numberError(l10n),
+                keyboardType: _type == IdentityDocumentType.passport ? TextInputType.visiblePassword : TextInputType.number,
+                textInputAction: TextInputAction.done,
+                onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (_type.birthDateInNumber)
+                Text(
+                  l10n.identityBirthDateFromNumber,
+                  key: const ValueKey<String>('idv-dob-from-number'),
+                  style: theme.textTheme.bodySmall,
+                )
+              else ...<Widget>[
+                Text(l10n.identityDateOfBirthLabel, style: theme.textTheme.titleSmall),
+                const SizedBox(height: AppSpacing.xs),
+                InkWell(
+                  key: const ValueKey<String>('idv-dob'),
+                  onTap: _pickDate,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      errorText: dobError
+                          ? (_dob == null ? l10n.identityFieldRequired : l10n.identityMismatchTitle)
+                          : null,
+                    ),
+                    child: Text(
+                      _dob == null ? l10n.identityDateOfBirthHint : DateFormat.yMMMMd(tag).format(_dob!),
+                      style: _dob == null
+                          ? theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor)
+                          : theme.textTheme.bodyLarge,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ],
         ),

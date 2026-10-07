@@ -61,6 +61,8 @@ class ApiIdentityVerificationDataSource
             type: IdentityDocumentType.tryFromWire(row['type'] as String?)!,
             back: BackImagePolicy.fromWire(row['back_image'] as String?),
             automaticCheck: row['automatic_check'] == true,
+            // Older servers don't send it — they always want the details.
+            detailsRequired: row['details_required'] != false,
           ),
     ];
   }

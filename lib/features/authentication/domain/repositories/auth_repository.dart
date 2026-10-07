@@ -11,8 +11,8 @@ import '../entities/otp_challenge.dart';
 /// returned as [OtpVerification] values, not thrown.
 abstract interface class AuthRepository {
   /// Returns the session persisted from a previous run, or `null` if the guest
-  /// is not signed in. Phase 1 storage is in-memory (`InMemoryTokenStore`), so
-  /// this is effectively `null` on a cold start.
+  /// is not signed in. The stored token is re-validated against the backend
+  /// (`me`); a rejected token is cleared and `null` returned.
   Future<AuthSession?> restoreSession();
 
   /// Asks the backend to send a verification code to [phone].

@@ -1404,6 +1404,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'خطوتان: صورة لهويتك، ثم صورة حية لوجهك. تُحذف الصور بعد انتهاء إقامتك.';
 
   @override
+  String get identityIntroBannerBodyDocumentOnly =>
+      'خطوة واحدة: صورة لهويتك. تُحذف الصور بعد انتهاء إقامتك.';
+
+  @override
+  String get identityDocumentOnlyBody =>
+      'اختر نوع وثيقتك، ثم التقط صورة واضحة لها.';
+
+  @override
   String get identityIntroCta => 'ابدأ التحقق';
 
   @override
@@ -3320,4 +3328,27 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get roomPolicyCheckOutTitle => 'تسجيل الخروج';
+
+  @override
+  String roomMaxAdultsReached(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'الحد الأقصى لهذه الغرفة هو $count بالغين',
+      two: 'الحد الأقصى لهذه الغرفة هو 2 بالغين',
+      one: 'الحد الأقصى لهذه الغرفة هو بالغ واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String roomMaxGuestsReached(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'الحد الأقصى لهذه الغرفة هو $count ضيوف',
+      one: 'الحد الأقصى لهذه الغرفة هو ضيف واحد',
+    );
+    return '$_temp0';
+  }
 }

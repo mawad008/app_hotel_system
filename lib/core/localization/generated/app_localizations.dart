@@ -2438,6 +2438,18 @@ abstract class AppLocalizations {
   /// **'Two steps: a photo of your ID, then a live selfie. Photos are deleted once your stay ends.'**
   String get identityIntroBannerBody;
 
+  /// No description provided for @identityIntroBannerBodyDocumentOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'One step: a photo of your ID. Photos are deleted once your stay ends.'**
+  String get identityIntroBannerBodyDocumentOnly;
+
+  /// No description provided for @identityDocumentOnlyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your document type, then take a clear photo of it.'**
+  String get identityDocumentOnlyBody;
+
   /// No description provided for @identityIntroCta.
   ///
   /// In en, this message translates to:
@@ -5851,6 +5863,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check-out'**
   String get roomPolicyCheckOutTitle;
+
+  /// Booking summary: the adults stepper hit the chosen room's capacity.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This room takes at most 1 adult} other{This room takes at most {count} adults}}'**
+  String roomMaxAdultsReached(int count);
+
+  /// Booking summary: the party hit the chosen room's total occupancy.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This room takes at most 1 guest} other{This room takes at most {count} guests}}'**
+  String roomMaxGuestsReached(int count);
 }
 
 class _AppLocalizationsDelegate

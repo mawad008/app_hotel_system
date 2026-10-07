@@ -19,6 +19,7 @@ class HotelAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.centerTitle = true,
     this.automaticallyImplyLeading = true,
     this.fallbackLocation,
+    this.onBack,
   });
 
   final String title;
@@ -32,6 +33,11 @@ class HotelAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// null, such a screen simply shows no back button.
   final String? fallbackLocation;
 
+  /// Custom back action. When set, the back button is always shown and this
+  /// runs instead of popping — for screens that are always reached with
+  /// `context.go` and need to decide where "back" leads at tap time.
+  final VoidCallback? onBack;
+
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
@@ -41,9 +47,11 @@ class HotelAppBar extends StatelessWidget implements PreferredSizeWidget {
     final bool canPop = route?.canPop ?? false;
     final Widget? resolvedLeading =
         leading ??
-        (automaticallyImplyLeading && (canPop || fallbackLocation != null)
+        (automaticallyImplyLeading &&
+                (canPop || fallbackLocation != null || onBack != null)
             ? _DirectionalBackButton(
                 fallbackLocation: canPop ? null : fallbackLocation,
+                onBack: onBack,
               )
             : null);
 
@@ -60,9 +68,10 @@ class HotelAppBar extends StatelessWidget implements PreferredSizeWidget {
 /// Back button whose glyph follows the reading direction: `arrow_back` in LTR,
 /// `arrow_forward` in RTL — so the Arabic layout shows the Figma's `→`.
 class _DirectionalBackButton extends StatelessWidget {
-  const _DirectionalBackButton({this.fallbackLocation});
+  const _DirectionalBackButton({this.fallbackLocation, this.onBack});
 
   final String? fallbackLocation;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +80,10 @@ class _DirectionalBackButton extends StatelessWidget {
       icon: Icon(AppIcons.backFor(rtl ? TextDirection.rtl : TextDirection.ltr)),
       tooltip: MaterialLocalizations.of(context).backButtonTooltip,
       onPressed: () {
+        if (onBack != null) {
+          onBack!();
+          return;
+        }
         final String? fallback = fallbackLocation;
         if (fallback != null) {
           context.go(fallback);

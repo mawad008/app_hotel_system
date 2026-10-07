@@ -605,6 +605,8 @@
 
   "identityIntroBannerTitle": "Quick identity check",
   "identityIntroBannerBody": "Two steps: a photo of your ID, then a live selfie. Photos are deleted once your stay ends.",
+  "identityIntroBannerBodyDocumentOnly": "One step: a photo of your ID. Photos are deleted once your stay ends.",
+  "identityDocumentOnlyBody": "Choose your document type, then take a clear photo of it.",
   "identityIntroCta": "Start verification",
   "identityCaptureDocumentTitle": "Photograph your ID",
   "identityCaptureDocumentHint": "Fit the ID inside the frame with all four edges visible.",
@@ -1336,5 +1338,16 @@
   "roomPriceIncludedValue": "Included",
   "roomFinalPriceNote": "Final price — no extra fees",
   "roomPolicyCheckInTitle": "Check-in",
-  "roomPolicyCheckOutTitle": "Check-out"
+  "roomPolicyCheckOutTitle": "Check-out",
+
+  "roomMaxAdultsReached": "{count, plural, =1{This room takes at most 1 adult} other{This room takes at most {count} adults}}",
+  "@roomMaxAdultsReached": {
+    "description": "Booking summary: the adults stepper hit the chosen room's capacity.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "roomMaxGuestsReached": "{count, plural, =1{This room takes at most 1 guest} other{This room takes at most {count} guests}}",
+  "@roomMaxGuestsReached": {
+    "description": "Booking summary: the party hit the chosen room's total occupancy.",
+    "placeholders": { "count": { "type": "int" } }
+  }
 }

@@ -9,6 +9,7 @@ import 'package:hotel_guest_app/features/authentication/data/datasources/dummy_a
 import 'package:hotel_guest_app/features/authentication/data/models/auth_models.dart';
 import 'package:hotel_guest_app/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:hotel_guest_app/features/authentication/domain/entities/guest_phone.dart';
+import 'package:hotel_guest_app/features/authentication/domain/entities/guest_profile.dart';
 import 'package:hotel_guest_app/features/authentication/domain/entities/otp_challenge.dart';
 
 const GuestPhone _phone =
@@ -124,6 +125,33 @@ void main() {
     await store.writeAccessToken('orphan');
     expect(await _repo(tokenStore: store).restoreSession(), isNull);
     expect(await store.readAccessToken(), isNull);
+  });
+
+  test('a fresh repository over the same store restores the signed-in guest '
+      '(app closed and reopened)', () async {
+    final TokenStore store = InMemoryTokenStore();
+    final AuthRepositoryImpl firstRun = _repo(tokenStore: store);
+    final OtpAuthenticated authed = await firstRun.verifyOtp(
+      challenge: await firstRun.requestOtp(_phone),
+      code: AuthDemoConfig.acceptedCode,
+    ) as OtpAuthenticated;
+
+    final AuthSession? restored = await _repo(tokenStore: store).restoreSession();
+
+    expect(restored, isNotNull);
+    expect(restored!.accessToken, authed.session.accessToken);
+    expect(restored.profile.phone.e164, _phone.e164);
+  });
+
+  test('restoreSession keeps the token when the backend is unreachable',
+      () async {
+    final TokenStore store = InMemoryTokenStore();
+    await store.writeAccessToken('dummy-token:${_phone.e164}');
+    await expectLater(
+      _repo(dataSource: _ThrowingDataSource(), tokenStore: store).restoreSession(),
+      throwsA(isA<Failure>()),
+    );
+    expect(await store.readAccessToken(), isNotNull);
   });
 }
 

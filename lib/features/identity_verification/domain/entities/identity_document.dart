@@ -110,6 +110,7 @@ class IdentityDocumentOption {
     required this.type,
     required this.back,
     this.automaticCheck = false,
+    this.detailsRequired = true,
   });
 
   /// The built-in fallback catalog (same defaults as the backend config).
@@ -127,15 +128,20 @@ class IdentityDocumentOption {
   /// automatically (no configured model, or automatic verification off).
   final bool automaticCheck;
 
+  /// False in the backend's document-only mode: the guest only photographs
+  /// the ID — no typed details, no OCR comparison, no selfie.
+  final bool detailsRequired;
+
   @override
   bool operator ==(Object other) =>
       other is IdentityDocumentOption &&
       other.type == type &&
       other.back == back &&
-      other.automaticCheck == automaticCheck;
+      other.automaticCheck == automaticCheck &&
+      other.detailsRequired == detailsRequired;
 
   @override
-  int get hashCode => Object.hash(type, back, automaticCheck);
+  int get hashCode => Object.hash(type, back, automaticCheck, detailsRequired);
 }
 
 /// A locally captured image, referenced only by non-sensitive metadata.

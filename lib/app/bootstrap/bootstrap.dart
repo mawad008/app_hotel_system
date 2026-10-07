@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/di/core_providers.dart';
+import '../../core/security/secure_token_store.dart';
+import '../../core/storage/app_preferences.dart';
 import '../app.dart';
 
 /// Single startup path for every entry point.
@@ -29,14 +31,32 @@ Future<void> bootstrap() async {
     return true;
   };
 
+  final AppPreferences preferences = await _loadPreferences();
+
   runApp(
     ProviderScope(
       overrides: <Override>[
         appConfigProvider.overrideWithValue(config),
+        // Persist the guest's token so closing the app doesn't sign them out.
+        tokenStoreProvider.overrideWithValue(SecureTokenStore()),
+        // Remember onboarding + language so they are only asked once.
+        appPreferencesProvider.overrideWithValue(preferences),
       ],
       child: const HotelGuestApp(),
     ),
   );
+}
+
+/// Loaded before the first frame so the router knows whether onboarding was
+/// already completed. Unavailable storage degrades to the old first-run flow
+/// rather than blocking startup.
+Future<AppPreferences> _loadPreferences() async {
+  try {
+    return await SharedAppPreferences.load();
+  } catch (error, stack) {
+    _report('preferences', error, stack);
+    return InMemoryAppPreferences();
+  }
 }
 
 /// Phase 0 crash sink: logs in debug only. A real crash-reporting integration

@@ -18,6 +18,7 @@ import '../../../../core/widgets/primary_button.dart';
 import '../../../app_content/domain/entities/app_content.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
 import '../../../app_content/presentation/widgets/managed_brand_logo.dart';
+import '../state/language_selection_controller.dart';
 
 /// `01 · Entry` — onboarding (v2 Figma `ENTRY_Onboarding`).
 ///
@@ -67,7 +68,11 @@ class EntryWelcomePage extends ConsumerWidget {
                   content: content.value ?? AppContent.empty,
                   // Deferred auth: browsing is open. Sign-in is requested
                   // later, when the guest confirms a booking.
-                  onStart: () => context.goNamed(AppRoutes.discoverName),
+                  onStart: () {
+                    // Remembered across launches: onboarding is first-run only.
+                    ref.read(onboardingCompletedProvider.notifier).complete();
+                    context.goNamed(AppRoutes.discoverName);
+                  },
                 ),
               ),
             ],

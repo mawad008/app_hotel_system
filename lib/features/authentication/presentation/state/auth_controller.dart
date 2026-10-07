@@ -30,7 +30,7 @@ final authRepositoryProvider = Provider<AuthRepository>((Ref ref) {
 });
 
 /// Minimum time the branded splash (`AuthSplashPage`) stays on screen before the
-/// router moves on. Session restore is usually instant (in-memory token store),
+/// router moves on. Session restore is often near-instant (one `me` round-trip),
 /// so without a floor the splash would flash by unseen. 1.6s is the v2 Figma
 /// `ENTRY_Splash` AFTER_TIMEOUT before the language sheet overlays it.
 /// Overridden to [Duration.zero] in tests.

@@ -15,6 +15,7 @@ import '../../data/datasources/auth_demo_config.dart';
 import '../../domain/entities/guest_phone.dart';
 import '../../domain/validators/auth_validators.dart';
 import '../state/login_flow_controller.dart';
+import '../state/post_auth_redirect_controller.dart';
 import '../widgets/phone_number_field.dart';
 
 /// `09 · Authentication` — "Enter your mobile number". Collects the phone,
@@ -52,6 +53,17 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
     ref.read(loginFlowControllerProvider.notifier).submitPhone(_phone);
   }
 
+  /// Every entry point reaches sign-in with `context.go`, so there is nothing
+  /// to pop. Return to the screen that asked for sign-in (e.g. the booking
+  /// review) when one was remembered, otherwise to discovery — and drop the
+  /// remembered target so a later, unrelated sign-in does not jump there.
+  void _leave() {
+    final String target =
+        ref.read(postAuthRedirectProvider.notifier).consume() ??
+        AppRoutes.discover;
+    context.go(target);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -71,61 +83,68 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
         ? AuthValidators.saudiPhone(_controller.text)
         : null;
 
-    return Scaffold(
-      appBar: HotelAppBar(title: l10n.authPhoneTitle),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.pageGutter),
-          children: <Widget>[
-            Text(l10n.authPhoneHeading, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: AppSpacing.xs),
-            Text(l10n.authPhoneBody, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: AppSpacing.xl),
-            PhoneNumberField(
-              label: l10n.authPhoneFieldLabel,
-              hintText: l10n.authPhoneFieldHint,
-              controller: _controller,
-              enabled: !submission.inProgress,
-              onSubmitted: _submit,
-              errorText: switch (error) {
-                PhoneInputError.empty => l10n.authPhoneInvalid,
-                PhoneInputError.invalid => l10n.authPhoneInvalid,
-                null => null,
-              },
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(l10n.authPhoneHelper, style: theme.textTheme.bodySmall),
-            if (config.useDummyData) ...<Widget>[
+    // Android's system back would otherwise close the app here.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? _) {
+        if (!didPop) _leave();
+      },
+      child: Scaffold(
+        appBar: HotelAppBar(title: l10n.authPhoneTitle, onBack: _leave),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.pageGutter),
+            children: <Widget>[
+              Text(l10n.authPhoneHeading, style: theme.textTheme.headlineSmall),
               const SizedBox(height: AppSpacing.xs),
-              Text(
-                l10n.authDemoHint(AuthDemoConfig.acceptedCode),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
+              Text(l10n.authPhoneBody, style: theme.textTheme.bodyMedium),
+              const SizedBox(height: AppSpacing.xl),
+              PhoneNumberField(
+                label: l10n.authPhoneFieldLabel,
+                hintText: l10n.authPhoneFieldHint,
+                controller: _controller,
+                enabled: !submission.inProgress,
+                onSubmitted: _submit,
+                errorText: switch (error) {
+                  PhoneInputError.empty => l10n.authPhoneInvalid,
+                  PhoneInputError.invalid => l10n.authPhoneInvalid,
+                  null => null,
+                },
               ),
-            ],
-            if (submission.failure != null) ...<Widget>[
+              const SizedBox(height: AppSpacing.xs),
+              Text(l10n.authPhoneHelper, style: theme.textTheme.bodySmall),
+              if (config.useDummyData) ...<Widget>[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  l10n.authDemoHint(AuthDemoConfig.acceptedCode),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ],
+              if (submission.failure != null) ...<Widget>[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  submission.failure!.localizedMessage(l10n),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.xl),
+              PrimaryButton(
+                label: l10n.authPhoneSubmit,
+                isLoading: submission.inProgress,
+                onPressed: submission.inProgress ? null : _submit,
+              ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                submission.failure!.localizedMessage(l10n),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
+                l10n.authPhoneTerms,
+                style: theme.textTheme.bodySmall,
+                textAlign: TextAlign.center,
               ),
             ],
-            const SizedBox(height: AppSpacing.xl),
-            PrimaryButton(
-              label: l10n.authPhoneSubmit,
-              isLoading: submission.inProgress,
-              onPressed: submission.inProgress ? null : _submit,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              l10n.authPhoneTerms,
-              style: theme.textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
+          ),
         ),
       ),
     );

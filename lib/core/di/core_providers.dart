@@ -19,8 +19,8 @@ final appConfigProvider = Provider<AppConfig>(
   (Ref ref) => throw StateError('appConfigProvider must be overridden in bootstrap()'),
 );
 
-/// Access-token storage. Phase 0: in-memory; swapped for a secure platform
-/// implementation in a later phase.
+/// Access-token storage. In-memory by default (tests); `bootstrap()` overrides
+/// it with the persistent `SecureTokenStore` for the real app.
 final tokenStoreProvider = Provider<TokenStore>((Ref ref) => InMemoryTokenStore());
 
 /// Shared HTTP client. Built once from config + token store.

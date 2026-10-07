@@ -11,7 +11,6 @@ import '../core/localization/locale_controller.dart';
 import '../core/localization/supported_locales.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_spacing.dart';
-import '../core/theme/theme_controller.dart';
 import '../core/widgets/app_card.dart';
 import '../core/widgets/app_icon_button.dart';
 import '../core/widgets/app_list_row.dart';
@@ -69,11 +68,6 @@ class FoundationHomePage extends ConsumerWidget {
             _SectionCard(
               title: l10n.sectionLanguage,
               child: const _LanguageSelector(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SectionCard(
-              title: l10n.sectionTheme,
-              child: const _ThemeSelector(),
             ),
             const SizedBox(height: AppSpacing.md),
             _SectionCard(
@@ -162,35 +156,6 @@ class _LanguageSelector extends ConsumerWidget {
                   : SupportedLocales.english,
             );
       },
-    );
-  }
-}
-
-class _ThemeSelector extends ConsumerWidget {
-  const _ThemeSelector();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeMode mode = ref.watch(themeModeControllerProvider);
-    return SegmentedButton<ThemeMode>(
-      segments: <ButtonSegment<ThemeMode>>[
-        ButtonSegment<ThemeMode>(
-          value: ThemeMode.system,
-          label: Text(l10n.themeSystem),
-        ),
-        ButtonSegment<ThemeMode>(
-          value: ThemeMode.light,
-          label: Text(l10n.themeLight),
-        ),
-        ButtonSegment<ThemeMode>(
-          value: ThemeMode.dark,
-          label: Text(l10n.themeDark),
-        ),
-      ],
-      selected: <ThemeMode>{mode},
-      onSelectionChanged: (Set<ThemeMode> selection) =>
-          ref.read(themeModeControllerProvider.notifier).set(selection.first),
     );
   }
 }

@@ -5,6 +5,25 @@ approved backend identity state machine (Document → Selfie → Matching → Re
 and represents every business state — it never invents states and never claims
 approval before the repository confirms it.
 
+## Document-only mode (2026-10-07) — current default
+
+`IDENTITY_DOCUMENT_ONLY=true` (config `verification.document_only`, default
+**true**): the guest only photographs the ID and verification completes.
+
+- Flow: Intro → pick document type (no name / number / birth date) → photo
+  (front, plus back where the type requires it) → review → upload →
+  **AUTO_APPROVED** → reservation **VERIFIED** → check-in.
+- Backend: no OCR call, no selfie, no face match. The photo is still stored
+  encrypted on the private disk (staff can see it); `document_check_status`
+  stays null; one automated decision row with `reason = document_only`.
+  New state-machine edge `DOCUMENT_UPLOADED → AUTO_APPROVED`.
+- `GET /guest/identity/document-types` adds `details_required` /
+  `selfie_required` (both false in this mode); the app hides the details
+  fields when `details_required` is false (missing → true, for older servers).
+- Set `IDENTITY_DOCUMENT_ONLY=false` to restore the OCR + selfie flow below.
+  PHPUnit runs with it false (phpunit.xml); `GuestIdentityDocumentOnlyTest`
+  covers this mode.
+
 ## Real OCR document check (2026-09-26)
 
 The ID-document upload now runs a **real server-side OCR check** before the

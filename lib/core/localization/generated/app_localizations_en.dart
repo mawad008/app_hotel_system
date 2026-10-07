@@ -1405,6 +1405,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Two steps: a photo of your ID, then a live selfie. Photos are deleted once your stay ends.';
 
   @override
+  String get identityIntroBannerBodyDocumentOnly =>
+      'One step: a photo of your ID. Photos are deleted once your stay ends.';
+
+  @override
+  String get identityDocumentOnlyBody =>
+      'Choose your document type, then take a clear photo of it.';
+
+  @override
   String get identityIntroCta => 'Start verification';
 
   @override
@@ -3345,4 +3353,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roomPolicyCheckOutTitle => 'Check-out';
+
+  @override
+  String roomMaxAdultsReached(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'This room takes at most $count adults',
+      one: 'This room takes at most 1 adult',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String roomMaxGuestsReached(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'This room takes at most $count guests',
+      one: 'This room takes at most 1 guest',
+    );
+    return '$_temp0';
+  }
 }

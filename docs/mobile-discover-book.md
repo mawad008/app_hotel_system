@@ -127,7 +127,13 @@ room detail, and were removed.
 ### Booking summary — `room_selection_review_page.dart` (`تفاصيل الحجز`)
 - Room card (thumb, name, `📍 hotel`, nightly price, `متاحة`).
 - Dates card + `تعديل` → the calendar.
-- **Inline** `بالغون` / `أطفال` steppers bound to `guestPartyControllerProvider`.
+- **Inline** `بالغون` / `أطفال` steppers bound to `guestPartyControllerProvider`,
+  capped at the chosen room type's `max_occupancy`
+  (`RoomSelection.maxAdultsWith` / `maxChildrenWith`). At the cap the + stays
+  dimmed-but-tappable and shows `الحد الأقصى لهذه الغرفة هو N بالغين`
+  (`roomMaxAdultsReached`) / `… N ضيوف` (`roomMaxGuestsReached`), plus a
+  caption under the steppers, so the party can never outgrow the room and
+  silently drop the selection.
 - `PriceBreakdownCard`: `قيمة الإقامة` (nightly × nights) + `رسوم الخدمة` +
   `الإجمالي`.
 - CTA (signed in) `المتابعة للدفع` → creates the `PENDING` reservation and

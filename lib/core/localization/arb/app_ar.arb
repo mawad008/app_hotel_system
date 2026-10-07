@@ -454,6 +454,8 @@
 
   "identityIntroBannerTitle": "تحقق سريع من هويتك",
   "identityIntroBannerBody": "خطوتان: صورة لهويتك، ثم صورة حية لوجهك. تُحذف الصور بعد انتهاء إقامتك.",
+  "identityIntroBannerBodyDocumentOnly": "خطوة واحدة: صورة لهويتك. تُحذف الصور بعد انتهاء إقامتك.",
+  "identityDocumentOnlyBody": "اختر نوع وثيقتك، ثم التقط صورة واضحة لها.",
   "identityIntroCta": "ابدأ التحقق",
   "identityCaptureDocumentTitle": "صوّر هويتك",
   "identityCaptureDocumentHint": "ضع الهوية داخل الإطار مع ظهور الحواف الأربع",
@@ -1121,5 +1123,8 @@
   "roomPriceIncludedValue": "شاملة",
   "roomFinalPriceNote": "السعر النهائي لا توجد رسوم إضافية",
   "roomPolicyCheckInTitle": "تسجيل الدخول",
-  "roomPolicyCheckOutTitle": "تسجيل الخروج"
+  "roomPolicyCheckOutTitle": "تسجيل الخروج",
+
+  "roomMaxAdultsReached": "{count, plural, =1{الحد الأقصى لهذه الغرفة هو بالغ واحد} =2{الحد الأقصى لهذه الغرفة هو 2 بالغين} other{الحد الأقصى لهذه الغرفة هو {count} بالغين}}",
+  "roomMaxGuestsReached": "{count, plural, =1{الحد الأقصى لهذه الغرفة هو ضيف واحد} other{الحد الأقصى لهذه الغرفة هو {count} ضيوف}}"
 }

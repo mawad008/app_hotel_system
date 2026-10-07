@@ -78,6 +78,16 @@ dependencies:
   # opening a hotel's location in the device maps app.
   url_launcher: ^6.3.2
 
+  # Persists the guest's access token across app restarts (Keychain on iOS,
+  # Keystore-encrypted prefs on Android, WebCrypto-encrypted storage on web),
+  # so a cold start restores the session instead of asking for a new OTP.
+  # Consumed only through `SecureTokenStore`.
+  flutter_secure_storage: ^11.2.0
+
+  # Non-secret first-run flags that must survive a restart (onboarding seen,
+  # chosen app language). Consumed only through `AppPreferences`.
+  shared_preferences: ^2.5.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

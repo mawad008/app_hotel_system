@@ -99,6 +99,15 @@ class RoomSelection {
   bool fits(GuestParty party) =>
       party.adults + party.children <= roomType.maxOccupancy;
 
+  /// The most adults this room type takes alongside [children] — the stepper
+  /// ceiling on the booking summary, so the party can't outgrow the room.
+  int maxAdultsWith(int children) =>
+      (roomType.maxOccupancy - children).clamp(GuestParty.minAdults, GuestParty.maxAdults);
+
+  /// The most children this room type takes alongside [adults].
+  int maxChildrenWith(int adults) =>
+      (roomType.maxOccupancy - adults).clamp(GuestParty.minChildren, GuestParty.maxChildren);
+
   @override
   bool operator ==(Object other) =>
       other is RoomSelection &&

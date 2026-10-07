@@ -194,6 +194,7 @@ class RoomSelectionReviewPage extends ConsumerWidget {
             const SizedBox(height: AppSpacing.md),
             _PartyCard(
               party: party,
+              selection: selection,
               onAdults: (int v) => ref
                   .read(guestPartyControllerProvider.notifier)
                   .setAdults(v),
@@ -375,35 +376,67 @@ class _DatesCard extends StatelessWidget {
 class _PartyCard extends StatelessWidget {
   const _PartyCard({
     required this.party,
+    required this.selection,
     required this.onAdults,
     required this.onChildren,
   });
 
   final GuestParty party;
+  final RoomSelection selection;
   final ValueChanged<int> onAdults;
   final ValueChanged<int> onChildren;
+
+  void _showLimit(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    // The steppers stop at the chosen room's capacity — a party that outgrows
+    // the room would otherwise drop the selection (RoomSelectionController).
+    final int maxAdults = selection.maxAdultsWith(party.children);
+    final int maxChildren = selection.maxChildrenWith(party.adults);
+    final String adultsLimit =
+        context.localDigits(l10n.roomMaxAdultsReached(maxAdults));
+    final String occupancyLimit = context.localDigits(
+      l10n.roomMaxGuestsReached(selection.roomType.maxOccupancy),
+    );
+    final bool atCapacity = party.total >= selection.roomType.maxOccupancy;
+
     return AppCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           GuestStepper(
             label: l10n.guestsAdults,
             value: party.adults,
             min: GuestParty.minAdults,
-            max: GuestParty.maxAdults,
+            max: maxAdults,
             onChanged: onAdults,
+            onLimitReached: () => _showLimit(context, adultsLimit),
           ),
           const SizedBox(height: AppSpacing.sm),
           GuestStepper(
             label: l10n.guestsChildren,
             value: party.children,
             min: GuestParty.minChildren,
-            max: GuestParty.maxChildren,
+            max: maxChildren,
             onChanged: onChildren,
+            onLimitReached: () => _showLimit(context, occupancyLimit),
           ),
+          if (atCapacity) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              party.children == 0 ? adultsLimit : occupancyLimit,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: context.colors.textSecondary),
+            ),
+          ],
         ],
       ),
     );

@@ -83,6 +83,9 @@ class _IdentityVerificationPageState
   /// Selectable document types from the server catalog (defaults until loaded).
   List<IdentityDocumentOption> _options = IdentityDocumentOption.defaults;
 
+  /// The server runs in document-only mode: a photo of the ID is all it asks.
+  bool get _documentOnly => _options.every((o) => !o.detailsRequired);
+
   BackImagePolicy get _backPolicy => _options
       .firstWhere((o) => o.type == _documentType,
           orElse: () => IdentityDocumentOption(type: _documentType, back: _documentType.defaultBack))
@@ -365,7 +368,9 @@ class _IdentityVerificationPageState
     title: l10n.identityVerificationTitle,
     tone: InfoBannerTone.info,
     bannerTitle: l10n.identityIntroBannerTitle,
-    bannerMessage: l10n.identityIntroBannerBody,
+    bannerMessage: _documentOnly
+        ? l10n.identityIntroBannerBodyDocumentOnly
+        : l10n.identityIntroBannerBody,
     primaryLabel: l10n.identityIntroCta,
     onPrimary: () => setState(() {
       _introSeen = true;
@@ -383,7 +388,7 @@ class _IdentityVerificationPageState
       profileName: auth is Authenticated ? auth.session.profile.fullName : null,
       highlightedFields: session.documentCheck?.mismatchedFields ?? const <String>[],
       onBack: () => setState(() => _introSeen = false),
-      onSubmit: (IdentityDocumentType type, IdentityDocumentClaim claim) => setState(() {
+      onSubmit: (IdentityDocumentType type, IdentityDocumentClaim? claim) => setState(() {
         _documentType = type;
         _claim = claim;
         // A kept photo (details were the problem) goes straight back to review.

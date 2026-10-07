@@ -148,6 +148,12 @@ Prefer small, feature-local states over a giant global state.
 Identity documents, selfies, payment secrets, tokens and provider
 secrets MUST NOT be logged.
 
+The guest's access token is persisted only through `SecureTokenStore`
+(`flutter_secure_storage`: Keychain / Keystore / WebCrypto-encrypted web
+storage) so a session survives closing the app. On a cold start it is
+re-validated against `GET /guest/auth/me`; a rejected token is cleared.
+The session ends only on sign-out, a backend `401`, or that failed check.
+
 Identity files are private backend resources. The mobile app should
 receive only the access mechanism/API response required by the approved
 backend workflow.

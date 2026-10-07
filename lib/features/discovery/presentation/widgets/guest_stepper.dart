@@ -10,7 +10,8 @@ import '../../../../core/widgets/app_icons.dart';
 /// 6px inset) holding two 36px round `bg/subtle` buttons around the value
 /// (16 Medium). The capsule keeps − on the left and + on the right in both
 /// directions, as the Figma Arabic frames do. Buttons disable at [min] /
-/// [max].
+/// [max]; when [onLimitReached] is given, + stays tappable (dimmed) at [max]
+/// and reports the ceiling instead of silently doing nothing.
 class GuestStepper extends StatelessWidget {
   const GuestStepper({
     super.key,
@@ -19,6 +20,7 @@ class GuestStepper extends StatelessWidget {
     required this.min,
     required this.max,
     required this.onChanged,
+    this.onLimitReached,
   });
 
   final String label;
@@ -26,6 +28,7 @@ class GuestStepper extends StatelessWidget {
   final int min;
   final int max;
   final ValueChanged<int> onChanged;
+  final VoidCallback? onLimitReached;
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +80,10 @@ class GuestStepper extends StatelessWidget {
                 _RoundButton(
                   icon: AppIcons.add,
                   tooltip: '${l10n.stepperIncrease} — $label',
-                  onPressed: value < max ? () => onChanged(value + 1) : null,
+                  onPressed: value < max
+                      ? () => onChanged(value + 1)
+                      : onLimitReached,
+                  dimmed: value >= max,
                 ),
               ],
             ),
@@ -93,9 +99,11 @@ class _RoundButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.dimmed = false,
   });
 
   final IconData icon;
+  final bool dimmed;
   final String tooltip;
   final VoidCallback? onPressed;
 
@@ -113,7 +121,8 @@ class _RoundButton extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         backgroundColor: c.bgSubtle,
         disabledBackgroundColor: c.bgSubtle,
-        foregroundColor: c.textPrimary,
+        foregroundColor:
+            dimmed ? c.textPrimary.withValues(alpha: 0.3) : c.textPrimary,
         disabledForegroundColor: c.textPrimary.withValues(alpha: 0.3),
         shape: const CircleBorder(),
       ),

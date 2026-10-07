@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../storage/app_preferences.dart';
 import 'supported_locales.dart';
 
 /// Holds the app locale.
@@ -11,15 +14,31 @@ import 'supported_locales.dart';
 /// the device locale" (resolved by `MaterialApp` against `supportedLocales`) and
 /// is only reached via [useDeviceLocale].
 ///
-/// Phase 0 keeps this in memory only; persistence is deferred with the rest of
-/// the storage layer.
+/// The choice is persisted through [AppPreferences], so the language picked on
+/// the first-run screen (which is not shown again) survives a restart.
 class LocaleController extends Notifier<Locale?> {
+  static const String _deviceCode = 'system';
+
   @override
-  Locale? build() => SupportedLocales.arabic;
+  Locale? build() {
+    final String? code = ref.read(appPreferencesProvider).localeCode;
+    if (code == _deviceCode) return null;
+    for (final Locale locale in SupportedLocales.all) {
+      if (locale.languageCode == code) return locale;
+    }
+    return SupportedLocales.arabic;
+  }
 
-  void set(Locale? locale) => state = locale;
+  void set(Locale? locale) {
+    state = locale;
+    unawaited(
+      ref
+          .read(appPreferencesProvider)
+          .setLocaleCode(locale?.languageCode ?? _deviceCode),
+    );
+  }
 
-  void useDeviceLocale() => state = null;
+  void useDeviceLocale() => set(null);
 }
 
 final localeControllerProvider =

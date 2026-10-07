@@ -88,4 +88,32 @@ void main() {
     );
     expect(find.text(en.reviewNoSelectionTitle), findsNothing);
   });
+
+  testWidgets(
+      'the adults stepper stops at the room capacity and says why instead of '
+      'dropping the selection', (WidgetTester tester) async {
+    // Standard Room (double bed) fits 2 guests; the party starts at 2 adults.
+    final AppLocalizations en = await _toSummary(tester, 'Standard Room');
+    expect(find.text(en.roomMaxAdultsReached(2)), findsOneWidget);
+
+    // Try a third adult.
+    await tester.tap(find.widgetWithIcon(IconButton, Icons.add).first);
+    await tester.pump();
+
+    // The count holds at 2, the limit is explained, and the room stays chosen.
+    expect(find.text('2'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.text(en.roomMaxAdultsReached(2)),
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(en.reviewNoSelectionTitle), findsNothing);
+    expect(
+      find.widgetWithText(FilledButton, en.bookingProceedToPayment),
+      findsOneWidget,
+    );
+  });
 }

@@ -14,6 +14,8 @@ import 'package:hotel_guest_app/features/identity_verification/data/device/ident
 import 'package:hotel_guest_app/features/identity_verification/data/device/live_identity_camera.dart';
 import 'package:hotel_guest_app/features/identity_verification/domain/entities/identity_document.dart';
 import 'package:hotel_guest_app/features/identity_verification/domain/entities/identity_document_check.dart';
+import 'package:hotel_guest_app/features/identity_verification/domain/entities/identity_verification_session.dart';
+import 'package:hotel_guest_app/features/identity_verification/domain/entities/identity_verification_status.dart';
 import 'package:hotel_guest_app/features/identity_verification/presentation/state/identity_verification_providers.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/create_reservation_request.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/extend_stay.dart';
@@ -59,6 +61,31 @@ class _RecordingSource extends DummyIdentityVerificationDataSource {
   }) {
     requests.add(request);
     return super.submitDocument(request, onProgress: onProgress);
+  }
+}
+
+/// The backend's document-only mode: no details, the photo approves at once.
+class _DocumentOnlySource extends DummyIdentityVerificationDataSource {
+  final List<SubmitIdentityDocumentRequest> requests = <SubmitIdentityDocumentRequest>[];
+
+  @override
+  Future<List<IdentityDocumentOption>> documentTypes() async => <IdentityDocumentOption>[
+        for (final IdentityDocumentOption o in IdentityDocumentOption.defaults)
+          IdentityDocumentOption(type: o.type, back: o.back, automaticCheck: true, detailsRequired: false),
+      ];
+
+  @override
+  Future<IdentityVerificationSessionModel> submitDocument(
+    SubmitIdentityDocumentRequest request, {
+    UploadProgress? onProgress,
+  }) async {
+    requests.add(request);
+    return IdentityVerificationSessionModel(
+      reservationId: request.reservationId,
+      status: IdentityVerificationStatus.autoApproved,
+      attempts: 1,
+      latestOutcome: IdentityMatchOutcome.fromWire(null),
+    );
   }
 }
 
@@ -412,6 +439,32 @@ void main() {
     expect(find.text(en.identityDetailsTitle), findsOneWidget);
     expect(find.text(en.identityFieldRequired), findsWidgets);
     expect(find.text(en.identityCaptureDocumentTitle), findsNothing);
+  });
+
+  testWidgets('document-only mode: pick the type, photograph the ID, verified — no details, no selfie',
+      (tester) async {
+    final en = await _l10n('en');
+    final source = _DocumentOnlySource();
+    await _open(tester, reservationIdForScenario(DummyVerificationScenario.autoApprove),
+        camera: FakeIdentityCamera(), source: source);
+
+    expect(find.text(en.identityIntroBannerBodyDocumentOnly), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, en.identityIntroCta));
+    await tester.pumpAndSettle();
+
+    expect(find.text(en.identityDocumentOnlyBody), findsOneWidget);
+    expect(find.byKey(const ValueKey('idv-name')), findsNothing);
+    expect(find.byKey(const ValueKey('idv-number')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('idv-type-passport')));
+    await tester.pumpAndSettle();
+    await _continueDetails(tester);
+
+    await _captureAndSubmitDocument(tester, en);
+
+    expect(source.requests, hasLength(1));
+    expect(source.requests.single.claim, isNull);
+    expect(find.text(en.identityCaptureSelfieHint), findsNothing);
+    expect(find.text(en.identityApprovedTitle), findsWidgets);
   });
 
   testWidgets('a details mismatch explains what to check; editing re-uploads the kept photo',

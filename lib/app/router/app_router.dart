@@ -116,18 +116,27 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       final bool onSplash = loc == AppRoutes.splash;
 
       final bool languageChosen = ref.read(languageSelectedProvider);
+      final bool onboarded = ref.read(onboardingCompletedProvider);
+      // Where a signed-out guest enters the app: onboarding on the first run,
+      // straight to browsing once it has been completed on any earlier launch.
+      final String entry = onboarded ? AppRoutes.discover : AppRoutes.welcome;
 
       return auth.map(
         unknown: () => onSplash ? null : AppRoutes.splash,
         unauthenticated: () {
+          // Language + onboarding are first-run only.
+          if (onboarded &&
+              (loc == AppRoutes.language || loc == AppRoutes.welcome)) {
+            return entry;
+          }
           // First run: the language screen sits before everything else on the
           // unauthenticated surface.
           if (loc == AppRoutes.language) {
             return languageChosen ? AppRoutes.welcome : null;
           }
           if (!languageChosen) return AppRoutes.language;
-          if (onSplash) return AppRoutes.welcome;
-          if (loc == AppRoutes.sessionExpired) return AppRoutes.welcome;
+          if (onSplash) return entry;
+          if (loc == AppRoutes.sessionExpired) return entry;
           if (onAuthSurface) return null;
           // Account is an explicit sign-in entry point for guests. Keep the
           // rest of the app's deferred-auth browsing flow unchanged.
@@ -137,7 +146,7 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
           // requested from the "confirm" action, not the router. The Bookings
           // and Services tabs are reachable too and show a sign-in prompt.
           if (AppRoutes.isPublic(pattern)) return null;
-          return AppRoutes.welcome;
+          return entry;
         },
         awaitingProfile: (_) => onProfile ? null : AppRoutes.completeProfile,
         authenticated: (_) {

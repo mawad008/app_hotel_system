@@ -176,6 +176,21 @@ void main() {
     ]);
   });
 
+  test('documentTypes reads document-only mode (details_required: false)', () async {
+    final adapter = _FakeAdapter(<String, (int, Map<String, dynamic>)>{
+      'GET /guest/identity/document-types': (200, <String, dynamic>{
+        'success': true,
+        'data': <Map<String, dynamic>>[
+          <String, dynamic>{'type': 'passport', 'back_image': 'none', 'automatic_check': true, 'details_required': false},
+        ],
+      }),
+    });
+
+    final options = await _source(adapter).documentTypes();
+
+    expect(options.single.detailsRequired, isFalse);
+  });
+
   test('an Egyptian ID upload sends both sides and no date of birth', () async {
     final adapter = _FakeAdapter(<String, (int, Map<String, dynamic>)>{
       'POST /guest/reservations/9/identity/documents': (201, <String, dynamic>{
