@@ -2,8 +2,10 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -29,6 +31,7 @@ class DetailHeroCard extends ConsumerWidget {
     this.copy,
     this.actions = const <Widget>[],
     this.centerCounter = false,
+    this.backFallbackLocation = AppRoutes.discover,
   });
 
   final String entityId;
@@ -47,6 +50,11 @@ class DetailHeroCard extends ConsumerWidget {
   /// Room hero: the counter sits alone, centred. Hotel hero: at the end,
   /// beside [copy].
   final bool centerCounter;
+
+  /// Where back goes when there is nothing to pop — the screen was reached
+  /// with `go` (post-sign-in return, deep link, restored location), so it is
+  /// the root of the stack.
+  final String backFallbackLocation;
 
   static const double _radius = 28;
 
@@ -102,7 +110,9 @@ class DetailHeroCard extends ConsumerWidget {
                   child: DetailHeroButton(
                     icon: AppIcons.heroBackFor(Directionality.of(context)),
                     tooltip: context.l10n.commonBack,
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    onPressed: () => context.canPop()
+                        ? context.pop()
+                        : context.go(backFallbackLocation),
                   ),
                 ),
                 if (actions.isNotEmpty)

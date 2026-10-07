@@ -164,6 +164,8 @@ class _DayCell extends StatelessWidget {
   final DateTime? today;
   final ValueChanged<DateTime> onSelectDay;
 
+  static const double _circle = 36;
+
   bool get _isDisabled => date.isBefore(firstSelectableDay);
   bool _isSame(DateTime? other) =>
       other != null && DateUtils.isSameDay(date, other);
@@ -190,8 +192,8 @@ class _DayCell extends StatelessWidget {
     final Color foreground = _isEndpoint
         ? theme.colorScheme.onPrimary
         : _isDisabled
-            ? theme.disabledColor
-            : theme.colorScheme.onSurface;
+        ? theme.disabledColor
+        : theme.colorScheme.onSurface;
 
     return InkWell(
       onTap: _isDisabled ? null : () => onSelectDay(date),
@@ -202,26 +204,35 @@ class _DayCell extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
+            // The band is as tall as the endpoint circles and centred, so it
+            // reads as one continuous strip joining them. `stretch` matters:
+            // childless ColoredBoxes would otherwise collapse to 0px tall.
             Positioned.fill(
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: ColoredBox(
-                      color: fillStartHalf ? band : Colors.transparent,
-                    ),
+              child: Center(
+                child: SizedBox(
+                  height: _circle,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Expanded(
+                        child: ColoredBox(
+                          color: fillStartHalf ? band : Colors.transparent,
+                        ),
+                      ),
+                      Expanded(
+                        child: ColoredBox(
+                          color: fillEndHalf ? band : Colors.transparent,
+                        ),
+                      ),
+                    ],
                   ),
-                  Expanded(
-                    child: ColoredBox(
-                      color: fillEndHalf ? band : Colors.transparent,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
             if (_isEndpoint)
               Container(
-                width: 36,
-                height: 36,
+                width: _circle,
+                height: _circle,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary,
                   shape: BoxShape.circle,
@@ -229,8 +240,8 @@ class _DayCell extends StatelessWidget {
               )
             else if (_isSame(today))
               Container(
-                width: 36,
-                height: 36,
+                width: _circle,
+                height: _circle,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: theme.colorScheme.outline),

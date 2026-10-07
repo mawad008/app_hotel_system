@@ -25,9 +25,6 @@ import '../../domain/entities/hotel_guest_details.dart';
 import '../../domain/entities/hotel_review_summary.dart';
 import '../../domain/entities/room_type_summary.dart';
 import '../state/favorite_hotels_controller.dart';
-import '../../../authentication/presentation/state/post_auth_redirect_controller.dart';
-import '../../../authentication/presentation/state/login_flow_controller.dart';
-import '../../../../core/errors/failure.dart';
 import '../state/guest_party_controller.dart';
 import '../state/hotel_detail_provider.dart';
 import '../state/room_availability_controller.dart';
@@ -35,6 +32,7 @@ import '../state/room_selection_controller.dart';
 import '../state/stay_dates_controller.dart';
 import '../widgets/detail_premium.dart';
 import '../widgets/hotel_location_map.dart';
+import '../widgets/hotel_favorite_toggle.dart';
 import '../widgets/hotel_share.dart';
 import '../widgets/hotel_thumbnail.dart';
 import '../../../reservation/presentation/state/create_reservation_controller.dart';
@@ -253,28 +251,8 @@ class _FavoriteButton extends ConsumerWidget {
       iconColor: AppPrimitives.red600,
       selected: favorite,
       tooltip: favorite ? l10n.hotelFavoriteRemove : l10n.hotelFavoriteAdd,
-      onPressed: () => _toggle(context, ref),
+      onPressed: () => toggleHotelFavorite(context, ref, hotelId),
     );
-  }
-
-  Future<void> _toggle(BuildContext context, WidgetRef ref) async {
-    final AppLocalizations l10n = context.l10n;
-    final String here = GoRouterState.of(context).uri.toString();
-    try {
-      final FavoriteToggleOutcome outcome =
-          await ref.read(favoriteHotelsProvider.notifier).toggle(hotelId);
-      if (outcome == FavoriteToggleOutcome.signInRequired && context.mounted) {
-        ref.read(postAuthRedirectProvider.notifier).remember(here);
-        ref.read(loginFlowControllerProvider.notifier).reset();
-        context.goNamed(AppRoutes.signInName);
-      }
-    } on Failure catch (failure) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(failure.localizedMessage(l10n))));
-      }
-    }
   }
 }
 

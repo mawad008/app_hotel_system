@@ -84,4 +84,30 @@ void main() {
     // Exactly the two endpoints across the two rendered months.
     expect(selected.length, greaterThanOrEqualTo(2));
   });
+
+  testWidgets('the nights between check-in and check-out are highlighted',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(_host(
+      locale: const Locale('ar'),
+      checkIn: DateTime(2026, 9, 6),
+      checkOut: DateTime(2026, 9, 10),
+      onSelect: (_) {},
+    ));
+
+    final List<Element> band = find
+        .descendant(
+          of: find.byType(StayRangeCalendar),
+          matching: find.byType(ColoredBox),
+        )
+        .evaluate()
+        .where((Element e) => (e.widget as ColoredBox).color.a > 0)
+        .toList();
+
+    // Three nights in between (both halves) + the inner half of each endpoint.
+    expect(band.length, 3 * 2 + 2);
+    // Regression: the band used to lay out 0px tall, so it never showed.
+    for (final Element e in band) {
+      expect((e.renderObject! as RenderBox).size.height, greaterThan(0));
+    }
+  });
 }

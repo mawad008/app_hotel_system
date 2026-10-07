@@ -115,8 +115,20 @@ Hero controls (Figma `hero-actions`, 32px frosted circles): back (Lucide
 (Hicon `Heart 3`, `red/600`, filled when on) at the end. Share opens the
 platform share sheet (`share_plus`; Web Share API on web) with name, location
 and a map link, falling back to the clipboard + a snackbar. Favourites are
-session-only (`favoriteHotelsProvider`) — the backend has no guest wishlist
-endpoint yet.
+**hotel-level** and server-backed (`GET/PUT/DELETE /guest/favorites/hotels`,
+`favoriteHotelsProvider`); the Room Detail heart saves the room's hotel —
+there are no room favourites on the backend. Every heart goes through
+`toggleHotelFavorite` (`widgets/hotel_favorite_toggle.dart`): a signed-out
+guest signs in first; a save shows "تم حفظ الفندق في المفضلة" with **عرض**
+(opens the list), a removal offers **تراجع**.
+
+**المفضلة** (`favorite_hotels_page.dart`, `/account/favorites`): reached from
+the Account card (row shows the count) or the save snackbar. Lists the saved
+hotels (photo, stars, name, city) — tap opens Hotel Detail, the heart removes
+it (with undo). Each row loads through `hotelDetailProvider`; a hotel that no
+longer loads shows "غير متاح حاليًا" and can still be removed. Empty state
+links to discovery. Not in the Figma — built from the existing list-card
+patterns.
 
 Icons: the section glyphs are Lucide at weight 300 in `gold/400`
 (`AppIcons.forDetailKey` / `forFacility`; facilities without an operator icon

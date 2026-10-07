@@ -458,6 +458,12 @@ abstract class AppLocalizations {
   /// **'Send verification code'**
   String get authPhoneSubmit;
 
+  /// No description provided for @authPhoneEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile number is required'**
+  String get authPhoneEmpty;
+
   /// No description provided for @authPhoneInvalid.
   ///
   /// In en, this message translates to:
@@ -569,7 +575,7 @@ abstract class AppLocalizations {
   /// No description provided for @authProfileNameHint.
   ///
   /// In en, this message translates to:
-  /// **'Mahmoud Nabil'**
+  /// **'Full name as on your ID'**
   String get authProfileNameHint;
 
   /// No description provided for @authProfileEmailLabel.
@@ -4363,6 +4369,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove from favourites'**
   String get hotelFavoriteRemove;
+
+  /// No description provided for @favoritesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get favoritesTitle;
+
+  /// No description provided for @favoritesBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your saved hotels'**
+  String get favoritesBannerTitle;
+
+  /// No description provided for @favoritesBannerBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotels you heart appear here. Tap one to open it, or the heart to remove it.'**
+  String get favoritesBannerBody;
+
+  /// No description provided for @favoritesEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No favourite hotels yet'**
+  String get favoritesEmptyTitle;
+
+  /// No description provided for @favoritesEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart on any hotel or room to save its hotel here.'**
+  String get favoritesEmptyBody;
+
+  /// No description provided for @favoritesBrowse.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse hotels'**
+  String get favoritesBrowse;
+
+  /// No description provided for @favoritesHotelUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This hotel is not available right now'**
+  String get favoritesHotelUnavailable;
+
+  /// No description provided for @favoriteSavedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotel saved to favourites'**
+  String get favoriteSavedSnack;
+
+  /// No description provided for @favoriteRemovedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotel removed from favourites'**
+  String get favoriteRemovedSnack;
+
+  /// No description provided for @favoriteViewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get favoriteViewAction;
+
+  /// No description provided for @favoriteUndoAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get favoriteUndoAction;
 
   /// No description provided for @hotelLocationMapSemantics.
   ///

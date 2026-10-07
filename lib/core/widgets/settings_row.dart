@@ -38,6 +38,16 @@ class SettingsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppColorTokens c = context.colors;
+    final Widget labelText = Text(
+      label,
+      maxLines: 1,
+      style: theme.textTheme.bodyLarge?.copyWith(
+        fontSize: 15,
+        height: 26 / 15,
+        color: c.textPrimary,
+        fontWeight: emphasized ? FontWeight.w500 : FontWeight.w400,
+      ),
+    );
 
     return InkWell(
       onTap: onTap,
@@ -58,25 +68,25 @@ class SettingsRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
             ],
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  fontSize: 15,
-                  height: 26 / 15,
-                  color: c.textPrimary,
-                  fontWeight: emphasized ? FontWeight.w500 : FontWeight.w400,
-                ),
-              ),
-            ),
-            if (value != null) ...<Widget>[
+            // The label is never squeezed: a long value (an e-mail address)
+            // takes the remaining width and ellipsizes instead of pushing the
+            // label into a narrow column that wraps letter by letter.
+            if (value == null)
+              Expanded(child: labelText)
+            else ...<Widget>[
+              labelText,
               const SizedBox(width: 12),
-              Text(
-                value!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  height: 24 / 14,
-                  color: c.textSecondary,
+              Expanded(
+                child: Text(
+                  value!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontSize: 14,
+                    height: 24 / 14,
+                    color: c.textSecondary,
+                  ),
                 ),
               ),
             ],

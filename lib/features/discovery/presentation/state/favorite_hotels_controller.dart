@@ -30,11 +30,17 @@ class FavoriteHotelsController extends Notifier<Set<String>> {
   /// newer local write.
   int _writes = 0;
 
+  /// Completes once the initial server fetch has settled (successfully or
+  /// not), so the favourites list can tell "still loading" from "empty".
+  Future<void> get loaded => _loaded;
+  Future<void> _loaded = Future<void>.value();
+
   @override
   Set<String> build() {
     final AuthState auth = ref.watch(authControllerProvider);
+    _loaded = Future<void>.value();
     if (auth is! Authenticated) return const <String>{};
-    _load();
+    _loaded = _load();
     return const <String>{};
   }
 

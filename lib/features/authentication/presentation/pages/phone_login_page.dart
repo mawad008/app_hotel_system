@@ -106,13 +106,16 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                 enabled: !submission.inProgress,
                 onSubmitted: _submit,
                 errorText: switch (error) {
-                  PhoneInputError.empty => l10n.authPhoneInvalid,
+                  PhoneInputError.empty => l10n.authPhoneEmpty,
                   PhoneInputError.invalid => l10n.authPhoneInvalid,
                   null => null,
                 },
               ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(l10n.authPhoneHelper, style: theme.textTheme.bodySmall),
+              // The validation message takes the helper's place while shown.
+              if (error == null) ...<Widget>[
+                const SizedBox(height: AppSpacing.xs),
+                Text(l10n.authPhoneHelper, style: theme.textTheme.bodySmall),
+              ],
               if (config.useDummyData) ...<Widget>[
                 const SizedBox(height: AppSpacing.xs),
                 Text(

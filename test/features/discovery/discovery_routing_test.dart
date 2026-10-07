@@ -55,6 +55,20 @@ void main() {
     expect(_location(c), '/discover/hotel/oasis');
   });
 
+  testWidgets('hotel detail back works with nothing to pop (reached with go)',
+      (WidgetTester tester) async {
+    final ProviderContainer c =
+        await pumpApp(tester, bootSession: completeSession());
+    // e.g. the post-sign-in return replaces the stack with `go`.
+    c.read(appRouterProvider).go('/discover/hotel/oasis');
+    await tester.pumpAndSettle();
+    expect(_location(c), '/discover/hotel/oasis');
+
+    await tester.tap(find.byTooltip('Back').first);
+    await tester.pumpAndSettle();
+    expect(_location(c), AppRoutes.discover);
+  });
+
   // Sign-out moved from Discover's app bar to the Account tab in Mobile
   // Phase 11 (mobile/docs/design-system.md) — its redirect behavior is
   // covered by auth_routing_test.dart now.

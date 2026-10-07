@@ -20,6 +20,7 @@ import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/settings_row.dart';
 import '../../../bookings/domain/bookings_filter.dart';
 import '../../../bookings/presentation/state/bookings_providers.dart';
+import '../../../discovery/presentation/state/favorite_hotels_controller.dart';
 import '../state/account_providers.dart';
 import '../state/account_summary.dart';
 
@@ -75,6 +76,7 @@ class _Body extends ConsumerWidget {
     final AppColorTokens c = context.colors;
     final TextTheme text = Theme.of(context).textTheme;
     final String? loyaltyReservation = summary.loyaltyReservationId;
+    final int favoriteCount = ref.watch(favoriteHotelsProvider).length;
 
     // `PROFILE_Home`: 24px page inset (12 top), sections 16px apart; every
     // row opens its own screen (Figma prototype routing map, "PROFILE").
@@ -162,6 +164,13 @@ class _Body extends ConsumerWidget {
                 ref.read(bookingsFilterProvider.notifier).state = BookingsFilter.past;
                 context.goNamed(AppRoutes.bookingsName);
               },
+            ),
+            SettingsRow(
+              key: const ValueKey<String>('account-favorites'),
+              icon: AppIcons.favorite,
+              label: l10n.favoritesTitle,
+              value: favoriteCount == 0 ? null : context.localDigits('$favoriteCount'),
+              onTap: () => context.pushNamed(AppRoutes.favoriteHotelsName),
             ),
             SettingsRow(
               icon: AppIcons.settings,

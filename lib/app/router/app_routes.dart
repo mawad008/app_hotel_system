@@ -220,6 +220,9 @@ abstract final class AppRoutes {
   static const String profilePersonalInfoName = 'profilePersonalInfo';
   static const String profilePreferences = '/account/preferences';
   static const String profilePreferencesName = 'profilePreferences';
+  /// The guest's saved hotels (the heart on Hotel / Room Detail).
+  static const String favoriteHotels = '/account/favorites';
+  static const String favoriteHotelsName = 'favoriteHotels';
   static const String profilePrivacy = '/account/privacy';
   static const String profilePrivacyName = 'profilePrivacy';
   static const String profileSupport = '/account/support';

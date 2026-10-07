@@ -24,7 +24,7 @@ void main() {
     await tester.tap(find.text(en.authPhoneSubmit));
     await tester.pump();
 
-    expect(find.text(en.authPhoneInvalid), findsOneWidget);
+    expect(find.text(en.authPhoneEmpty), findsOneWidget);
     expect(find.text(en.authOtpHeading), findsNothing);
   });
 

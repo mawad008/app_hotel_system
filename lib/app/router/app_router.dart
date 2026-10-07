@@ -21,6 +21,7 @@ import '../../features/bookings/presentation/pages/bookings_list_page.dart';
 import '../../features/profile/presentation/pages/account_home_page.dart';
 import '../../features/stay_home/presentation/pages/extend_stay_page.dart';
 import '../../features/stay_home/presentation/pages/stay_home_page.dart';
+import '../../features/discovery/presentation/pages/favorite_hotels_page.dart';
 import '../../features/discovery/presentation/pages/available_rooms_page.dart';
 import '../../features/discovery/presentation/pages/discover_page.dart';
 import '../../features/discovery/presentation/pages/hotel_detail_page.dart';
@@ -477,6 +478,11 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
         path: AppRoutes.profilePreferences,
         name: AppRoutes.profilePreferencesName,
         builder: (BuildContext context, GoRouterState state) => const PreferencesPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.favoriteHotels,
+        name: AppRoutes.favoriteHotelsName,
+        builder: (BuildContext context, GoRouterState state) => const FavoriteHotelsPage(),
       ),
       GoRoute(
         path: AppRoutes.profilePrivacy,

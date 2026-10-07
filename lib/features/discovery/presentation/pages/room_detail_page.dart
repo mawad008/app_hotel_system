@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
-import '../../../authentication/presentation/state/login_flow_controller.dart';
-import '../../../authentication/presentation/state/post_auth_redirect_controller.dart';
 
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/localization/numerals.dart';
@@ -20,8 +18,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/time/clock.dart';
-import '../../../../core/errors/failure.dart';
-import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
@@ -43,6 +39,7 @@ import '../state/room_selection_controller.dart';
 import '../state/stay_dates_controller.dart';
 import '../state/favorite_hotels_controller.dart';
 import '../widgets/detail_premium.dart';
+import '../widgets/hotel_favorite_toggle.dart';
 import '../widgets/hotel_share.dart';
 import '../../../../core/widgets/app_icons.dart';
 
@@ -328,6 +325,7 @@ class _Body extends ConsumerWidget {
             photos: photos,
             aspectRatio: 361 / 358,
             centerCounter: true,
+            backFallbackLocation: AppRoutes.hotelDetail.replaceFirst(':hotelId', hotel.id),
             actions: <Widget>[
               DetailHeroButton(
                 icon: AppIcons.share,
@@ -1069,29 +1067,7 @@ class _RoomHotelFavoriteButton extends ConsumerWidget {
       iconColor: AppPrimitives.red600,
       selected: favorite,
       tooltip: favorite ? l10n.hotelFavoriteRemove : l10n.hotelFavoriteAdd,
-      onPressed: () async {
-        try {
-          final FavoriteToggleOutcome outcome = await ref
-              .read(favoriteHotelsProvider.notifier)
-              .toggle(hotelId);
-          if (outcome == FavoriteToggleOutcome.signInRequired &&
-              context.mounted) {
-            ref
-                .read(postAuthRedirectProvider.notifier)
-                .remember(GoRouterState.of(context).uri.toString());
-            ref.read(loginFlowControllerProvider.notifier).reset();
-            context.goNamed(AppRoutes.signInName);
-          }
-        } on Failure catch (failure) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context)
-              ..clearSnackBars()
-              ..showSnackBar(
-                SnackBar(content: Text(failure.localizedMessage(l10n))),
-              );
-          }
-        }
-      },
+      onPressed: () => toggleHotelFavorite(context, ref, hotelId),
     );
   }
 }

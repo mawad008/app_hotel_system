@@ -214,6 +214,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authPhoneSubmit => 'إرسال رمز التحقق';
 
   @override
+  String get authPhoneEmpty => 'رقم الجوال مطلوب';
+
+  @override
   String get authPhoneInvalid =>
       'أدخل رقم جوال سعودي يبدأ بـ 05 ويتكون من 10 أرقام';
 
@@ -277,7 +280,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authProfileNameLabel => 'الاسم الكامل';
 
   @override
-  String get authProfileNameHint => 'محمود نبيل';
+  String get authProfileNameHint => 'الاسم بالكامل كما في الهوية';
 
   @override
   String get authProfileEmailLabel => 'البريد الإلكتروني';
@@ -2507,6 +2510,41 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get hotelFavoriteRemove => 'إزالة من المفضلة';
+
+  @override
+  String get favoritesTitle => 'المفضلة';
+
+  @override
+  String get favoritesBannerTitle => 'فنادقك المحفوظة';
+
+  @override
+  String get favoritesBannerBody =>
+      'تظهر هنا الفنادق التي حفظتها بالضغط على القلب. اضغط على الفندق لفتحه، أو على القلب لإزالته.';
+
+  @override
+  String get favoritesEmptyTitle => 'لا توجد فنادق مفضلة بعد';
+
+  @override
+  String get favoritesEmptyBody =>
+      'اضغط على القلب في صفحة أي فندق أو غرفة لحفظ الفندق هنا.';
+
+  @override
+  String get favoritesBrowse => 'تصفح الفنادق';
+
+  @override
+  String get favoritesHotelUnavailable => 'هذا الفندق غير متاح حاليًا';
+
+  @override
+  String get favoriteSavedSnack => 'تم حفظ الفندق في المفضلة';
+
+  @override
+  String get favoriteRemovedSnack => 'تمت إزالة الفندق من المفضلة';
+
+  @override
+  String get favoriteViewAction => 'عرض';
+
+  @override
+  String get favoriteUndoAction => 'تراجع';
 
   @override
   String get hotelLocationMapSemantics => 'موقع الفندق على الخريطة';

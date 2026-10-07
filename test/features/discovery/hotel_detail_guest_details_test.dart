@@ -18,6 +18,7 @@ import 'package:hotel_guest_app/features/discovery/domain/entities/money.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/widgets/hotel_location_map.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/widgets/hotel_share.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/state/favorite_hotels_controller.dart';
+import 'package:hotel_guest_app/features/discovery/presentation/pages/favorite_hotels_page.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/pages/hotel_detail_page.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/state/hotel_detail_provider.dart';
 import 'package:hotel_guest_app/features/stay_services/domain/entities/hotel_service.dart';
@@ -419,6 +420,41 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('hotel-favorite')));
     await tester.pumpAndSettle();
     expect(find.byIcon(AppIcons.favorite), findsOneWidget);
+  });
+
+  testWidgets('a saved hotel is listed under Favourites and can be removed there', (
+    WidgetTester tester,
+  ) async {
+    final AppLocalizations en = await _pump(
+      tester,
+      _hotel(details: _full),
+      session: completeSession(),
+    );
+
+    await tester.tap(find.byKey(const ValueKey<String>('hotel-favorite')));
+    await tester.pumpAndSettle();
+    expect(find.text(en.favoriteSavedSnack), findsOneWidget);
+
+    // The snackbar leads to the list, so the heart never ends nowhere.
+    await tester.tap(find.text(en.favoriteViewAction));
+    await tester.pumpAndSettle();
+    expect(find.byType(FavoriteHotelsPage), findsOneWidget);
+    expect(find.text('Test Hotel'), findsOneWidget);
+    expect(find.text('Jeddah'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey<String>('favorite-remove-$_hotelId')));
+    await tester.pumpAndSettle();
+    expect(find.text(en.favoritesEmptyTitle), findsOneWidget);
+
+    // Undo puts it back.
+    await tester.tap(find.text(en.favoriteUndoAction));
+    await tester.pumpAndSettle();
+    expect(find.text('Test Hotel'), findsOneWidget);
+
+    // Tapping the row opens the hotel.
+    await tester.tap(find.text('Test Hotel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HotelDetailPage), findsOneWidget);
   });
 
   testWidgets('a signed-out heart tap asks the guest to sign in first', (

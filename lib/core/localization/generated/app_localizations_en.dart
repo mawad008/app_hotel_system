@@ -218,6 +218,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPhoneSubmit => 'Send verification code';
 
   @override
+  String get authPhoneEmpty => 'Mobile number is required';
+
+  @override
   String get authPhoneInvalid =>
       'Enter a Saudi mobile number starting with 05 (10 digits)';
 
@@ -282,7 +285,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authProfileNameLabel => 'Full name';
 
   @override
-  String get authProfileNameHint => 'Mahmoud Nabil';
+  String get authProfileNameHint => 'Full name as on your ID';
 
   @override
   String get authProfileEmailLabel => 'Email';
@@ -2525,6 +2528,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hotelFavoriteRemove => 'Remove from favourites';
+
+  @override
+  String get favoritesTitle => 'Favourites';
+
+  @override
+  String get favoritesBannerTitle => 'Your saved hotels';
+
+  @override
+  String get favoritesBannerBody =>
+      'Hotels you heart appear here. Tap one to open it, or the heart to remove it.';
+
+  @override
+  String get favoritesEmptyTitle => 'No favourite hotels yet';
+
+  @override
+  String get favoritesEmptyBody =>
+      'Tap the heart on any hotel or room to save its hotel here.';
+
+  @override
+  String get favoritesBrowse => 'Browse hotels';
+
+  @override
+  String get favoritesHotelUnavailable =>
+      'This hotel is not available right now';
+
+  @override
+  String get favoriteSavedSnack => 'Hotel saved to favourites';
+
+  @override
+  String get favoriteRemovedSnack => 'Hotel removed from favourites';
+
+  @override
+  String get favoriteViewAction => 'View';
+
+  @override
+  String get favoriteUndoAction => 'Undo';
 
   @override
   String get hotelLocationMapSemantics => 'Hotel location on the map';
