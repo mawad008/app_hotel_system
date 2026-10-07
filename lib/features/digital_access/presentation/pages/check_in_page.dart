@@ -9,7 +9,6 @@ import '../../../../core/localization/l10n.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
-import '../../../../core/widgets/info_banner.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -59,7 +58,12 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
     );
 
     return Scaffold(
-      appBar: HotelAppBar(title: l10n.checkInTitle),
+      appBar: HotelAppBar(
+        title: l10n.checkInTitle,
+        // Reached with `go` from the identity result — nothing to pop.
+        fallbackLocation: AppRoutes.reservationDetail
+            .replaceFirst(':reservationId', widget.reservationId),
+      ),
       body: SafeArea(
         child: _merge(
           reservationAsync,
@@ -174,14 +178,6 @@ class _Body extends ConsumerWidget {
                   ],
                 ),
               ),
-              if (eligibility == CheckInEligibility.notReady) ...<Widget>[
-                const SizedBox(height: AppSpacing.md),
-                InfoBanner(
-                  tone: InfoBannerTone.info,
-                  title: l10n.checkInNotReadyTitle,
-                  message: l10n.checkInNotReadyBody,
-                ),
-              ],
             ],
           ),
         ),
@@ -192,7 +188,19 @@ class _Body extends ConsumerWidget {
             AppSpacing.pageGutter,
             AppSpacing.md,
           ),
-          child: PrimaryButton(
+          // Not ready: the reservation screen shows the step still missing
+          // (pay / verify identity) — never leave a dead, disabled button.
+          child: eligibility == CheckInEligibility.notReady
+              ? PrimaryButton(
+                  label: l10n.identityBackToReservation,
+                  onPressed: () => context.goNamed(
+                    AppRoutes.reservationDetailName,
+                    pathParameters: <String, String>{
+                      'reservationId': reservation.id,
+                    },
+                  ),
+                )
+              : PrimaryButton(
             label: submitting ? l10n.checkInProcessingTitle : l10n.checkInCta,
             isLoading: submitting,
             onPressed: (!eligibility.canStart || submitting)

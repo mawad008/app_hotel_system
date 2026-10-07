@@ -6,6 +6,7 @@ import '../../../../core/errors/failure.dart';
 import '../../domain/entities/identity_document.dart';
 import '../../domain/entities/identity_verification_request.dart';
 import '../../domain/entities/identity_verification_session.dart';
+import '../../../reservation/presentation/state/reservation_detail_provider.dart';
 import 'identity_verification_providers.dart';
 
 /// What the verification flow is doing right now, on top of the authoritative
@@ -128,6 +129,7 @@ class IdentityVerificationController
         phase: IdentityFlowPhase.ready,
         session: session,
       );
+      _refreshReservationIfApproved(session);
     } catch (error) {
       if (_stale(token)) return;
       state = IdentityVerificationState(
@@ -221,6 +223,7 @@ class IdentityVerificationController
         phase: IdentityFlowPhase.ready,
         session: session,
       );
+      _refreshReservationIfApproved(session);
     } catch (error) {
       if (_stale(token)) return;
       state = IdentityVerificationState(
@@ -228,6 +231,16 @@ class IdentityVerificationController
         session: state.session,
         failure: ErrorMapper.toFailure(error),
       );
+    }
+  }
+
+  /// An approval moves the Reservation DEPOSIT_HELD -> VERIFIED server-side,
+  /// so the cached reservation (Reservation Detail's CTA, the check-in gate)
+  /// must be refetched rather than keep showing DEPOSIT_HELD — same
+  /// invalidate-after-mutation convention as payment/check-in/checkout.
+  void _refreshReservationIfApproved(IdentityVerificationSession session) {
+    if (session.isApproved) {
+      ref.invalidate(reservationDetailProvider(_reservationId));
     }
   }
 
