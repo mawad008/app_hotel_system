@@ -114,9 +114,40 @@ Already configured in the project:
   localised in `en.lproj` / `ar.lproj`.
 - App icon set without alpha channel.
 
+### App Store Connect
+
+Screenshots for the listing are in `store/app-store/iphone-6.9/` — the
+**6.9" iPhone** size (1320×2868 px, iPhone 17 Pro Max / 16 Pro Max), which App
+Store Connect scales down for every other iPhone size. `ar/` has the full
+booking journey (8 screens); `en/` stops before the room list (5 screens)
+because room-type names and descriptions only exist in Arabic on the backend.
+Upload each set under its own listing language. PNG, no alpha channel, as Apple
+requires.
+
+They were captured from the production build on the Android emulator with the
+display forced to the iPhone 17 Pro Max geometry (440×956 pt at 3×), so the
+layout is exactly what the iPhone shows; a real iOS run is not needed:
+
+```
+adb shell wm size 1320x2868 && adb shell wm density 480
+adb shell am broadcast -a com.android.systemui.demo -e command enter   # 9:41 status bar
+adb shell am broadcast -a com.android.systemui.demo -e command clock -e hhmm 0941
+adb shell am broadcast -a com.android.systemui.demo -e command network -e wifi show -e level 4 -e fully true
+adb shell am broadcast -a com.android.systemui.demo -e command network -e mobile hide
+adb shell am broadcast -a com.android.systemui.demo -e command notifications -e visible false
+adb exec-out screencap -p > screen.png                                  # 1320×2868
+adb shell wm size reset && adb shell wm density reset                   # afterwards
+adb shell am broadcast -a com.android.systemui.demo -e command exit
+```
+
+Disable any accessibility service on the emulator first (Settings →
+Accessibility, e.g. the Accessibility Menu): with one enabled, Android draws a
+green focus border around the Flutter view that ends up in every capture.
+Flatten the PNGs to RGB (`Image.convert("RGB")`) before uploading.
+
 Still to do in App Store Connect: create the app record for the bundle id,
 privacy policy URL, App Privacy answers (same data as Play's Data safety),
-6.9" iPhone screenshots, and a demo account for App Review.
+upload the screenshots above, and a demo account for App Review.
 
 ## Icons and store graphics
 
