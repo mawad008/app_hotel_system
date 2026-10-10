@@ -253,6 +253,11 @@ class HotelModel {
       checkOutTime: _nonBlank(h['check_out_time']),
       pricesIncludeTaxes: (h['prices_include_taxes'] as bool?) ?? false,
       serviceFee: _serviceFee(h['service_fee']),
+      // `tax_rate`: decimal string %, null when rates include taxes / none.
+      taxRate: switch (Money.parseAmount(h['tax_rate'])) {
+        final num r when r > 0 => r,
+        _ => null,
+      },
       suitableFor: _nonBlank(h['suitable_for']),
       roomsCount: (h['rooms_count'] as num?)?.toInt(),
       highlights: <HotelHighlight>[

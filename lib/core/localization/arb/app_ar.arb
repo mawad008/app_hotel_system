@@ -313,6 +313,7 @@
   "bookingDatesLabel": "تواريخ الإقامة",
   "bookingRoomSubtotal": "قيمة الإقامة",
   "bookingServiceFee": "رسوم الخدمة",
+  "bookingTaxRow": "الضريبة ({rate}٪)",
   "bookingTotal": "الإجمالي",
   "bookingProceedToPayment": "المتابعة للدفع",
   "bookingRoomAvailable": "متاحة",

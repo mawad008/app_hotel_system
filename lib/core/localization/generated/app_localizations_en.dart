@@ -1026,6 +1026,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bookingServiceFee => 'Service fee';
 
   @override
+  String bookingTaxRow(String rate) {
+    return 'Tax ($rate%)';
+  }
+
+  @override
   String get bookingTotal => 'Total';
 
   @override

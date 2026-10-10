@@ -1724,6 +1724,12 @@ abstract class AppLocalizations {
   /// **'Service fee'**
   String get bookingServiceFee;
 
+  /// No description provided for @bookingTaxRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax ({rate}%)'**
+  String bookingTaxRow(String rate);
+
   /// No description provided for @bookingTotal.
   ///
   /// In en, this message translates to:

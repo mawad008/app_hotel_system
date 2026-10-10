@@ -43,6 +43,7 @@ import '../state/favorite_rooms_controller.dart';
 import '../widgets/detail_premium.dart';
 import '../widgets/hotel_favorite_toggle.dart';
 import '../widgets/hotel_share.dart';
+import '../widgets/price_breakdown_card.dart' show formatTaxRate;
 import '../../../../core/widgets/app_icons.dart';
 import '../../../../core/widgets/pull_to_refresh.dart';
 
@@ -211,6 +212,9 @@ class RoomDetailPage extends ConsumerWidget {
       context.pop();
     }
 
+    final Money? serviceFee =
+        hotel.details.serviceFee?.feeFor(room.stayTotal(stay.nights));
+
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -229,8 +233,10 @@ class RoomDetailPage extends ConsumerWidget {
               room: room,
               stay: stay,
               party: party,
-              serviceFee: hotel.details.serviceFee?.feeFor(
+              serviceFee: serviceFee,
+              tax: hotel.details.taxFor(
                 room.stayTotal(stay.nights),
+                serviceFee: serviceFee,
               ),
             ),
             const SizedBox(height: AppSpacing.space3),
@@ -267,6 +273,7 @@ class _CurrentPriceRow extends StatelessWidget {
     required this.stay,
     required this.party,
     this.serviceFee,
+    this.tax,
   });
 
   final AvailableRoom room;
@@ -276,14 +283,18 @@ class _CurrentPriceRow extends StatelessWidget {
   /// The hotel's service fee for this stay, included in the total.
   final Money? serviceFee;
 
+  /// The hotel's tax on stay + fee (rates exclude taxes), included in the total.
+  final Money? tax;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final TextTheme text = Theme.of(context).textTheme;
     final AppColorTokens c = context.colors;
-    // What the guest pays: the stay plus the hotel's service fee, if any.
-    final num total =
-        room.stayTotal(stay.nights).amount + (serviceFee?.amount ?? 0);
+    // What the guest pays: the stay plus the hotel's service fee and tax.
+    final num total = room.stayTotal(stay.nights).amount +
+        (serviceFee?.amount ?? 0) +
+        (tax?.amount ?? 0);
     return Row(
       children: <Widget>[
         Expanded(
@@ -421,6 +432,11 @@ class _Body extends ConsumerWidget {
             party: party,
             taxesIncluded: details.pricesIncludeTaxes,
             serviceFee: details.serviceFee?.feeFor(room.stayTotal(stay.nights)),
+            taxRate: details.taxRate,
+            tax: details.taxFor(
+              room.stayTotal(stay.nights),
+              serviceFee: details.serviceFee?.feeFor(room.stayTotal(stay.nights)),
+            ),
           ),
           if (included.isNotEmpty) ...<Widget>[
             gap,
@@ -708,8 +724,9 @@ class _IconDisc extends StatelessWidget {
 
 /// Figma `pricing card` ("تفاصيل حجزك"): three stay tiles, the nightly-rate
 /// row, the "شاملة" tax row when the hotel says its rates include taxes,
-/// the hotel's service fee (amount) when it charges one, the stay total
-/// (fee included) and — when taxes are included and there is no fee — the
+/// the hotel's service fee (amount) when it charges one, the tax row when
+/// its rates exclude taxes and it has a tax rate, the stay total (fee + tax
+/// included) and — when taxes are included and there is no fee — the
 /// green "final price, no extra fees" note.
 class _BookingDetailsCard extends StatelessWidget {
   const _BookingDetailsCard({
@@ -718,6 +735,8 @@ class _BookingDetailsCard extends StatelessWidget {
     required this.party,
     this.taxesIncluded = false,
     this.serviceFee,
+    this.tax,
+    this.taxRate,
   });
 
   final AvailableRoom room;
@@ -730,15 +749,20 @@ class _BookingDetailsCard extends StatelessWidget {
   /// The hotel's booking service fee for this stay; `null` when it has none.
   final Money? serviceFee;
 
+  /// The hotel's tax on stay + fee when its rates exclude taxes, and its %.
+  final Money? tax;
+  final num? taxRate;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final TextTheme text = Theme.of(context).textTheme;
     final AppColorTokens c = context.colors;
     final Locale locale = Localizations.localeOf(context);
-    // What the guest pays: the stay plus the hotel's service fee, if any.
-    final num total =
-        room.stayTotal(stay.nights).amount + (serviceFee?.amount ?? 0);
+    // What the guest pays: the stay plus the hotel's service fee and tax.
+    final num total = room.stayTotal(stay.nights).amount +
+        (serviceFee?.amount ?? 0) +
+        (tax?.amount ?? 0);
 
     Widget includedRow(String label) => Padding(
       padding: const EdgeInsets.only(top: AppSpacing.space3),
@@ -840,6 +864,25 @@ class _BookingDetailsCard extends StatelessWidget {
                 MoneyText(
                   serviceFee!.amount,
                   currency: serviceFee!.currency,
+                  markSize: 12,
+                  style: text.bodySmall?.copyWith(color: c.textPrimary),
+                ),
+              ],
+            ),
+          ],
+          if (tax != null) ...<Widget>[
+            const SizedBox(height: AppSpacing.space3),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.bookingTaxRow(formatTaxRate(taxRate)),
+                    style: text.bodySmall?.copyWith(color: c.textPrimary),
+                  ),
+                ),
+                MoneyText(
+                  tax!.amount,
+                  currency: tax!.currency,
                   markSize: 12,
                   style: text.bodySmall?.copyWith(color: c.textPrimary),
                 ),

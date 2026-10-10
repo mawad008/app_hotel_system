@@ -460,6 +460,14 @@
   "bookingDatesLabel": "Stay dates",
   "bookingRoomSubtotal": "Stay subtotal",
   "bookingServiceFee": "Service fee",
+  "bookingTaxRow": "Tax ({rate}%)",
+  "@bookingTaxRow": {
+    "placeholders": {
+      "rate": {
+        "type": "String"
+      }
+    }
+  },
   "bookingTotal": "Total",
   "bookingProceedToPayment": "Proceed to payment",
   "bookingRoomAvailable": "Available",

@@ -9,12 +9,14 @@ import '../../../reservation/domain/entities/reservation.dart';
 import '../../domain/entities/payment.dart';
 import 'payment_status_pill.dart';
 import '../../../discovery/domain/entities/money.dart';
+import '../../../discovery/presentation/widgets/price_breakdown_card.dart' show formatTaxRate;
 
 /// The payment-screen recap: reservation reference / hotel / room / stay
 /// dates / payment status, then the full cost breakdown — room rate × nights,
 /// stay subtotal, taxes, service fee, booking total — and, separately, the
 /// deposit hold the guest is asked for now. Every figure comes from the
 /// authoritative [Reservation] (`price_snapshot`, `service_fee_amount`,
+/// `tax_rate` / `tax_amount`,
 /// `room_type.base_price`, `hotel.deposit_amount`, `hotel.prices_include_taxes`)
 /// or the placed [payment]; the app computes nothing but the displayed sum the
 /// backend's `total_amount` already mirrors.
@@ -107,8 +109,10 @@ class PaymentSummaryCard extends StatelessWidget {
             )
           else if (taxesIncluded == false)
             _AmountRow(
-              label: l10n.roomTaxesLabel,
-              amount: Money(amount: 0, currency: currency),
+              label: reservation.taxRate == null
+                  ? l10n.roomTaxesLabel
+                  : l10n.bookingTaxRow(formatTaxRate(reservation.taxRate)),
+              amount: reservation.tax ?? Money(amount: 0, currency: currency),
             ),
           _AmountRow(
             label: l10n.bookingServiceFee,

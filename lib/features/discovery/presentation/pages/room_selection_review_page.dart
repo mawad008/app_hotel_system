@@ -32,6 +32,8 @@ import '../../../reservation/domain/entities/reservation.dart';
 import '../state/hotel_detail_provider.dart';
 import '../../../reservation/presentation/state/create_reservation_controller.dart';
 import '../../domain/entities/guest_party.dart';
+import '../../domain/entities/hotel_guest_details.dart';
+import '../../domain/entities/money.dart';
 import '../../domain/entities/room_selection.dart';
 import '../state/booking_price.dart';
 import '../state/guest_party_controller.dart';
@@ -133,15 +135,16 @@ class RoomSelectionReviewPage extends ConsumerWidget {
     final LoyaltyProgram? program = signedIn
         ? ref.watch(loyaltyProgramProvider(hotelId)).valueOrNull
         : null;
+    final HotelGuestDetails? hotelDetails =
+        ref.watch(hotelDetailProvider(hotelId)).valueOrNull?.details;
+    // The hotel's own service fee and tax (dashboard-managed); none when off.
+    final Money? serviceFee =
+        hotelDetails?.serviceFee?.feeFor(selection.stayTotal);
     final BookingPriceBreakdown breakdown = BookingPriceBreakdown.of(
       selection,
-      // The hotel's own service fee (dashboard-managed); none when it's off.
-      serviceFee: ref
-          .watch(hotelDetailProvider(hotelId))
-          .valueOrNull
-          ?.details
-          .serviceFee
-          ?.feeFor(selection.stayTotal),
+      serviceFee: serviceFee,
+      tax: hotelDetails?.taxFor(selection.stayTotal, serviceFee: serviceFee),
+      taxRate: hotelDetails?.taxRate,
       loyaltyDiscount: program == null || redeemPoints == 0
           ? 0
           : program.discountFor(

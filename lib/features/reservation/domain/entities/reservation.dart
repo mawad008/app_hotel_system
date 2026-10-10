@@ -108,6 +108,8 @@ class Reservation {
     this.nightlyRate,
     this.depositAmount,
     this.serviceFee,
+    this.tax,
+    this.taxRate,
     this.pricesIncludeTaxes,
     this.cancelledAt,
     this.cancellation = CancellationState.unknown,
@@ -153,16 +155,28 @@ class Reservation {
   /// (`service_fee_amount`); `null` when none.
   final Money? serviceFee;
 
+  /// The booking tax (`tax_amount`: the snapshotted `tax_rate` % of the stay
+  /// + service fee, server-computed); `null` when none.
+  final Money? tax;
+
+  /// The tax % snapshotted at booking (`tax_rate`); `null` when none.
+  final num? taxRate;
+
   /// The hotel's `prices_include_taxes` flag: `true` when the room rate
-  /// already includes taxes, `false` when no tax is added (the platform never
-  /// adds a separate tax line), `null` when unknown.
+  /// already includes taxes, `false` when the hotel's tax rate (if any) is
+  /// added on top as [tax], `null` when unknown.
   final bool? pricesIncludeTaxes;
 
-  /// What the guest pays for the booking: the stay plus the service fee.
-  Money get totalToPay => serviceFee == null
+  /// What the guest pays for the booking: the stay plus service fee and tax.
+  Money get totalToPay => serviceFee == null && tax == null
       ? priceSnapshot
       : Money(
-          amount: ((priceSnapshot.amount + serviceFee!.amount) * 100).round() / 100,
+          amount: ((priceSnapshot.amount +
+                          (serviceFee?.amount ?? 0) +
+                          (tax?.amount ?? 0)) *
+                      100)
+                  .round() /
+              100,
           currency: priceSnapshot.currency,
         );
 
@@ -198,6 +212,8 @@ class Reservation {
       other.nightlyRate == nightlyRate &&
       other.depositAmount == depositAmount &&
       other.serviceFee == serviceFee &&
+      other.tax == tax &&
+      other.taxRate == taxRate &&
       other.pricesIncludeTaxes == pricesIncludeTaxes &&
       other.cancelledAt == cancelledAt &&
       other.cancellation == cancellation &&
@@ -224,6 +240,8 @@ class Reservation {
         nightlyRate,
         depositAmount,
         serviceFee,
+        tax,
+        taxRate,
         pricesIncludeTaxes,
         cancelledAt,
         cancellation,

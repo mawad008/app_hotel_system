@@ -17,6 +17,7 @@ class HotelGuestDetails {
     this.checkOutTime,
     this.pricesIncludeTaxes = false,
     this.serviceFee,
+    this.taxRate,
     this.suitableFor,
     this.roomsCount,
     this.highlights = const <HotelHighlight>[],
@@ -34,7 +35,24 @@ class HotelGuestDetails {
   /// The hotel's booking service fee ("رسوم الخدمة"); `null` when it charges
   /// none. Switched on/off and priced from the dashboard hotel form.
   final HotelServiceFee? serviceFee;
+
+  /// The tax % ("نسبة الضريبة") added on top of the stay + service fee when
+  /// the hotel's rates exclude taxes; `null` when none (or rates include it).
+  final num? taxRate;
   final String? suitableFor;
+
+  /// The tax on a stay priced [stayTotal] plus [serviceFee] — to the halala,
+  /// truncated like the backend's `Reservation::taxAmount` (bcmath scale 2).
+  /// `null` when the hotel adds no tax.
+  Money? taxFor(Money stayTotal, {Money? serviceFee}) {
+    final num? rate = taxRate;
+    if (rate == null || rate <= 0) return null;
+    final num base = stayTotal.amount + (serviceFee?.amount ?? 0);
+    return Money(
+      amount: (base * rate + 1e-9).floor() / 100,
+      currency: stayTotal.currency,
+    );
+  }
 
   /// Physical rooms on file; `null` when not reported.
   final int? roomsCount;
@@ -48,6 +66,7 @@ class HotelGuestDetails {
       other.checkOutTime == checkOutTime &&
       other.pricesIncludeTaxes == pricesIncludeTaxes &&
       other.serviceFee == serviceFee &&
+      other.taxRate == taxRate &&
       other.suitableFor == suitableFor &&
       other.roomsCount == roomsCount &&
       listEquals(other.highlights, highlights) &&
@@ -59,6 +78,7 @@ class HotelGuestDetails {
     checkOutTime,
     pricesIncludeTaxes,
     serviceFee,
+    taxRate,
     suitableFor,
     roomsCount,
     Object.hashAll(highlights),
