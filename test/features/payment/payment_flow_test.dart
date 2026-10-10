@@ -118,7 +118,7 @@ Future<ProviderContainer> _open(
 
 void main() {
   testWidgets(
-      'before any hold, the review shows the server deposit — never the stay total',
+      'before any hold, the deposit row shows the server deposit — never the stay total',
       (WidgetTester tester) async {
     final en = await _l10n('en');
     final id = reservationIdForScenario(DummyHoldScenario.succeeds);
@@ -131,8 +131,17 @@ void main() {
     );
 
     expect(find.text(en.paymentCardDepositLabel), findsOneWidget);
+    // The stay total appears only in the cost breakdown (subtotal + total);
+    // the deposit row carries the 93.20 hold.
     expect(find.text('93.20'), findsOneWidget);
-    expect(find.text('466'), findsNothing);
+    expect(find.text('466'), findsNWidgets(2));
+    final Finder depositRow = find
+        .ancestor(of: find.text(en.paymentCardDepositLabel), matching: find.byType(Row))
+        .first;
+    expect(
+      find.descendant(of: depositRow, matching: find.text('93.20')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('review → pay → processing → result → back to reservation (EN)',

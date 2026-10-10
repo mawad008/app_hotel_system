@@ -173,7 +173,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get brandWordmark => 'Hotel System';
 
   @override
-  String get entryHeadline => 'استكشف فندق الواحة و احجز من مكانك';
+  String get entryHeadline => 'استكشف فنادقنا واحجز إقامتك من مكانك';
 
   @override
   String get entrySubtext => 'ببساطة اختر غرفتك المفضلة في وقتك المفضل';
@@ -1238,6 +1238,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get paymentCardDetailsTitle => 'الدفع';
 
   @override
+  String get paymentBreakdownHeading => 'تفاصيل التكلفة';
+
+  @override
+  String get paymentNightsLabel => 'عدد الليالي';
+
+  @override
+  String get paymentBookingTotalLabel => 'إجمالي الحجز';
+
+  @override
+  String get paymentDepositHint => 'يُحجَز الآن كتأمين قابل للاسترداد';
+
+  @override
   String get paymentCardDepositLabel => 'مبلغ التأمين';
 
   @override
@@ -2061,6 +2073,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'يُخصم المبلغ المستحق دفعة واحدة من بطاقتك المسجّلة، وتُرسل فاتورتك إلكترونياً.';
 
   @override
+  String get stayCheckoutCta => 'تسجيل المغادرة';
+
+  @override
+  String checkoutEarlyDepartureNote(String date) {
+    return 'ستغادر قبل موعد المغادرة المحجوز ($date). تُحتسب الإقامة على الليالي التي أقمتها فقط.';
+  }
+
+  @override
   String get checkoutCompleteCta => 'إتمام المغادرة';
 
   @override
@@ -2515,18 +2535,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get favoritesTitle => 'المفضلة';
 
   @override
-  String get favoritesBannerTitle => 'فنادقك المحفوظة';
+  String get favoritesBannerTitle => 'غرفك وفنادقك المحفوظة';
 
   @override
   String get favoritesBannerBody =>
-      'تظهر هنا الفنادق التي حفظتها بالضغط على القلب. اضغط على الفندق لفتحه، أو على القلب لإزالته.';
+      'تظهر هنا الغرف والفنادق التي حفظتها بالضغط على القلب. اضغط على أي منها لفتحه، أو على القلب لإزالته.';
 
   @override
-  String get favoritesEmptyTitle => 'لا توجد فنادق مفضلة بعد';
+  String get favoritesEmptyTitle => 'لا توجد عناصر مفضلة بعد';
 
   @override
   String get favoritesEmptyBody =>
-      'اضغط على القلب في صفحة أي فندق أو غرفة لحفظ الفندق هنا.';
+      'اضغط على القلب في صفحة أي غرفة أو فندق لحفظها هنا.';
 
   @override
   String get favoritesBrowse => 'تصفح الفنادق';
@@ -2545,6 +2565,34 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get favoriteUndoAction => 'تراجع';
+
+  @override
+  String get favoritesRoomsSection => 'الغرف';
+
+  @override
+  String get favoritesHotelsSection => 'الفنادق';
+
+  @override
+  String get favoriteRoomSavedSnack => 'تم حفظ الغرفة في المفضلة';
+
+  @override
+  String get favoriteRoomRemovedSnack => 'تمت إزالة الغرفة من المفضلة';
+
+  @override
+  String get roomFavoriteAdd => 'حفظ الغرفة في المفضلة';
+
+  @override
+  String get roomFavoriteRemove => 'إزالة الغرفة من المفضلة';
+
+  @override
+  String get roomDetailNeedsDatesTitle => 'اختر تواريخ إقامتك';
+
+  @override
+  String get roomDetailNeedsDatesBody =>
+      'حدّد تاريخي الوصول والمغادرة لعرض سعر هذه الغرفة وتوفرها.';
+
+  @override
+  String get roomDetailChooseDates => 'اختيار التواريخ';
 
   @override
   String get hotelLocationMapSemantics => 'موقع الفندق على الخريطة';
@@ -3353,7 +3401,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get roomTaxesLabel => 'الضرائب والرسوم';
+  String get roomTaxesLabel => 'الضرائب';
 
   @override
   String get roomPriceIncludedValue => 'شاملة';
@@ -3389,4 +3437,7 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get roomCapacityChangeRoomHint => 'لإضافة ضيوف أكثر، اختر غرفة أكبر.';
 }

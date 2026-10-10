@@ -18,7 +18,7 @@ import 'package:hotel_guest_app/features/discovery/domain/entities/money.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/widgets/hotel_location_map.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/widgets/hotel_share.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/state/favorite_hotels_controller.dart';
-import 'package:hotel_guest_app/features/discovery/presentation/pages/favorite_hotels_page.dart';
+import 'package:hotel_guest_app/features/discovery/presentation/pages/favorites_page.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/pages/hotel_detail_page.dart';
 import 'package:hotel_guest_app/features/discovery/presentation/state/hotel_detail_provider.dart';
 import 'package:hotel_guest_app/features/stay_services/domain/entities/hotel_service.dart';
@@ -438,7 +438,7 @@ void main() {
     // The snackbar leads to the list, so the heart never ends nowhere.
     await tester.tap(find.text(en.favoriteViewAction));
     await tester.pumpAndSettle();
-    expect(find.byType(FavoriteHotelsPage), findsOneWidget);
+    expect(find.byType(FavoritesPage), findsOneWidget);
     expect(find.text('Test Hotel'), findsOneWidget);
     expect(find.text('Jeddah'), findsOneWidget);
 

@@ -115,20 +115,29 @@ Hero controls (Figma `hero-actions`, 32px frosted circles): back (Lucide
 (Hicon `Heart 3`, `red/600`, filled when on) at the end. Share opens the
 platform share sheet (`share_plus`; Web Share API on web) with name, location
 and a map link, falling back to the clipboard + a snackbar. Favourites are
-**hotel-level** and server-backed (`GET/PUT/DELETE /guest/favorites/hotels`,
-`favoriteHotelsProvider`); the Room Detail heart saves the room's hotel —
-there are no room favourites on the backend. Every heart goes through
-`toggleHotelFavorite` (`widgets/hotel_favorite_toggle.dart`): a signed-out
-guest signs in first; a save shows "تم حفظ الفندق في المفضلة" with **عرض**
-(opens the list), a removal offers **تراجع**.
+server-backed at two levels: the Hotel Detail heart saves the **hotel**
+(`GET/PUT/DELETE /guest/favorites/hotels`, `favoriteHotelsProvider`) and the
+Room Detail heart saves the **room** (room type —
+`GET/PUT/DELETE /guest/favorites/rooms`, `favoriteRoomsProvider`; the list
+row carries `room_type_id`, `hotel_id`, `name`, `cover_url`). Every heart
+goes through `toggleHotelFavorite` / `toggleRoomFavorite`
+(`widgets/hotel_favorite_toggle.dart`): a signed-out guest signs in first; a
+save shows "تم حفظ الفندق/الغرفة في المفضلة" with **عرض** (opens the list), a
+removal offers **تراجع**.
 
-**المفضلة** (`favorite_hotels_page.dart`, `/account/favorites`): reached from
-the Account card (row shows the count) or the save snackbar. Lists the saved
-hotels (photo, stars, name, city) — tap opens Hotel Detail, the heart removes
-it (with undo). Each row loads through `hotelDetailProvider`; a hotel that no
-longer loads shows "غير متاح حاليًا" and can still be removed. Empty state
-links to discovery. Not in the Figma — built from the existing list-card
-patterns.
+**المفضلة** (`favorites_page.dart`, `/account/favorites`): reached from the
+Account card (row shows the rooms + hotels count) or the save snackbar. Two
+sections — **الغرف** (photo, room name, hotel name; tap opens Room Detail)
+and **الفنادق** (photo, stars, name, city; tap opens Hotel Detail). The heart
+on any row removes it (with undo). A hotel that no longer loads shows
+"غير متاح حاليًا" and can still be removed; the backend drops rooms / hotels
+that were deactivated from the list. Empty state links to discovery. Not in
+the Figma — built from the existing list-card patterns.
+
+Room Detail opened directly (from المفضلة or a deep link) loads availability
+for the guest's current dates + party itself (loader meanwhile); with no
+dates chosen it asks for them (**اختيار التواريخ** → stay-dates screen),
+since a room is only priced for a stay.
 
 Icons: the section glyphs are Lucide at weight 300 in `gold/400`
 (`AppIcons.forDetailKey` / `forFacility`; facilities without an operator icon
@@ -146,6 +155,13 @@ room detail, and were removed.
   (`roomMaxAdultsReached`) / `… N ضيوف` (`roomMaxGuestsReached`), plus a
   caption under the steppers, so the party can never outgrow the room and
   silently drop the selection.
+- The same cap applies to the "عدد الضيوف" sheet (`guest_party_sheet.dart`)
+  whenever a room is selected — it is reached from the rooms list and from
+  the summary's `تعديل` → dates screen. At capacity the sheet shows the same
+  limit plus `لإضافة ضيوف أكثر، اختر غرفة أكبر.` (`roomCapacityChangeRoomHint`).
+  To grow the party the guest picks a larger room first; before that fix the
+  sheet let the party outgrow the room, the selection was dropped, and the
+  summary showed "لم تُختر غرفة" (QA 2026-10-08).
 - `PriceBreakdownCard`: `قيمة الإقامة` (nightly × nights) + `رسوم الخدمة` +
   `الإجمالي`.
 - CTA (signed in) `المتابعة للدفع` → creates the `PENDING` reservation and
@@ -164,9 +180,20 @@ selection when a party change still fits the room type (updates
 party that no longer fits. This is what lets the inline steppers work.
 
 ### Intermediate — boards 16 & 08
-- `stay_dates_page.dart`: the guest-party row was removed (party is edited on the
-  rooms screen / booking summary); the scrolling `StayRangeCalendar` +
-  `عرض الغرف المتاحة` CTA stay.
+- `stay_dates_page.dart` ("R1 Dates & guests"): check-in / check-out fields,
+  then a full-width **`عدد الضيوف` field** (current party, e.g. "بالغان · طفل",
+  + `تعديل`) that opens the guests sheet (`بالغون` / `أطفال` steppers), so the
+  party is set *before* the room list (2026-10-08 QA bug: there was no
+  adults/children step). Then the scrolling `StayRangeCalendar` +
+  `عرض الغرف المتاحة` CTA. The party is still editable on the rooms screen /
+  booking summary.
+- **Occupancy filtering**: the room list only offers room types whose
+  capacity (`room_types.capacity` → `maxOccupancy`) seats adults + children.
+  Laravel `HotelDiscoveryService::availability` omits unfit room types (it
+  used to return them greyed with `rooms_available: 0`), and
+  `AvailabilityResultModel.toEntity` drops them too (`GuestParty.fitsIn`) so
+  dummy mode and older servers behave the same. Nothing fits → the no-rooms
+  state with `تغيير التواريخ` / `تعديل عدد الضيوف`.
 - `available_rooms_page.dart` — **v2 `ROOMS_Available`** (2026-09-26): app bar
   "الغرف المتاحة" with the ✕ at the end (no back arrow); one scrolling column
   (12 top / 24 sides / 32 bottom, 16 between blocks): the `stay summary` card

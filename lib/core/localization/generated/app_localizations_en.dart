@@ -175,7 +175,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get entryHeadline =>
-      'Explore Al Waha Hotel and book from wherever you are';
+      'Explore our hotels and book your stay from wherever you are';
 
   @override
   String get entrySubtext =>
@@ -1238,6 +1238,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get paymentCardDetailsTitle => 'Payment';
 
   @override
+  String get paymentBreakdownHeading => 'Cost breakdown';
+
+  @override
+  String get paymentNightsLabel => 'Nights';
+
+  @override
+  String get paymentBookingTotalLabel => 'Booking total';
+
+  @override
+  String get paymentDepositHint => 'Held now as a refundable deposit';
+
+  @override
   String get paymentCardDepositLabel => 'Deposit amount';
 
   @override
@@ -2071,6 +2083,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'The amount due is charged in one payment to your card on file. Your invoice is sent electronically.';
 
   @override
+  String get stayCheckoutCta => 'Check out';
+
+  @override
+  String checkoutEarlyDepartureNote(String date) {
+    return 'You are leaving before your booked check-out ($date). You are only charged for the nights you stayed.';
+  }
+
+  @override
   String get checkoutCompleteCta => 'Complete checkout';
 
   @override
@@ -2533,18 +2553,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favoritesTitle => 'Favourites';
 
   @override
-  String get favoritesBannerTitle => 'Your saved hotels';
+  String get favoritesBannerTitle => 'Your saved rooms and hotels';
 
   @override
   String get favoritesBannerBody =>
-      'Hotels you heart appear here. Tap one to open it, or the heart to remove it.';
+      'Rooms and hotels you saved with the heart appear here. Tap one to open it, or the heart to remove it.';
 
   @override
-  String get favoritesEmptyTitle => 'No favourite hotels yet';
+  String get favoritesEmptyTitle => 'No favourites yet';
 
   @override
   String get favoritesEmptyBody =>
-      'Tap the heart on any hotel or room to save its hotel here.';
+      'Tap the heart on any room or hotel to save it here.';
 
   @override
   String get favoritesBrowse => 'Browse hotels';
@@ -2564,6 +2584,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get favoriteUndoAction => 'Undo';
+
+  @override
+  String get favoritesRoomsSection => 'Rooms';
+
+  @override
+  String get favoritesHotelsSection => 'Hotels';
+
+  @override
+  String get favoriteRoomSavedSnack => 'Room saved to favourites';
+
+  @override
+  String get favoriteRoomRemovedSnack => 'Room removed from favourites';
+
+  @override
+  String get roomFavoriteAdd => 'Save room to favourites';
+
+  @override
+  String get roomFavoriteRemove => 'Remove room from favourites';
+
+  @override
+  String get roomDetailNeedsDatesTitle => 'Choose your stay dates';
+
+  @override
+  String get roomDetailNeedsDatesBody =>
+      'Pick check-in and check-out dates to see this room\'s price and availability.';
+
+  @override
+  String get roomDetailChooseDates => 'Choose dates';
 
   @override
   String get hotelLocationMapSemantics => 'Hotel location on the map';
@@ -3379,7 +3427,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get roomTaxesLabel => 'Taxes & fees';
+  String get roomTaxesLabel => 'Taxes';
 
   @override
   String get roomPriceIncludedValue => 'Included';
@@ -3414,4 +3462,8 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get roomCapacityChangeRoomHint =>
+      'To add more guests, choose a larger room.';
 }

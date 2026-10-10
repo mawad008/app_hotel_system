@@ -16,6 +16,9 @@ import '../../../../core/widgets/app_icons.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
+import '../../../../core/widgets/secondary_button.dart';
+import '../../../../core/widgets/live_refresh.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../authentication/presentation/state/auth_controller.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
 import '../../../authentication/presentation/widgets/sign_in_required_view.dart';
@@ -53,33 +56,48 @@ class StayHomePage extends ConsumerWidget {
     }
     final AsyncValue<Reservation?> async = ref.watch(currentStayProvider);
 
-    return Scaffold(
-      appBar: AppBar(centerTitle: true, title: Text(l10n.stayHomeTitle)),
-      body: SafeArea(
-        child: async.when(
-          loading: () => Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object error, StackTrace _) {
-            final failure = ErrorMapper.toFailure(error);
-            return MessageView(
-              icon: AppIcons.warning,
-              title: l10n.stateErrorTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () => ref.invalidate(currentStayProvider),
-            );
-          },
-          data: (Reservation? stay) => stay == null
-              ? MessageView(
-                  icon: AppIcons.navServicesOutline,
-                  title: l10n.stayHomeNoActiveStayTitle,
-                  message: l10n.stayHomeNoActiveStayBody,
-                )
-              : _Body(reservation: stay),
+    return LiveRefresh(
+      onRefresh: () => ref.invalidate(currentStayProvider),
+      child: Scaffold(
+        appBar: AppBar(centerTitle: true, title: Text(l10n.stayHomeTitle)),
+        body: SafeArea(
+          child: PullToRefresh(
+            onRefresh: () {
+              // The stay plus the cards it feeds (services, charges).
+              ref
+                ..invalidate(serviceCatalogueProvider)
+                ..invalidate(folioProvider);
+              return ref.refresh(currentStayProvider.future);
+            },
+            child: async.when(
+              // A failed background refresh keeps the last good data on screen.
+              skipError: true,
+              loading: () =>
+                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+              error: (Object error, StackTrace _) {
+                final failure = ErrorMapper.toFailure(error);
+                return MessageView(
+                  icon: AppIcons.warning,
+                  title: l10n.stateErrorTitle,
+                  message: failure.localizedMessage(l10n),
+                  actionLabel: l10n.actionRetry,
+                  onAction: () => ref.invalidate(currentStayProvider),
+                );
+              },
+              data: (Reservation? stay) => stay == null
+                  ? MessageView(
+                      icon: AppIcons.navServicesOutline,
+                      title: l10n.stayHomeNoActiveStayTitle,
+                      message: l10n.stayHomeNoActiveStayBody,
+                    )
+                  : _Body(reservation: stay),
+            ),
+          ),
         ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        current: AppNavTab.services,
-        onSelected: (AppNavTab tab) => goToNavTab(context, tab),
+        bottomNavigationBar: AppBottomNav(
+          current: AppNavTab.services,
+          onSelected: (AppNavTab tab) => goToNavTab(context, tab),
+        ),
       ),
     );
   }
@@ -95,8 +113,9 @@ class _Body extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
     final AppColorTokens c = context.colors;
-    final AsyncValue<ServiceCatalogue> catalogue =
-        ref.watch(serviceCatalogueProvider(reservation.hotelId));
+    final AsyncValue<ServiceCatalogue> catalogue = ref.watch(
+      serviceCatalogueProvider(reservation.hotelId),
+    );
     final AsyncValue<num> outstanding = ref
         .watch(folioProvider(reservation.id))
         .whenData((folio) => folio.outstandingTotal.amount);
@@ -117,8 +136,8 @@ class _Body extends ConsumerWidget {
                     Text(
                       l10n.stayHomeRoomLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: c.textOnInverse.withValues(alpha: 0.7),
-                          ),
+                        color: c.textOnInverse.withValues(alpha: 0.7),
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
@@ -127,9 +146,8 @@ class _Body extends ConsumerWidget {
                         MaterialLocalizations.of(context)
                             .formatShortMonthDay(reservation.stay.checkOut),
                       ),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: c.textOnInverse,
-                          ),
+                      style: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(color: c.textOnInverse),
                     ),
                   ],
                 ),
@@ -138,10 +156,10 @@ class _Body extends ConsumerWidget {
               Text(
                 reservation.roomNumber ?? '—',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: c.textOnInverse,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  color: c.textOnInverse,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ],
           ),
@@ -158,7 +176,9 @@ class _Body extends ConsumerWidget {
             TextButton(
               onPressed: () => context.pushNamed(
                 AppRoutes.stayServicesName,
-                pathParameters: <String, String>{'reservationId': reservation.id},
+                pathParameters: <String, String>{
+                  'reservationId': reservation.id,
+                },
               ),
               child: Text(l10n.commonSeeAll),
             ),
@@ -174,12 +194,11 @@ class _Body extends ConsumerWidget {
             title: l10n.stateErrorTitle,
             message: ErrorMapper.toFailure(e).localizedMessage(l10n),
             actionLabel: l10n.actionRetry,
-            onAction: () => ref.invalidate(serviceCatalogueProvider(reservation.hotelId)),
+            onAction: () =>
+                ref.invalidate(serviceCatalogueProvider(reservation.hotelId)),
           ),
-          data: (ServiceCatalogue value) => _QuickActionsGrid(
-            reservation: reservation,
-            catalogue: value,
-          ),
+          data: (ServiceCatalogue value) =>
+              _QuickActionsGrid(reservation: reservation, catalogue: value),
         ),
         const SizedBox(height: AppSpacing.md),
         // Routing map: "charges card → 10 Checkout & invoice".
@@ -191,26 +210,45 @@ class _Body extends ConsumerWidget {
             pathParameters: <String, String>{'reservationId': reservation.id},
           ),
           child: AppCard(
-          style: AppCardStyle.outlined,
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(l10n.stayHomeExtraCharges, style: Theme.of(context).textTheme.titleMedium),
-                    Text(
-                      l10n.stayHomeExtraChargesNote,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+            style: AppCardStyle.outlined,
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.stayHomeExtraCharges,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        l10n.stayHomeExtraChargesNote,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              MoneyText(outstanding.valueOrNull ?? 0, currency: reservation.priceSnapshot.currency),
-            ],
+                const SizedBox(width: AppSpacing.sm),
+                MoneyText(
+                  outstanding.valueOrNull ?? 0,
+                  currency: reservation.priceSnapshot.currency,
+                ),
+              ],
+            ),
           ),
         ),
+        const SizedBox(height: AppSpacing.md),
+        // An explicit way out — the charges card alone wasn't discoverable.
+        // The guest may leave any time during the stay, not only on the
+        // booked check-out day (billed for the nights actually stayed).
+        SecondaryButton(
+          key: const ValueKey<String>('stay-checkout-button'),
+          label: l10n.stayCheckoutCta,
+          icon: AppIcons.checkout,
+          onPressed: () => context.pushNamed(
+            AppRoutes.checkoutName,
+            pathParameters: <String, String>{'reservationId': reservation.id},
+          ),
         ),
       ],
     );
@@ -245,16 +283,18 @@ class _QuickActionsGrid extends StatelessWidget {
           // The hotel's cleaning service when it has one, else the catalogue.
           onTap: cleaning == null
               ? () => context.pushNamed(
-                    AppRoutes.stayServicesName,
-                    pathParameters: <String, String>{'reservationId': reservation.id},
-                  )
+                  AppRoutes.stayServicesName,
+                  pathParameters: <String, String>{
+                    'reservationId': reservation.id,
+                  },
+                )
               : () => context.pushNamed(
-                    AppRoutes.serviceDetailName,
-                    pathParameters: <String, String>{
-                      'reservationId': reservation.id,
-                      'serviceId': cleaning.id,
-                    },
-                  ),
+                  AppRoutes.serviceDetailName,
+                  pathParameters: <String, String>{
+                    'reservationId': reservation.id,
+                    'serviceId': cleaning.id,
+                  },
+                ),
         ),
         _ActionTile(
           icon: AppIcons.roomService,
@@ -313,10 +353,8 @@ class _ActionTile extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontSize: 15,
-              color: context.colors.textPrimary,
-            ),
+            style: Theme.of(context).textTheme.bodyLarge
+                ?.copyWith(fontSize: 15, color: context.colors.textPrimary),
           ),
         ],
       ),

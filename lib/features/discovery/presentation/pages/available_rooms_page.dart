@@ -39,6 +39,7 @@ import '../widgets/room_sort_sheet.dart';
 import '../widgets/room_filter_sheet.dart';
 import '../widgets/room_summary_card.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `16 · Stay dates & available rooms` — the available-rooms list.
 ///
@@ -220,9 +221,8 @@ class _Loaded extends ConsumerWidget {
         sort: state.sort,
         filter: roomFilter,
         onFilter: (RoomListFilter next) => onRoomFilterChanged(next),
-        onPick: (RoomSort next) => ref
-            .read(roomAvailabilityControllerProvider.notifier)
-            .setSort(next),
+        onPick: (RoomSort next) =>
+            ref.read(roomAvailabilityControllerProvider.notifier).setSort(next),
       ),
       if (selectionClearedNotice) ...<Widget>[
         const SizedBox(height: AppSpacing.space4),
@@ -258,50 +258,54 @@ class _Loaded extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: result is UiSuccess<AvailabilityResult>
-            ? ListView(
-                padding: contentPadding,
-                children: <Widget>[
-                  ...header,
-                  const SizedBox(height: AppSpacing.space4),
-                  ..._roomListChildren(
-                    context,
-                    result: result.data,
-                    nights: range.nights,
-                    selectedRoomTypeId: selectionMatches
-                        ? selection.roomTypeId
-                        : null,
-                  ),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Padding(
-                    padding: contentPadding.copyWith(bottom: 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: header,
+        child: PullToRefresh(
+          onRefresh: () =>
+              ref.read(roomAvailabilityControllerProvider.notifier).refresh(),
+          child: result is UiSuccess<AvailabilityResult>
+              ? ListView(
+                  padding: contentPadding,
+                  children: <Widget>[
+                    ...header,
+                    const SizedBox(height: AppSpacing.space4),
+                    ..._roomListChildren(
+                      context,
+                      result: result.data,
+                      nights: range.nights,
+                      selectedRoomTypeId: selectionMatches
+                          ? selection.roomTypeId
+                          : null,
                     ),
-                  ),
-                  Expanded(
-                    child: UiStateView<AvailabilityResult>(
-                      state: result,
-                      onRetry: () => ref
-                          .read(roomAvailabilityControllerProvider.notifier)
-                          .retry(),
-                      emptyTitle: l10n.roomsNoResultsTitle,
-                      emptyMessage: l10n.roomsNoResultsBody,
-                      onSuccess: (_) => const SizedBox.shrink(),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Padding(
+                      padding: contentPadding.copyWith(bottom: 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: header,
+                      ),
                     ),
-                  ),
-                  if (result is UiEmpty<AvailabilityResult>)
-                    _NoResultsActions(
-                      onChangeDates: () => context.pop(),
-                      onChangeGuests: () => showGuestPartySheet(context),
+                    Expanded(
+                      child: UiStateView<AvailabilityResult>(
+                        state: result,
+                        onRetry: () => ref
+                            .read(roomAvailabilityControllerProvider.notifier)
+                            .retry(),
+                        emptyTitle: l10n.roomsNoResultsTitle,
+                        emptyMessage: l10n.roomsNoResultsBody,
+                        onSuccess: (_) => const SizedBox.shrink(),
+                      ),
                     ),
-                ],
-              ),
+                    if (result is UiEmpty<AvailabilityResult>)
+                      _NoResultsActions(
+                        onChangeDates: () => context.pop(),
+                        onChangeGuests: () => showGuestPartySheet(context),
+                      ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -342,7 +346,9 @@ class _Loaded extends ConsumerWidget {
           ),
           Text(
             l10n.roomsAvailableCount(
-              visibleRooms.where((AvailableRoom room) => room.isAvailable).length,
+              visibleRooms
+                  .where((AvailableRoom room) => room.isAvailable)
+                  .length,
             ),
             style: AppTypography.textTheme(
               palette.title,
@@ -602,13 +608,12 @@ class _ChipButton extends StatelessWidget {
               widthFactor: 1,
               child: Text(
                 label,
-                style: AppTypography.textTheme(
-                  palette.title,
-                  palette.subtitle,
-                ).labelLarge?.copyWith(
-                  fontWeight: AppTypography.medium,
-                  height: 17 / 14,
-                ),
+                style: AppTypography.textTheme(palette.title, palette.subtitle)
+                    .labelLarge
+                    ?.copyWith(
+                      fontWeight: AppTypography.medium,
+                      height: 17 / 14,
+                    ),
               ),
             ),
           ),

@@ -24,6 +24,7 @@ import '../../domain/entities/service_order.dart';
 import '../state/service_request_controller.dart';
 import '../state/stay_services_providers.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `11 · Services & requests` — one service, with quantity + notes and the
 /// "request" action. The estimated total shown here is a client-side
@@ -64,29 +65,40 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
     return Scaffold(
       appBar: HotelAppBar(title: l10n.serviceDetailTitle),
       body: SafeArea(
-        child: reservationAsync.when(
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (_, _) => _missing(context),
-          data: (Reservation reservation) {
-            final AsyncValue<ServiceCatalogue> cat = ref.watch(
-              serviceCatalogueProvider(reservation.hotelId),
-            );
-            return cat.when(
-              loading: () =>
-                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-              error: (_, _) => _missing(context),
-              data: (ServiceCatalogue catalogue) {
-                final HotelService? service = catalogue.serviceById(
-                  widget.serviceId,
-                );
-                if (service == null || !service.isOrderable) {
-                  return _missing(context);
-                }
-                return _content(context, reservation, service, locale);
-              },
+        child: PullToRefresh(
+          onRefresh: () {
+            ref.invalidate(serviceCatalogueProvider);
+            return ref.refresh(
+              reservationDetailProvider(widget.reservationId).future,
             );
           },
+          child: reservationAsync.when(
+            // A failed refresh keeps the last good data on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (_, _) => _missing(context),
+            data: (Reservation reservation) {
+              final AsyncValue<ServiceCatalogue> cat = ref.watch(
+                serviceCatalogueProvider(reservation.hotelId),
+              );
+              return cat.when(
+                skipError: true,
+                loading: () =>
+                    Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+                error: (_, _) => _missing(context),
+                data: (ServiceCatalogue catalogue) {
+                  final HotelService? service = catalogue.serviceById(
+                    widget.serviceId,
+                  );
+                  if (service == null || !service.isOrderable) {
+                    return _missing(context);
+                  }
+                  return _content(context, reservation, service, locale);
+                },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -204,7 +216,10 @@ class _ServiceDetailPageState extends ConsumerState<ServiceDetailPage> {
                         ),
                       ),
                       Text(
-                        l10n.moneyAmount(service.price.currency, MoneyText.digits(context, estimate)),
+                        l10n.moneyAmount(
+                          service.price.currency,
+                          MoneyText.digits(context, estimate),
+                        ),
                         style: theme.textTheme.titleSmall?.copyWith(
                           color:
                               theme.extension<AppSemanticColors>()?.accent ??

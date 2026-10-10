@@ -108,6 +108,7 @@ class Reservation {
     this.nightlyRate,
     this.depositAmount,
     this.serviceFee,
+    this.pricesIncludeTaxes,
     this.cancelledAt,
     this.cancellation = CancellationState.unknown,
     this.checkInAvailability = CheckInAvailability.unknown,
@@ -152,6 +153,11 @@ class Reservation {
   /// (`service_fee_amount`); `null` when none.
   final Money? serviceFee;
 
+  /// The hotel's `prices_include_taxes` flag: `true` when the room rate
+  /// already includes taxes, `false` when no tax is added (the platform never
+  /// adds a separate tax line), `null` when unknown.
+  final bool? pricesIncludeTaxes;
+
   /// What the guest pays for the booking: the stay plus the service fee.
   Money get totalToPay => serviceFee == null
       ? priceSnapshot
@@ -192,6 +198,7 @@ class Reservation {
       other.nightlyRate == nightlyRate &&
       other.depositAmount == depositAmount &&
       other.serviceFee == serviceFee &&
+      other.pricesIncludeTaxes == pricesIncludeTaxes &&
       other.cancelledAt == cancelledAt &&
       other.cancellation == cancellation &&
       other.checkInAvailability == checkInAvailability;
@@ -217,6 +224,7 @@ class Reservation {
         nightlyRate,
         depositAmount,
         serviceFee,
+        pricesIncludeTaxes,
         cancelledAt,
         cancellation,
         checkInAvailability,

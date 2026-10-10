@@ -19,6 +19,8 @@ import '../../domain/entities/check_in.dart';
 import '../state/check_in_controller.dart';
 import '../state/digital_access_providers.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/live_refresh.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `04 · Check in & Stay` — the check-in review / eligibility screen.
 ///
@@ -57,40 +59,61 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
       accessGrantProvider(widget.reservationId),
     );
 
-    return Scaffold(
-      appBar: HotelAppBar(
-        title: l10n.checkInTitle,
-        // Reached with `go` from the identity result — nothing to pop.
-        fallbackLocation: AppRoutes.reservationDetail
-            .replaceFirst(':reservationId', widget.reservationId),
-      ),
-      body: SafeArea(
-        child: _merge(
-          reservationAsync,
-          grantAsync,
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object error) {
-            final failure = ErrorMapper.toFailure(error);
-            return MessageView(
-              icon: AppIcons.room,
-              title: l10n.checkInUnavailableTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () {
-                ref.invalidate(accessGrantProvider(widget.reservationId));
-                ref.invalidate(reservationDetailProvider(widget.reservationId));
+    return LiveRefresh(
+      onRefresh: () => ref
+        ..invalidate(reservationDetailProvider(widget.reservationId))
+        ..invalidate(accessGrantProvider(widget.reservationId)),
+      child: Scaffold(
+        appBar: HotelAppBar(
+          title: l10n.checkInTitle,
+          // Reached with `go` from the identity result — nothing to pop.
+          fallbackLocation: AppRoutes.reservationDetail.replaceFirst(
+            ':reservationId',
+            widget.reservationId,
+          ),
+        ),
+        body: SafeArea(
+          child: PullToRefresh(
+            onRefresh: () => refreshAll(<Future<Object?>>[
+              ref.refresh(
+                reservationDetailProvider(widget.reservationId).future,
+              ),
+              ref.refresh(accessGrantProvider(widget.reservationId).future),
+            ]),
+            child: _merge(
+              reservationAsync,
+              grantAsync,
+              loading: () =>
+                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+              error: (Object error) {
+                final failure = ErrorMapper.toFailure(error);
+                return MessageView(
+                  icon: AppIcons.room,
+                  title: l10n.checkInUnavailableTitle,
+                  message: failure.localizedMessage(l10n),
+                  actionLabel: l10n.actionRetry,
+                  onAction: () {
+                    ref.invalidate(accessGrantProvider(widget.reservationId));
+                    ref.invalidate(
+                      reservationDetailProvider(widget.reservationId),
+                    );
+                  },
+                );
               },
-            );
-          },
-          data: (Reservation reservation, AccessGrant grant) {
-            // A grant already exists — the access screen owns it from here.
-            if (grant.exists) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => _handOff());
-              return Center(child: LoadingView(label: l10n.stateLoadingTitle));
-            }
-            return _Body(reservation: reservation);
-          },
+              data: (Reservation reservation, AccessGrant grant) {
+                // A grant already exists — the access screen owns it from here.
+                if (grant.exists) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _handOff(),
+                  );
+                  return Center(
+                    child: LoadingView(label: l10n.stateLoadingTitle),
+                  );
+                }
+                return _Body(reservation: reservation);
+              },
+            ),
+          ),
         ),
       ),
     );
@@ -103,9 +126,10 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
     required Widget Function(Object error) error,
     required Widget Function(Reservation, AccessGrant) data,
   }) {
+    // A failed background refresh keeps the last good data on screen.
+    if (a.hasValue && b.hasValue) return data(a.requireValue, b.requireValue);
     if (a.hasError) return error(a.error!);
     if (b.hasError) return error(b.error!);
-    if (a.hasValue && b.hasValue) return data(a.requireValue, b.requireValue);
     return loading();
   }
 }
@@ -119,8 +143,9 @@ class _Body extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final CheckInEligibility eligibility =
-        CheckInEligibility.forReservation(reservation);
+    final CheckInEligibility eligibility = CheckInEligibility.forReservation(
+      reservation,
+    );
     final CheckInRequest request = CheckInRequest.forReservation(reservation);
     final CheckInActionState action = ref.watch(checkInControllerProvider);
     final bool submitting =
@@ -201,22 +226,24 @@ class _Body extends ConsumerWidget {
                   ),
                 )
               : PrimaryButton(
-            label: submitting ? l10n.checkInProcessingTitle : l10n.checkInCta,
-            isLoading: submitting,
-            onPressed: (!eligibility.canStart || submitting)
-                ? null
-                : () {
-                    ref
-                        .read(checkInControllerProvider.notifier)
-                        .submit(request);
-                    context.pushReplacementNamed(
-                      AppRoutes.checkInProcessingName,
-                      pathParameters: <String, String>{
-                        'reservationId': reservation.id,
-                      },
-                    );
-                  },
-          ),
+                  label: submitting
+                      ? l10n.checkInProcessingTitle
+                      : l10n.checkInCta,
+                  isLoading: submitting,
+                  onPressed: (!eligibility.canStart || submitting)
+                      ? null
+                      : () {
+                          ref
+                              .read(checkInControllerProvider.notifier)
+                              .submit(request);
+                          context.pushReplacementNamed(
+                            AppRoutes.checkInProcessingName,
+                            pathParameters: <String, String>{
+                              'reservationId': reservation.id,
+                            },
+                          );
+                        },
+                ),
         ),
       ],
     );

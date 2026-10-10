@@ -102,6 +102,19 @@ void main() {
     // The currently-staying CTAs are shown instead.
     expect(find.text(en.bookingCtaMyCurrentStay), findsOneWidget);
     expect(find.text(en.bookingCtaShowAccessCode), findsOneWidget);
+    // `checked_in` has not started the stay yet — checkout isn't offered.
+    expect(find.byKey(const ValueKey<String>('booking-checkout-button')), findsNothing);
+  });
+
+  testWidgets('an ongoing stay offers an explicit check-out button',
+      (tester) async {
+    final en = await _l10n('en');
+    final id = reviewScenarioId(DummyReviewScenario.noReviewThenPending);
+    await _open(tester, id, status: ReservationStatus.inStay);
+    await _scrollToBottom(tester);
+
+    expect(find.byKey(const ValueKey<String>('booking-checkout-button')), findsOneWidget);
+    expect(find.text(en.stayCheckoutCta), findsOneWidget);
   });
 
   testWidgets('an already-reviewed completed stay shows "view your review"',

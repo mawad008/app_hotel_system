@@ -44,7 +44,9 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
     final AppLocalizations l10n = context.l10n;
     setState(() => _saving = true);
     try {
-      await ref.read(authControllerProvider.notifier).updateContactDetails(
+      await ref
+          .read(authControllerProvider.notifier)
+          .updateContactDetails(
             fullName: profile.fullName ?? '',
             email: _draftEmail!,
           );
@@ -67,13 +69,16 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final AuthState auth = ref.watch(authControllerProvider);
-    final GuestProfile? profile = auth is Authenticated ? auth.session.profile : null;
+    final GuestProfile? profile = auth is Authenticated
+        ? auth.session.profile
+        : null;
     final bool trusted =
         ref.watch(accountSummaryProvider).valueOrNull?.trustedGuest ?? false;
     final String email = _draftEmail ?? profile?.email ?? '';
     final bool dirty = _draftEmail != null && _draftEmail != profile?.email;
 
     return ProfileSubpage(
+      onRefresh: () => ref.refresh(accountSummaryProvider.future),
       title: l10n.profilePersonalInfoTitle,
       bannerTitle: l10n.profilePersonalInfoBannerTitle,
       bannerMessage: l10n.profilePersonalInfoBannerBody,
@@ -88,7 +93,9 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
             SettingsRow(
               label: l10n.profilePhoneLabel,
               // Bidi-isolated so "+966 …" keeps its order in RTL.
-              value: profile == null ? '—' : '\u2066${profile.phone.display}\u2069',
+              value: profile == null
+                  ? '—'
+                  : '\u2066${profile.phone.display}\u2069',
             ),
             SettingsRow(
               label: l10n.profileEmailLabel,
@@ -110,7 +117,9 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
       footer: PrimaryButton(
         label: l10n.profileSaveChanges,
         isLoading: _saving,
-        onPressed: dirty && !_saving && profile != null ? () => _save(profile) : null,
+        onPressed: dirty && !_saving && profile != null
+            ? () => _save(profile)
+            : null,
       ),
     );
   }
@@ -126,8 +135,9 @@ class _EmailSheet extends StatefulWidget {
 }
 
 class _EmailSheetState extends State<_EmailSheet> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.initial);
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial,
+  );
   bool _showError = false;
 
   @override

@@ -37,6 +37,11 @@ class IdentityCameraUnavailable extends IdentityCaptureResult {
 /// open a file chooser either way), so there the guest picks an image file.
 abstract interface class IdentityCamera {
   Future<IdentityCaptureResult> capture(IdentityCaptureTarget target);
+
+  /// The photo a [capture] took while Android killed the app in the
+  /// background (the system camera is a separate activity), recovered on the
+  /// next launch. `null` when there is none (always, off Android).
+  Future<IdentityCaptured?> recoverLostCapture(IdentityCaptureTarget target);
 }
 
 /// [IdentityCamera] backed by the platform camera via `image_picker`. On
@@ -96,6 +101,27 @@ class ImagePickerIdentityCamera implements IdentityCamera {
       return IdentityCameraUnavailable(
         permissionDenied: e.code == 'camera_access_denied',
       );
+    }
+  }
+
+  @override
+  Future<IdentityCaptured?> recoverLostCapture(IdentityCaptureTarget target) async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
+    try {
+      final LostDataResponse lost = await _picker.retrieveLostData();
+      final XFile? file = lost.file;
+      if (lost.isEmpty || file == null) return null;
+      return IdentityCaptured(
+        CapturedImage(
+          label: target == IdentityCaptureTarget.selfie ? 'selfie.jpg' : 'document.jpg',
+          sizeBytes: await file.length(),
+          mimeType: 'image/jpeg',
+          filePath: file.path,
+        ),
+      );
+    } on PlatformException catch (e) {
+      debugPrint('Identity capture recovery failed: ${e.code}');
+      return null;
     }
   }
 }

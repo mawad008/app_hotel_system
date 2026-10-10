@@ -13,6 +13,7 @@ import '../../../../core/widgets/info_banner.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../domain/entities/problem_report.dart';
 import '../state/problem_report_providers.dart';
 import '../widgets/problem_report_card.dart';
@@ -36,18 +37,25 @@ class MyProblemReportsPage extends ConsumerWidget {
     return Scaffold(
       appBar: HotelAppBar(title: l10n.myReportsTitle),
       body: SafeArea(
-        child: reportsAsync.when(
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e, StackTrace _) => MessageView(
-            icon: AppIcons.report,
-            title: l10n.reportUnavailableTitle,
-            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-            actionLabel: l10n.actionRetry,
-            onAction: () => ref.invalidate(problemReportsProvider(reservationId)),
+        child: PullToRefresh(
+          onRefresh: () =>
+              ref.refresh(problemReportsProvider(reservationId).future),
+          child: reportsAsync.when(
+            // A failed refresh keeps the last good data on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e, StackTrace _) => MessageView(
+              icon: AppIcons.report,
+              title: l10n.reportUnavailableTitle,
+              message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+              actionLabel: l10n.actionRetry,
+              onAction: () =>
+                  ref.invalidate(problemReportsProvider(reservationId)),
+            ),
+            data: (List<ProblemReport> reports) =>
+                _Body(reservationId: reservationId, reports: reports),
           ),
-          data: (List<ProblemReport> reports) =>
-              _Body(reservationId: reservationId, reports: reports),
         ),
       ),
     );
@@ -65,9 +73,9 @@ class _Body extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
 
     void newReport() => context.pushReplacementNamed(
-          AppRoutes.reportProblemName,
-          pathParameters: <String, String>{'reservationId': reservationId},
-        );
+      AppRoutes.reportProblemName,
+      pathParameters: <String, String>{'reservationId': reservationId},
+    );
 
     if (reports.isEmpty) {
       return Column(

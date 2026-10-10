@@ -22,10 +22,14 @@ class GuestParty {
 
   int get total => adults + children;
 
+  /// Whether this party fits a room type seating at most [maxOccupancy] guests
+  /// (adults and children both count — mirrors Laravel's `room_types.capacity`).
+  bool fitsIn(int maxOccupancy) => total <= maxOccupancy;
+
   GuestParty copyWith({int? adults, int? children}) => GuestParty(
-        adults: (adults ?? this.adults).clamp(minAdults, maxAdults),
-        children: (children ?? this.children).clamp(minChildren, maxChildren),
-      );
+    adults: (adults ?? this.adults).clamp(minAdults, maxAdults),
+    children: (children ?? this.children).clamp(minChildren, maxChildren),
+  );
 
   @override
   bool operator ==(Object other) =>

@@ -5,6 +5,7 @@ import 'package:hotel_guest_app/app/router/app_router.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
 import 'package:hotel_guest_app/features/checkout/data/datasources/dummy_checkout_data_source.dart';
 import 'package:hotel_guest_app/features/checkout/presentation/state/checkout_providers.dart';
+import 'package:hotel_guest_app/features/discovery/domain/entities/stay_range.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/create_reservation_request.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/extend_stay.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/reservation.dart';
@@ -17,14 +18,15 @@ import '../../support/pump_app.dart';
 import 'checkout_test_support.dart';
 
 class _ReservationRepo implements ReservationRepository {
-  _ReservationRepo(this.status);
+  _ReservationRepo(this.status, {this.stay});
   final ReservationStatus status;
+  final StayRange? stay;
   @override
   Future<Reservation> create(CreateReservationRequest request) async =>
       fakeReservation(status: status);
   @override
   Future<Reservation> getById(String id) async =>
-      fakeReservation(id: id, status: status);
+      fakeReservation(id: id, status: status, stay: stay);
   @override
   Future<List<Reservation>> list() async => <Reservation>[];
 
@@ -47,13 +49,14 @@ Future<ProviderContainer> _open(
   ReservationStatus status = ReservationStatus.inStay,
   Locale? locale,
   DummyCheckoutDataSource? source,
+  StayRange? stay,
 }) async {
   final c = await pumpApp(
     tester,
     bootSession: completeSession(),
     locale: locale,
     extraOverrides: <Override>[
-      reservationRepositoryProvider.overrideWithValue(_ReservationRepo(status)),
+      reservationRepositoryProvider.overrideWithValue(_ReservationRepo(status, stay: stay)),
       if (source != null) ...<Override>[
         checkoutDataSourceProvider.overrideWithValue(source),
         invoiceDataSourceProvider.overrideWithValue(source),
@@ -66,6 +69,35 @@ Future<ProviderContainer> _open(
 }
 
 void main() {
+  testWidgets('leaving before the booked check-out day says only stayed nights are billed',
+      (tester) async {
+    final en = await _l10n('en');
+    final DateTime today = DateUtils.dateOnly(DateTime.now());
+    final id = reservationIdForSettlement(DummySettlementScenario.settles);
+    await _open(
+      tester,
+      id,
+      stay: StayRange(
+        checkIn: today.subtract(const Duration(days: 1)),
+        checkOut: today.add(const Duration(days: 2)),
+      ),
+    );
+
+    expect(find.byKey(const ValueKey<String>('checkout-early-departure-note')), findsOneWidget);
+    // Checkout is not blocked before the booked day.
+    final FilledButton cta = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, en.checkoutCompleteCta));
+    expect(cta.onPressed, isNotNull);
+  });
+
+  testWidgets('on/after the booked check-out day there is no early-departure note',
+      (tester) async {
+    final id = reservationIdForSettlement(DummySettlementScenario.settles);
+    await _open(tester, id); // fake stay ended 2026-09-08
+
+    expect(find.byKey(const ValueKey<String>('checkout-early-departure-note')), findsNothing);
+  });
+
   testWidgets('checkout → processing → completion → invoice (EN)',
       (tester) async {
     final en = await _l10n('en');

@@ -5,30 +5,28 @@ import '../../../../core/di/core_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../authentication/presentation/state/auth_controller.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
-import '../../data/datasources/favorites/favorite_hotels_data_source.dart';
+import '../../data/datasources/favorites/favorite_rooms_data_source.dart';
+import '../../domain/entities/favorite_room.dart';
+import 'favorite_hotels_controller.dart';
 
-final _dummyFavoritesProvider = Provider<DummyFavoriteHotelsDataSource>(
-  (Ref ref) => DummyFavoriteHotelsDataSource(),
+final _dummyFavoriteRoomsProvider = Provider<DummyFavoriteRoomsDataSource>(
+  (Ref ref) => DummyFavoriteRoomsDataSource(),
 );
 
-final favoriteHotelsDataSourceProvider = Provider<FavoriteHotelsDataSource>((
+final favoriteRoomsDataSourceProvider = Provider<FavoriteRoomsDataSource>((
   Ref ref,
 ) {
   final AppConfig config = ref.watch(appConfigProvider);
   return config.useDummyData
-      ? ref.watch(_dummyFavoritesProvider)
-      : ApiFavoriteHotelsDataSource(ref.watch(apiClientProvider));
+      ? ref.watch(_dummyFavoriteRoomsProvider)
+      : ApiFavoriteRoomsDataSource(ref.watch(apiClientProvider));
 });
 
-/// What a heart tap did.
-enum FavoriteToggleOutcome { saved, removed, signInRequired }
-
-/// The guest's favourite hotel ids — the backend's
-/// `guest_favorite_hotels` is the source of truth. Loaded for the signed-in
-/// guest (empty when signed out) and reloaded whenever the session changes.
-/// A tap updates optimistically, then reconciles: a failed write is reverted
-/// and rethrown as a `Failure` for the UI to report.
-class FavoriteHotelsController extends Notifier<Set<String>> {
+/// The guest's saved rooms, newest first — the backend's
+/// `guest_favorite_room_types` is the source of truth. Same lifecycle as
+/// [FavoriteHotelsController]: loaded for the signed-in guest, reloaded when
+/// the session changes, optimistic toggles reverted on failure.
+class FavoriteRoomsController extends Notifier<List<FavoriteRoom>> {
   /// Bumped on every heart tap so a slower initial load never overwrites a
   /// newer local write.
   int _writes = 0;
@@ -39,12 +37,12 @@ class FavoriteHotelsController extends Notifier<Set<String>> {
   Future<void> _loaded = Future<void>.value();
 
   @override
-  Set<String> build() {
+  List<FavoriteRoom> build() {
     final AuthState auth = ref.watch(authControllerProvider);
     _loaded = Future<void>.value();
-    if (auth is! Authenticated) return const <String>{};
+    if (auth is! Authenticated) return const <FavoriteRoom>[];
     _loaded = _load();
-    return const <String>{};
+    return const <FavoriteRoom>[];
   }
 
   /// Pull-to-refresh: refetches from the server while the current list stays
@@ -59,36 +57,40 @@ class FavoriteHotelsController extends Notifier<Set<String>> {
   Future<void> _load() async {
     final int writesAtStart = _writes;
     try {
-      final Set<String> ids = await ref
-          .read(favoriteHotelsDataSourceProvider)
-          .fetchIds();
-      if (_writes == writesAtStart) state = ids;
+      final List<FavoriteRoom> rooms = await ref
+          .read(favoriteRoomsDataSourceProvider)
+          .fetch();
+      if (_writes == writesAtStart) state = rooms;
     } catch (_) {
       // Hearts simply render empty when the list can't be fetched; the next
       // tap writes to the server, which stays authoritative.
     }
   }
 
-  bool isFavorite(String hotelId) => state.contains(hotelId);
+  bool isFavorite(String roomTypeId) =>
+      state.any((FavoriteRoom r) => r.roomTypeId == roomTypeId);
 
-  Future<FavoriteToggleOutcome> toggle(String hotelId) async {
+  Future<FavoriteToggleOutcome> toggle(FavoriteRoom room) async {
     if (ref.read(authControllerProvider) is! Authenticated) {
       return FavoriteToggleOutcome.signInRequired;
     }
     _writes++;
-    final Set<String> before = state;
-    final bool removing = before.contains(hotelId);
+    final List<FavoriteRoom> before = state;
+    final bool removing = isFavorite(room.roomTypeId);
     state = removing
-        ? (Set<String>.of(before)..remove(hotelId))
-        : <String>{...before, hotelId};
+        ? <FavoriteRoom>[
+            for (final FavoriteRoom r in before)
+              if (r.roomTypeId != room.roomTypeId) r,
+          ]
+        : <FavoriteRoom>[room, ...before];
     try {
-      final FavoriteHotelsDataSource source = ref.read(
-        favoriteHotelsDataSourceProvider,
+      final FavoriteRoomsDataSource source = ref.read(
+        favoriteRoomsDataSourceProvider,
       );
       if (removing) {
-        await source.remove(hotelId);
+        await source.remove(room.roomTypeId);
       } else {
-        await source.add(hotelId);
+        await source.add(room);
       }
       return removing
           ? FavoriteToggleOutcome.removed
@@ -100,7 +102,7 @@ class FavoriteHotelsController extends Notifier<Set<String>> {
   }
 }
 
-final favoriteHotelsProvider =
-    NotifierProvider<FavoriteHotelsController, Set<String>>(
-      FavoriteHotelsController.new,
+final favoriteRoomsProvider =
+    NotifierProvider<FavoriteRoomsController, List<FavoriteRoom>>(
+      FavoriteRoomsController.new,
     );

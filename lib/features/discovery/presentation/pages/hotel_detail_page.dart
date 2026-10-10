@@ -18,6 +18,7 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../domain/entities/guest_party.dart';
 import '../../domain/entities/hotel.dart';
 import '../../domain/entities/hotel_facility.dart';
@@ -85,6 +86,8 @@ class HotelDetailPage extends ConsumerWidget {
     final AsyncValue<Hotel> hotel = ref.watch(hotelDetailProvider(hotelId));
 
     return hotel.when(
+      // A failed pull-to-refresh keeps the shown hotel.
+      skipError: true,
       loading: () => Scaffold(
         appBar: AppBar(),
         body: Center(child: LoadingView(label: l10n.stateLoadingTitle)),
@@ -148,17 +151,8 @@ class _Body extends ConsumerWidget {
 
     // A short, bounded column of cards — built eagerly (not a lazy list) so
     // every section is in the tree for screen readers and tests.
-    return RefreshIndicator(
-      color: context.colors.bgPrimary,
-      backgroundColor: context.colors.bgSurface,
-      onRefresh: () async {
-        try {
-          ref.invalidate(hotelDetailProvider(hotel.id));
-          await ref.read(hotelDetailProvider(hotel.id).future);
-        } on Object {
-          // The watched provider renders its normal error state.
-        }
-      },
+    return PullToRefresh(
+      onRefresh: () => ref.refresh(hotelDetailProvider(hotel.id).future),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(

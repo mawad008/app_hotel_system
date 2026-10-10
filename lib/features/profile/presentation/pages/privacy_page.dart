@@ -15,6 +15,7 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/settings_row.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
 import '../../../bookings/domain/bookings_filter.dart';
@@ -33,39 +34,55 @@ class PrivacyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<GuestAccountSettings> settings = ref.watch(guestAccountSettingsProvider);
+    final AsyncValue<GuestAccountSettings> settings = ref.watch(
+      guestAccountSettingsProvider,
+    );
+
+    Future<void> refresh() {
+      ref.invalidate(appContentProvider);
+      return ref.refresh(guestAccountSettingsProvider.future);
+    }
 
     return settings.when(
+      // A failed refresh keeps the last good data on screen.
+      skipError: true,
       loading: () => Scaffold(
         appBar: HotelAppBar(title: l10n.accountPrivacyLabel),
         body: Center(child: LoadingView(label: l10n.stateLoadingTitle)),
       ),
       error: (Object e, StackTrace _) => Scaffold(
         appBar: HotelAppBar(title: l10n.accountPrivacyLabel),
-        body: MessageView(
-          icon: AppIcons.privacy,
-          title: l10n.stateErrorTitle,
-          message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-          actionLabel: l10n.actionRetry,
-          onAction: () => ref.invalidate(guestAccountSettingsProvider),
+        body: PullToRefresh(
+          onRefresh: refresh,
+          child: MessageView(
+            icon: AppIcons.privacy,
+            title: l10n.stateErrorTitle,
+            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+            actionLabel: l10n.actionRetry,
+            onAction: () => ref.invalidate(guestAccountSettingsProvider),
+          ),
         ),
       ),
       data: (GuestAccountSettings s) {
         final DateTime? requestedAt = s.dataDeletionRequestedAt;
         return ProfileSubpage(
+          onRefresh: refresh,
           title: l10n.accountPrivacyLabel,
-          bannerTone: requestedAt == null ? InfoBannerTone.info : InfoBannerTone.success,
+          bannerTone: requestedAt == null
+              ? InfoBannerTone.info
+              : InfoBannerTone.success,
           bannerTitle: requestedAt == null
               ? l10n.profilePrivacyBannerTitle
               : l10n.profileDeletionRequestedTitle,
           bannerMessage: requestedAt == null
               ? l10n.profilePrivacyBannerBody
               : l10n.profileDeletionRequestedBody(
-                  MaterialLocalizations.of(context).formatMediumDate(requestedAt),
+                  MaterialLocalizations.of(context)
+                      .formatMediumDate(requestedAt),
                 ),
           cards: <Widget>[
             SettingsCard(
-          borderWidth: 1,
+              borderWidth: 1,
               children: <Widget>[
                 SettingsRow(
                   label: l10n.profilePrivacyIdPhotos,
@@ -80,7 +97,8 @@ class PrivacyPage extends ConsumerWidget {
                 SettingsRow(
                   label: l10n.profilePrivacyStayHistory,
                   onTap: () {
-                    ref.read(bookingsFilterProvider.notifier).state = BookingsFilter.past;
+                    ref.read(bookingsFilterProvider.notifier).state =
+                        BookingsFilter.past;
                     context.goNamed(AppRoutes.bookingsName);
                   },
                 ),
@@ -100,13 +118,15 @@ class PrivacyPage extends ConsumerWidget {
                   selected: s.keepIdentityForFuture,
                   onTap: () => _setRetention(context, ref, keep: true),
                 ),
-                if (ref.watch(appContentProvider).valueOrNull?.identityRetentionDays
+                if (ref
+                        .watch(appContentProvider)
+                        .valueOrNull
+                        ?.identityRetentionDays
                     case final int days)
                   Text(
                     l10n.profileIdentityHotelCopyNote(days),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: context.colors.textSecondary,
-                        ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: context.colors.textSecondary),
                   ),
               ],
             ),
@@ -115,22 +135,32 @@ class PrivacyPage extends ConsumerWidget {
             label: requestedAt == null
                 ? l10n.profileRequestDeletion
                 : l10n.profileDeletionRequestedCta,
-            onPressed: requestedAt == null ? () => _confirm(context, ref) : null,
+            onPressed: requestedAt == null
+                ? () => _confirm(context, ref)
+                : null,
           ),
         );
       },
     );
   }
 
-  Future<void> _setRetention(BuildContext context, WidgetRef ref, {required bool keep}) async {
+  Future<void> _setRetention(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool keep,
+  }) async {
     final AppLocalizations l10n = context.l10n;
     try {
-      await ref.read(guestAccountSettingsProvider.notifier).setIdentityRetention(keepForFuture: keep);
+      await ref
+          .read(guestAccountSettingsProvider.notifier)
+          .setIdentityRetention(keepForFuture: keep);
     } on Failure catch (failure) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(failure.localizedMessage(l10n))));
+          ..showSnackBar(
+            SnackBar(content: Text(failure.localizedMessage(l10n))),
+          );
       }
     }
   }
@@ -154,19 +184,27 @@ class PrivacyPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(guestAccountSettingsProvider.notifier).requestDataDeletion();
+      await ref
+          .read(guestAccountSettingsProvider.notifier)
+          .requestDataDeletion();
     } on Failure catch (failure) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(failure.localizedMessage(l10n))));
+          ..showSnackBar(
+            SnackBar(content: Text(failure.localizedMessage(l10n))),
+          );
       }
     }
   }
 }
 
 class _RetentionOption extends StatelessWidget {
-  const _RetentionOption({required this.label, required this.selected, required this.onTap});
+  const _RetentionOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -194,7 +232,8 @@ class _RetentionOption extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 15, height: 26 / 15),
+                  style: Theme.of(context).textTheme.bodyLarge
+                      ?.copyWith(fontSize: 15, height: 26 / 15),
                 ),
               ),
             ],

@@ -20,6 +20,7 @@ import '../state/checkout_controller.dart';
 import '../state/checkout_providers.dart';
 import '../widgets/folio_summary_card.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `05 · Depart & Invoice` screen 1 — review the outstanding amount before
 /// checkout. Shows the authoritative folio; the primary action settles it in
@@ -43,23 +44,29 @@ class CheckoutPage extends ConsumerWidget {
     return Scaffold(
       appBar: HotelAppBar(title: l10n.checkoutTitle),
       body: SafeArea(
-        child: _merge(
-          reservationAsync,
-          folioAsync,
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e) => MessageView(
-            icon: AppIcons.checkout,
-            title: l10n.checkoutUnavailableTitle,
-            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-            actionLabel: l10n.actionRetry,
-            onAction: () {
-              ref.invalidate(folioProvider(reservationId));
-              ref.invalidate(reservationDetailProvider(reservationId));
-            },
+        child: PullToRefresh(
+          onRefresh: () => refreshAll(<Future<Object?>>[
+            ref.refresh(reservationDetailProvider(reservationId).future),
+            ref.refresh(folioProvider(reservationId).future),
+          ]),
+          child: _merge(
+            reservationAsync,
+            folioAsync,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e) => MessageView(
+              icon: AppIcons.checkout,
+              title: l10n.checkoutUnavailableTitle,
+              message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+              actionLabel: l10n.actionRetry,
+              onAction: () {
+                ref.invalidate(folioProvider(reservationId));
+                ref.invalidate(reservationDetailProvider(reservationId));
+              },
+            ),
+            data: (Reservation reservation, Folio folio) =>
+                _Body(reservation: reservation, folio: folio),
           ),
-          data: (Reservation reservation, Folio folio) =>
-              _Body(reservation: reservation, folio: folio),
         ),
       ),
     );
@@ -72,9 +79,10 @@ class CheckoutPage extends ConsumerWidget {
     required Widget Function(Object) error,
     required Widget Function(Reservation, Folio) data,
   }) {
+    // A failed refresh keeps the last good data on screen.
+    if (a.hasValue && b.hasValue) return data(a.requireValue, b.requireValue);
     if (a.hasError) return error(a.error!);
     if (b.hasError) return error(b.error!);
-    if (a.hasValue && b.hasValue) return data(a.requireValue, b.requireValue);
     return loading();
   }
 }
@@ -104,6 +112,12 @@ class _Body extends ConsumerWidget {
         action is CheckoutSubmitting &&
         action.request.reservationId == reservation.id;
     final bool eligible = _canCheckout.contains(reservation.status);
+    // Leaving before the booked check-out day: the backend bills only the
+    // nights stayed (CheckoutService::recordDeparture) — say so up front.
+    final DateTime today = DateUtils.dateOnly(DateTime.now());
+    final bool leavingEarly =
+        reservation.status == ReservationStatus.inStay &&
+        today.isBefore(DateUtils.dateOnly(reservation.stay.checkOut));
 
     return Column(
       children: <Widget>[
@@ -120,6 +134,18 @@ class _Body extends ConsumerWidget {
                     ? l10n.checkoutReadyBody
                     : l10n.checkoutNotReadyBody,
               ),
+              if (leavingEarly) ...<Widget>[
+                const SizedBox(height: AppSpacing.sm),
+                InfoBanner(
+                  key: const ValueKey<String>('checkout-early-departure-note'),
+                  tone: InfoBannerTone.info,
+                  title: l10n.stayCheckoutCta,
+                  message: l10n.checkoutEarlyDepartureNote(
+                    MaterialLocalizations.of(context)
+                        .formatShortMonthDay(reservation.stay.checkOut),
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               FolioSummaryCard(folio: folio),
               const SizedBox(height: AppSpacing.md),

@@ -20,17 +20,20 @@ class SupportPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AccountSummary? summary = ref.watch(accountSummaryProvider).valueOrNull;
+    final AccountSummary? summary = ref
+        .watch(accountSummaryProvider)
+        .valueOrNull;
     final String? activeStay = summary?.activeStayReservationId;
     final String? contactStay = summary?.contactReservationId;
 
     return ProfileSubpage(
+      onRefresh: () => ref.refresh(accountSummaryProvider.future),
       title: l10n.profileSupportTitle,
       bannerTitle: l10n.profileSupportBannerTitle,
       bannerMessage: l10n.profileSupportBannerBody,
       cards: <Widget>[
         SettingsCard(
-                borderWidth: 1,
+          borderWidth: 1,
           children: <Widget>[
             SettingsRow(
               icon: AppIcons.faq,
@@ -49,9 +52,11 @@ class SupportPage extends ConsumerWidget {
               onTap: activeStay == null
                   ? null
                   : () => context.pushNamed(
-                        AppRoutes.reportProblemName,
-                        pathParameters: <String, String>{'reservationId': activeStay},
-                      ),
+                      AppRoutes.reportProblemName,
+                      pathParameters: <String, String>{
+                        'reservationId': activeStay,
+                      },
+                    ),
             ),
           ],
         ),
@@ -63,9 +68,9 @@ class SupportPage extends ConsumerWidget {
         onPressed: contactStay == null
             ? null
             : () => context.pushNamed(
-                  AppRoutes.contactReceptionName,
-                  pathParameters: <String, String>{'reservationId': contactStay},
-                ),
+                AppRoutes.contactReceptionName,
+                pathParameters: <String, String>{'reservationId': contactStay},
+              ),
       ),
     );
   }

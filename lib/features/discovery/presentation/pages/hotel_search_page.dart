@@ -15,6 +15,7 @@ import '../widgets/hotel_search_field.dart';
 import '../widgets/hotel_summary_card.dart';
 import '../widgets/sort_chip_bar.dart';
 import '../../../../core/widgets/app_bottom_nav.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `15 · Search, filters & sort` — the search screen: a live search field, the
 /// quick-sort chips, a filter button, the result count and the hotel list with
@@ -112,7 +113,12 @@ class _HotelSearchPageState extends ConsumerState<HotelSearchPage> {
               ),
             ),
             const SizedBox(height: AppSpacing.xs),
-            Expanded(child: _Results(state: state)),
+            Expanded(
+              child: PullToRefresh(
+                onRefresh: _controllerNotifier.refresh,
+                child: _Results(state: state),
+              ),
+            ),
           ],
         ),
       ),

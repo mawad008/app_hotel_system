@@ -243,6 +243,35 @@ stacked actions** (primary + secondary), matching the Figma empty states
 `EmptyView` / `ErrorView` presets add default icon/colour and expose the same
 two-action API. `UiStateView` uses them for the empty/error branches.
 
+With a bounded height the view fills it (content still centred) inside an
+always-scrollable scroll view, so a surrounding `PullToRefresh` can be pulled
+from anywhere on an empty / error state.
+
+---
+
+## Pull to refresh — `core/widgets/pull_to_refresh.dart`
+
+Every screen that shows server data wraps its body in `PullToRefresh`
+(2026-10-08): pull down from the top → `onRefresh` refetches the screen's
+providers (`ref.refresh(x.future)`, several via `refreshAll([...])`).
+
+- Every vertical scrollable below is made **always-scrollable**, so short lists
+  and empty / error states pull too; on web a **mouse drag** pulls as well.
+- Riverpod keeps the previous value while refetching (no flash). Screens use
+  `skipError: true` (or check `hasValue` before `hasError` in their `_merge`)
+  so a **failed refresh keeps the last data** — `PullToRefresh` shows the
+  localized failure in a snackbar instead.
+- Controllers that hold UI state rather than an `AsyncValue` expose a
+  `refresh()` that keeps the shown result (`RoomAvailabilityController`,
+  `HotelSearchController`; favourites use `reload()` to avoid an empty flash).
+- `ProfileSubpage` takes an optional `onRefresh`.
+- Complements `LiveRefresh` (`core/widgets/live_refresh.dart`), which refetches
+  on app resume / every 15 s on the booking screens.
+- **Not** on transactional or input screens (auth, stay dates, booking
+  summary, payment, identity capture, processing / result pages, review and
+  report forms, extend stay) — a refetch there could reset a draft or replay a
+  step — nor on the static contact-reception banner screen.
+
 ---
 
 ## Loading / skeleton — `core/widgets/skeleton.dart`

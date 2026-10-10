@@ -21,7 +21,7 @@ import '../../features/bookings/presentation/pages/bookings_list_page.dart';
 import '../../features/profile/presentation/pages/account_home_page.dart';
 import '../../features/stay_home/presentation/pages/extend_stay_page.dart';
 import '../../features/stay_home/presentation/pages/stay_home_page.dart';
-import '../../features/discovery/presentation/pages/favorite_hotels_page.dart';
+import '../../features/discovery/presentation/pages/favorites_page.dart';
 import '../../features/discovery/presentation/pages/available_rooms_page.dart';
 import '../../features/discovery/presentation/pages/discover_page.dart';
 import '../../features/discovery/presentation/pages/hotel_detail_page.dart';
@@ -72,6 +72,8 @@ import '../../features/stay_services/presentation/pages/service_review_processin
 import '../../features/stay_services/presentation/pages/service_review_result_page.dart';
 import '../../features/stay_services/presentation/pages/stay_services_page.dart';
 import '../foundation_home_page.dart';
+import '../../core/storage/app_preferences.dart';
+import '../../features/identity_verification/presentation/state/pending_identity_capture.dart';
 import 'app_routes.dart';
 
 /// Bridges [authControllerProvider] to a [Listenable] so `GoRouter` re-runs its
@@ -153,8 +155,13 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
         authenticated: (_) {
           if (onSplash || onAuthSurface || onProfile) {
             // If the guest signed in mid-booking, return them to where they
-            // were (the review screen); otherwise land on the app home.
+            // were (the review screen). A cold start after Android killed the
+            // app behind the system camera reopens the identity step it was
+            // on. Otherwise land on the app home.
             return ref.read(postAuthRedirectProvider.notifier).consume() ??
+                (onSplash
+                    ? PendingIdentityCapture.read(ref.read(appPreferencesProvider))?.location
+                    : null) ??
                 AppRoutes.authenticatedHome;
           }
           return null;
@@ -480,9 +487,9 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
         builder: (BuildContext context, GoRouterState state) => const PreferencesPage(),
       ),
       GoRoute(
-        path: AppRoutes.favoriteHotels,
-        name: AppRoutes.favoriteHotelsName,
-        builder: (BuildContext context, GoRouterState state) => const FavoriteHotelsPage(),
+        path: AppRoutes.favorites,
+        name: AppRoutes.favoritesName,
+        builder: (BuildContext context, GoRouterState state) => const FavoritesPage(),
       ),
       GoRoute(
         path: AppRoutes.profilePrivacy,

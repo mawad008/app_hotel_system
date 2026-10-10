@@ -19,6 +19,7 @@ import '../../../reservation/presentation/state/reservation_detail_provider.dart
 import '../../domain/entities/invoice.dart';
 import '../state/checkout_providers.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `05 · Depart & Invoice` screen 2 — the issued e-invoice with full line
 /// items. Every figure is backend-supplied; the app renders it and never
@@ -38,30 +39,35 @@ class InvoicePage extends ConsumerWidget {
     return Scaffold(
       appBar: HotelAppBar(title: l10n.invoiceTitle),
       body: SafeArea(
-        child: invoiceAsync.when(
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e, StackTrace _) {
-            final Failure failure = ErrorMapper.toFailure(e);
-            if (failure.kind == FailureKind.notFound) {
+        child: PullToRefresh(
+          onRefresh: () => ref.refresh(invoiceProvider(reservationId).future),
+          child: invoiceAsync.when(
+            // A failed refresh keeps the last invoice on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e, StackTrace _) {
+              final Failure failure = ErrorMapper.toFailure(e);
+              if (failure.kind == FailureKind.notFound) {
+                return MessageView(
+                  icon: AppIcons.invoice,
+                  title: l10n.invoiceNotReadyTitle,
+                  message: l10n.invoiceNotReadyBody,
+                  actionLabel: l10n.commonBack,
+                  onAction: () => context.pop(),
+                );
+              }
               return MessageView(
                 icon: AppIcons.invoice,
-                title: l10n.invoiceNotReadyTitle,
-                message: l10n.invoiceNotReadyBody,
-                actionLabel: l10n.commonBack,
-                onAction: () => context.pop(),
+                title: l10n.invoiceUnavailableTitle,
+                message: failure.localizedMessage(l10n),
+                actionLabel: l10n.actionRetry,
+                onAction: () => ref.invalidate(invoiceProvider(reservationId)),
               );
-            }
-            return MessageView(
-              icon: AppIcons.invoice,
-              title: l10n.invoiceUnavailableTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () => ref.invalidate(invoiceProvider(reservationId)),
-            );
-          },
-          data: (Invoice invoice) =>
-              _Body(reservationId: reservationId, invoice: invoice),
+            },
+            data: (Invoice invoice) =>
+                _Body(reservationId: reservationId, invoice: invoice),
+          ),
         ),
       ),
     );

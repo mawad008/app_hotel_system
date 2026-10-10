@@ -25,6 +25,7 @@ import '../state/stay_services_providers.dart';
 import '../stay_services_l10n.dart';
 import '../widgets/service_order_status_pill.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `11 · Services & requests` screens 2 & 4 — one service request: its status,
 /// details, and (while still `requested`) the cancel action. Doubles as the
@@ -53,17 +54,25 @@ class ServiceOrderDetailPage extends ConsumerWidget {
     return Scaffold(
       appBar: HotelAppBar(title: l10n.serviceOrderDetailTitle),
       body: SafeArea(
-        child: orderAsync.when(
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e, StackTrace _) => MessageView(
-            icon: AppIcons.invoice,
-            title: l10n.servicesUnavailableTitle,
-            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-            actionLabel: l10n.actionRetry,
-            onAction: () => ref.invalidate(serviceOrderProvider(key)),
+        child: PullToRefresh(
+          onRefresh: () {
+            ref.invalidate(serviceOrderReviewProvider(key));
+            return ref.refresh(serviceOrderProvider(key).future);
+          },
+          child: orderAsync.when(
+            // A failed refresh keeps the last good data on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e, StackTrace _) => MessageView(
+              icon: AppIcons.invoice,
+              title: l10n.servicesUnavailableTitle,
+              message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+              actionLabel: l10n.actionRetry,
+              onAction: () => ref.invalidate(serviceOrderProvider(key)),
+            ),
+            data: (ServiceOrder order) => _Body(orderKey: key, order: order),
           ),
-          data: (ServiceOrder order) => _Body(orderKey: key, order: order),
         ),
       ),
     );
@@ -230,8 +239,9 @@ class _Body extends ConsumerWidget {
   /// order the hotel already accepted gets the in-progress warning.
   Future<void> _confirmCancel(BuildContext context, WidgetRef ref) async {
     final AppLocalizations l10n = context.l10n;
-    final String service =
-        order.serviceName.resolve(Localizations.localeOf(context));
+    final String service = order.serviceName.resolve(
+      Localizations.localeOf(context),
+    );
     final bool? confirmed = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         fullscreenDialog: true,
@@ -276,8 +286,9 @@ class _RateServiceButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<Object?> reviewAsync =
-        ref.watch(serviceOrderReviewProvider(orderKey));
+    final AsyncValue<Object?> reviewAsync = ref.watch(
+      serviceOrderReviewProvider(orderKey),
+    );
     final bool alreadyReviewed = reviewAsync.valueOrNull != null;
 
     return SecondaryButton(

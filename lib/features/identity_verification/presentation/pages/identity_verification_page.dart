@@ -9,6 +9,7 @@ import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/localization/numerals.dart';
+import '../../../../core/storage/app_preferences.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/info_banner.dart';
 import '../../../../core/widgets/loading_view.dart';
@@ -29,6 +30,7 @@ import '../../data/device/identity_camera.dart';
 import '../../data/device/live_identity_camera.dart';
 import '../state/identity_verification_controller.dart';
 import '../state/identity_verification_providers.dart';
+import '../state/pending_identity_capture.dart';
 import '../widgets/identity_capture_frame.dart';
 import '../widgets/identity_details_form.dart';
 import '../widgets/identity_info_screen.dart';
@@ -124,6 +126,14 @@ class _IdentityVerificationPageState
 
   IdentityDocumentType _documentType = IdentityDocumentType.passport;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _resumeInterruptedCapture();
+    });
+  }
+
   void _maybeHandOff(IdentityVerificationState state) {
     if (_handedOff || !mounted) return;
     final IdentityVerificationSession? session = state.session;
@@ -159,7 +169,10 @@ class _IdentityVerificationPageState
 
     ref.listen<IdentityVerificationState>(
       identityVerificationControllerProvider(widget.reservationId),
-      (_, next) => _maybeHandOff(next),
+      (_, IdentityVerificationState next) {
+        _maybeHandOff(next);
+        _maybeSubmitRecoveredSelfie(next);
+      },
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeHandOff(state));
 
@@ -527,10 +540,82 @@ class _IdentityVerificationPageState
 
   Future<void> _takePhoto(IdentityCaptureTarget target, {bool back = false}) async {
     final IdentityLiveViewfinderState? live = _liveKeys[target]!.currentState;
-    final IdentityCaptureResult result = live != null && live.isReady
-        ? await live.takePicture()
-        : await ref.read(identityCameraProvider).capture(target);
+    final IdentityCaptureResult result;
+    if (live != null) {
+      // The in-app camera is still (re)opening — e.g. right after the
+      // permission prompt or a trip to the background. Wait for it rather
+      // than handing off to the system camera, which takes the guest out of
+      // the app (and on Android the app may be killed meanwhile).
+      if (!live.isReady) return;
+      result = await live.takePicture();
+    } else {
+      // The system camera (web, or the live camera failed to open): remember
+      // the step so a cold start brings the guest back here.
+      final AppPreferences prefs = ref.read(appPreferencesProvider);
+      if (!kIsWeb) {
+        await PendingIdentityCapture(
+          reservationId: widget.reservationId,
+          target: target,
+          back: back,
+          documentType: _documentType,
+        ).save(prefs);
+      }
+      result = await ref.read(identityCameraProvider).capture(target);
+      if (!kIsWeb) await PendingIdentityCapture.clear(prefs);
+    }
     if (!mounted) return;
+    await _applyCapture(result, target, back: back);
+  }
+
+  /// Picks up a capture interrupted by Android killing the app behind the
+  /// system camera: back on the same step, with the photo when it survived.
+  Future<void> _resumeInterruptedCapture() async {
+    final AppPreferences prefs = ref.read(appPreferencesProvider);
+    final PendingIdentityCapture? pending = PendingIdentityCapture.read(prefs);
+    if (pending == null || pending.reservationId != widget.reservationId) return;
+    await PendingIdentityCapture.clear(prefs);
+    // Only the front of the card / the selfie can be recovered: a back-side
+    // capture lost the front photo (held in memory) with the process.
+    final IdentityCaptured? recovered = pending.back
+        ? null
+        : await ref.read(identityCameraProvider).recoverLostCapture(pending.target);
+    if (!mounted) return;
+    setState(() {
+      _documentType = pending.documentType;
+      _introSeen = true;
+      if (pending.target == IdentityCaptureTarget.document) {
+        _step = _LocalStep.captureDocument;
+      }
+    });
+    if (recovered == null) return;
+    if (pending.target == IdentityCaptureTarget.selfie) {
+      // The session may still be loading — submit once it asks for a selfie.
+      _recoveredSelfie = recovered.image;
+      _maybeSubmitRecoveredSelfie(
+        ref.read(identityVerificationControllerProvider(widget.reservationId)),
+      );
+    } else {
+      await _applyCapture(recovered, pending.target, back: false);
+    }
+  }
+
+  /// A selfie recovered after a cold start, waiting for the session to load.
+  CapturedImage? _recoveredSelfie;
+
+  void _maybeSubmitRecoveredSelfie(IdentityVerificationState state) {
+    final CapturedImage? image = _recoveredSelfie;
+    if (image == null || !mounted || state.isBusy) return;
+    if (state.session?.needsSelfie != true) return;
+    _recoveredSelfie = null;
+    _selfieImage = image;
+    _controller.submitSelfie(image: image);
+  }
+
+  Future<void> _applyCapture(
+    IdentityCaptureResult result,
+    IdentityCaptureTarget target, {
+    required bool back,
+  }) async {
     switch (result) {
       case IdentityCaptured(:final CapturedImage image):
         if (target == IdentityCaptureTarget.document) {

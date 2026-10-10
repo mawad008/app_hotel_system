@@ -37,6 +37,7 @@ class CreateReservationRequest {
     required this.guestReference,
     required this.priceSnapshot,
     this.roomId,
+    this.attemptToken,
   });
 
   factory CreateReservationRequest.fromSelection(
@@ -65,6 +66,33 @@ class CreateReservationRequest {
   final String guestReference;
   final Money priceSnapshot;
   final String? roomId;
+
+  /// One booking *attempt* (random, from [CreateReservationController]) —
+  /// reused when the same Confirm is retried, renewed after a success. Not
+  /// part of equality: it identifies the attempt, not the booking criteria.
+  final String? attemptToken;
+
+  /// The same request tagged with [token].
+  CreateReservationRequest withAttempt(String token) => CreateReservationRequest(
+        hotelId: hotelId,
+        hotelName: hotelName,
+        roomTypeId: roomTypeId,
+        roomName: roomName,
+        stay: stay,
+        party: party,
+        guestReference: guestReference,
+        priceSnapshot: priceSnapshot,
+        roomId: roomId,
+        attemptToken: token,
+      );
+
+  /// The `Idempotency-Key` header the backend dedupes the create call on
+  /// (`[A-Za-z0-9._:-]`, unique per guest). Per attempt — never the criteria
+  /// alone, or re-booking the same dates after a cancelled / expired booking
+  /// would replay the old one.
+  String get serverIdempotencyKey => 'rsv-${attemptToken ?? _sanitized(idempotencyKey)}';
+
+  static String _sanitized(String raw) => raw.replaceAll(RegExp(r'[^A-Za-z0-9._:-]'), '_');
 
   /// A stable idempotency key for this exact request — used to dedupe repeated
   /// submits and to derive the dummy confirmation code. No time component, no

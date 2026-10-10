@@ -4,6 +4,8 @@ import 'package:hotel_guest_app/core/di/core_providers.dart';
 import 'package:hotel_guest_app/core/errors/app_exception.dart';
 import 'package:hotel_guest_app/core/time/clock.dart';
 import 'package:hotel_guest_app/features/reservation/data/datasources/dummy_reservation_data_source.dart';
+import 'package:hotel_guest_app/features/reservation/data/models/reservation_models.dart';
+import 'package:hotel_guest_app/features/reservation/domain/entities/create_reservation_request.dart';
 import 'package:hotel_guest_app/features/reservation/data/repositories/reservation_repository_impl.dart';
 import 'package:hotel_guest_app/features/reservation/presentation/state/create_reservation_controller.dart';
 import 'package:hotel_guest_app/features/reservation/presentation/state/reservation_providers.dart';
@@ -12,6 +14,19 @@ import '../../support/test_config.dart';
 import 'reservation_test_support.dart';
 
 final DateTime _now = DateTime(2026, 9, 8, 9, 41);
+
+/// Records the `Idempotency-Key` each create would send.
+class _KeyRecordingSource extends DummyReservationDataSource {
+  _KeyRecordingSource() : super(clock: () => _now);
+
+  final List<String> keys = <String>[];
+
+  @override
+  Future<ReservationModel> create(CreateReservationRequest request) {
+    keys.add(request.serverIdempotencyKey);
+    return super.create(request);
+  }
+}
 
 ProviderContainer _container({DummyReservationDataSource? source}) {
   final DummyReservationDataSource ds =
@@ -115,5 +130,48 @@ void main() {
     notifier.reset();
     expect(c.read(createReservationControllerProvider),
         isA<CreateReservationIdle>());
+  });
+
+  test('a retry of the same booking after a failure reuses the attempt key',
+      () async {
+    final _KeyRecordingSource ds = _KeyRecordingSource()
+      ..failWith = const NetworkException();
+    final ProviderContainer c = _container(source: ds);
+    final notifier = c.read(createReservationControllerProvider.notifier);
+
+    await notifier.submit(fakeRequest());
+    notifier.reset();
+    ds.failWith = null;
+    await notifier.submit(fakeRequest());
+
+    expect(ds.keys, hasLength(2));
+    expect(ds.keys[0], ds.keys[1]);
+    expect(ds.keys[0], matches(RegExp(r'^rsv-[0-9a-f]{32}$')));
+  });
+
+  test('booking the same criteria again after a success is a new attempt',
+      () async {
+    final _KeyRecordingSource ds = _KeyRecordingSource();
+    final ProviderContainer c = _container(source: ds);
+    final notifier = c.read(createReservationControllerProvider.notifier);
+
+    await notifier.submit(fakeRequest());
+    notifier.reset();
+    await notifier.submit(fakeRequest());
+
+    expect(ds.keys, hasLength(2));
+    expect(ds.keys[0], isNot(ds.keys[1]));
+  });
+
+  test('different criteria get a different attempt key', () async {
+    final _KeyRecordingSource ds = _KeyRecordingSource()
+      ..failWith = const NetworkException();
+    final ProviderContainer c = _container(source: ds);
+    final notifier = c.read(createReservationControllerProvider.notifier);
+
+    await notifier.submit(fakeRequest());
+    await notifier.submit(fakeRequest(guestReference: '+966500000000'));
+
+    expect(ds.keys[0], isNot(ds.keys[1]));
   });
 }

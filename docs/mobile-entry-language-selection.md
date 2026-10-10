@@ -102,7 +102,7 @@ runs; the native launch screen always shows the bundled mark.
   * centred white headline (`display` 28/40) and sub-line (`body-lg` 17/28),
     8px apart; 17px (8 + 1px spacer + 8) to the CTA;
   * `ابدأ الآن` — `PrimaryButton`, `Size=Small` (40).
-* Copy (v2): `استكشف فندق الواحة و احجز من مكانك` /
+* Copy: `استكشف فنادقنا واحجز إقامتك من مكانك` /
   `ببساطة اختر غرفتك المفضلة في وقتك المفضل`.
 
 ## Dashboard-managed content
@@ -140,8 +140,8 @@ the **bundled defaults**, used for any field that isn't configured.
   sub-line wraps to two lines (one in the Figma) and the card is ~28px taller.
 * ⏳ **English onboarding copy** is our translation — the Figma binds the Arabic
   to a library `Content` variable whose English value isn't in the file.
-  The headline names the sample hotel `فندق الواحة` literally, as in the Figma —
-  confirm with the designer whether it should be the tenant hotel's name.
+  The Figma headline named the sample hotel `فندق الواحة`; replaced
+  (QA 2026-10-08) with platform-wide copy because the app lists many hotels.
 * Language buttons are 48 tall (Figma overrides a Small button to 49); the
   onboarding CTA paints at 40 but keeps Material's 48px tap target, adding 4px
   above/below it.

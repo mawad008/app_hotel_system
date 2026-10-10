@@ -8,6 +8,7 @@ import '../../../../core/localization/l10n.dart';
 import '../../../../core/localization/numerals.dart';
 import '../../../../core/time/hotel_time.dart';
 import '../../../../core/time/stay_date_format.dart';
+import '../../domain/entities/favorite_room.dart';
 import '../../domain/entities/hotel_facility.dart';
 import '../../domain/entities/hotel_guest_details.dart';
 import '../../domain/entities/localized_text.dart';
@@ -19,6 +20,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/time/clock.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
+import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -37,11 +39,12 @@ import '../state/hotel_detail_provider.dart';
 import '../state/room_availability_controller.dart';
 import '../state/room_selection_controller.dart';
 import '../state/stay_dates_controller.dart';
-import '../state/favorite_hotels_controller.dart';
+import '../state/favorite_rooms_controller.dart';
 import '../widgets/detail_premium.dart';
 import '../widgets/hotel_favorite_toggle.dart';
 import '../widgets/hotel_share.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `ROOM_Detail_Premium` (v2 Figma, `08 · Room selection & stay actions`) —
 /// one room type in full, as a column of cards 24px apart:
@@ -102,25 +105,79 @@ class RoomDetailPage extends ConsumerWidget {
       _ => null,
     };
 
-    if (stay == null || room == null || hotelAsync.value == null) {
+    // Opened straight from a saved room (Favourites) or a deep link: fetch
+    // availability for the guest's current dates instead of relying on the
+    // rooms list having loaded it, and wait for it rather than flash "no
+    // room". Without dates there is nothing to price, so ask for them.
+    if (stay == null) {
       return Scaffold(
         appBar: HotelAppBar(title: l10n.roomDetailsTitle),
         body: MessageView(
-          icon: AppIcons.room,
-          title: l10n.reviewNoSelectionTitle,
-          message: l10n.roomsNoResultsBody,
-          actionLabel: l10n.reviewBackToRooms,
-          onAction: () => context.pop(),
+          icon: AppIcons.calendar,
+          title: l10n.roomDetailNeedsDatesTitle,
+          message: l10n.roomDetailNeedsDatesBody,
+          actionLabel: l10n.roomDetailChooseDates,
+          onAction: () => context.pushNamed(
+            AppRoutes.stayDatesName,
+            pathParameters: <String, String>{'hotelId': hotelId},
+          ),
         ),
       );
     }
-
-    final Hotel hotel = hotelAsync.value!;
     final AvailabilityRequest request = AvailabilityRequest(
       hotelId: hotelId,
       stay: stay,
       party: party,
     );
+    // A failed fetch for these exact criteria is not retried in a loop; it
+    // falls through to the "no room" state below.
+    final bool failed =
+        availability.request == request &&
+        availability.result is UiFailure<AvailabilityResult>;
+    final bool fresh = availability.isFreshFor(request);
+    if (!fresh && !failed) {
+      if (availability.result is! UiLoading<AvailabilityResult>) {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => ref
+              .read(roomAvailabilityControllerProvider.notifier)
+              .load(request),
+        );
+      }
+      return Scaffold(
+        appBar: HotelAppBar(title: l10n.roomDetailsTitle),
+        body: Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+      );
+    }
+    Future<void> refresh() => refreshAll(<Future<Object?>>[
+      ref.read(roomAvailabilityControllerProvider.notifier).refresh(),
+      ref.refresh(hotelDetailProvider(hotelId).future),
+    ]);
+
+    // A pull-to-refresh keeps the shown hotel; only a first load waits.
+    if (hotelAsync.isLoading && !hotelAsync.hasValue) {
+      return Scaffold(
+        appBar: HotelAppBar(title: l10n.roomDetailsTitle),
+        body: Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+      );
+    }
+
+    if (room == null || hotelAsync.value == null) {
+      return Scaffold(
+        appBar: HotelAppBar(title: l10n.roomDetailsTitle),
+        body: PullToRefresh(
+          onRefresh: refresh,
+          child: MessageView(
+            icon: AppIcons.room,
+            title: l10n.reviewNoSelectionTitle,
+            message: l10n.roomsNoResultsBody,
+            actionLabel: l10n.reviewBackToRooms,
+            onAction: () => context.pop(),
+          ),
+        ),
+      );
+    }
+
+    final Hotel hotel = hotelAsync.value!;
     final bool isSelected =
         selection != null &&
         selection.matches(request) &&
@@ -157,7 +214,10 @@ class RoomDetailPage extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: _Body(room: room, stay: stay, party: party, hotel: hotel),
+        child: PullToRefresh(
+          onRefresh: refresh,
+          child: _Body(room: room, stay: stay, party: party, hotel: hotel),
+        ),
       ),
       bottomNavigationBar: DetailBottomBar(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -222,7 +282,8 @@ class _CurrentPriceRow extends StatelessWidget {
     final TextTheme text = Theme.of(context).textTheme;
     final AppColorTokens c = context.colors;
     // What the guest pays: the stay plus the hotel's service fee, if any.
-    final num total = room.stayTotal(stay.nights).amount + (serviceFee?.amount ?? 0);
+    final num total =
+        room.stayTotal(stay.nights).amount + (serviceFee?.amount ?? 0);
     return Row(
       children: <Widget>[
         Expanded(
@@ -325,7 +386,10 @@ class _Body extends ConsumerWidget {
             photos: photos,
             aspectRatio: 361 / 358,
             centerCounter: true,
-            backFallbackLocation: AppRoutes.hotelDetail.replaceFirst(':hotelId', hotel.id),
+            backFallbackLocation: AppRoutes.hotelDetail.replaceFirst(
+              ':hotelId',
+              hotel.id,
+            ),
             actions: <Widget>[
               DetailHeroButton(
                 icon: AppIcons.share,
@@ -338,7 +402,14 @@ class _Body extends ConsumerWidget {
                   longitude: hotel.details.location?.longitude,
                 ),
               ),
-              _RoomHotelFavoriteButton(hotelId: hotel.id),
+              _RoomFavoriteButton(
+                room: FavoriteRoom(
+                  roomTypeId: type.id,
+                  hotelId: hotel.id,
+                  name: type.name,
+                  coverUrl: type.galleryUrls.firstOrNull,
+                ),
+              ),
             ],
           ),
           gap,
@@ -429,7 +500,9 @@ class _Body extends ConsumerWidget {
                   _PolicyTile(
                     icon: AppIcons.time,
                     title: l10n.roomPolicyCheckInTitle,
-                    body: context.localDigits(l10n.roomPolicyCheckInBody(checkIn)),
+                    body: context.localDigits(
+                      l10n.roomPolicyCheckInBody(checkIn),
+                    ),
                   ),
                 ],
                 if (checkOut != null) ...<Widget>[
@@ -437,7 +510,9 @@ class _Body extends ConsumerWidget {
                   _PolicyTile(
                     icon: AppIcons.time,
                     title: l10n.roomPolicyCheckOutTitle,
-                    body: context.localDigits(l10n.roomPolicyCheckOutBody(checkOut)),
+                    body: context.localDigits(
+                      l10n.roomPolicyCheckOutBody(checkOut),
+                    ),
                   ),
                 ],
               ],
@@ -622,7 +697,11 @@ class _IconDisc extends StatelessWidget {
         color: AppPrimitives.white,
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, size: size / 2, color: color ?? context.colors.textPrimary),
+      child: Icon(
+        icon,
+        size: size / 2,
+        color: color ?? context.colors.textPrimary,
+      ),
     );
   }
 }
@@ -658,7 +737,8 @@ class _BookingDetailsCard extends StatelessWidget {
     final AppColorTokens c = context.colors;
     final Locale locale = Localizations.localeOf(context);
     // What the guest pays: the stay plus the hotel's service fee, if any.
-    final num total = room.stayTotal(stay.nights).amount + (serviceFee?.amount ?? 0);
+    final num total =
+        room.stayTotal(stay.nights).amount + (serviceFee?.amount ?? 0);
 
     Widget includedRow(String label) => Padding(
       padding: const EdgeInsets.only(top: AppSpacing.space3),
@@ -1049,25 +1129,29 @@ class _PolicyTile extends StatelessWidget {
   }
 }
 
-/// The room hero favourites its hotel, using the same server-backed guest
-/// wishlist as the hotel detail screen.
-class _RoomHotelFavoriteButton extends ConsumerWidget {
-  const _RoomHotelFavoriteButton({required this.hotelId});
+/// The room hero saves this room (room type) to the guest's server-backed
+/// favourites, listed under Account → المفضلة.
+class _RoomFavoriteButton extends ConsumerWidget {
+  const _RoomFavoriteButton({required this.room});
 
-  final String hotelId;
+  final FavoriteRoom room;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final bool favorite = ref.watch(
-      favoriteHotelsProvider.select((Set<String> ids) => ids.contains(hotelId)),
+      favoriteRoomsProvider.select(
+        (List<FavoriteRoom> rooms) =>
+            rooms.any((FavoriteRoom r) => r.roomTypeId == room.roomTypeId),
+      ),
     );
     return DetailHeroButton(
+      key: const ValueKey<String>('room-favorite'),
       icon: favorite ? AppIcons.favoriteActive : AppIcons.favorite,
       iconColor: AppPrimitives.red600,
       selected: favorite,
-      tooltip: favorite ? l10n.hotelFavoriteRemove : l10n.hotelFavoriteAdd,
-      onPressed: () => toggleHotelFavorite(context, ref, hotelId),
+      tooltip: favorite ? l10n.roomFavoriteRemove : l10n.roomFavoriteAdd,
+      onPressed: () => toggleRoomFavorite(context, ref, room),
     );
   }
 }

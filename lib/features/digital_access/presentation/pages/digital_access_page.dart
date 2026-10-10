@@ -27,6 +27,7 @@ import '../state/digital_access_providers.dart';
 import '../widgets/access_credential_card.dart';
 import '../widgets/access_status_pill.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `04 · Check in & Stay` — the digital room-key screen.
 ///
@@ -59,29 +60,39 @@ class DigitalAccessPage extends ConsumerWidget {
 
     return Scaffold(
       // Figma: "تم تسجيل دخولك" in the app bar once the key is live.
-      appBar: HotelAppBar(title: active ? l10n.accessCheckedInTitle : l10n.accessTitle),
+      appBar: HotelAppBar(
+        title: active ? l10n.accessCheckedInTitle : l10n.accessTitle,
+      ),
       body: SafeArea(
-        child: grantAsync.when(
-          loading: () => fromAction != null
-              ? _Body(grant: fromAction, reservationId: reservationId)
-              : Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object error, StackTrace _) {
-            final failure = ErrorMapper.toFailure(error);
-            return MessageView(
-              icon: AppIcons.key,
-              title: l10n.accessUnavailableTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () =>
-                  ref.invalidate(accessGrantProvider(reservationId)),
-            );
-          },
-          data: (AccessGrant grant) {
-            final AccessGrant shown = (fromAction != null && !grant.isActive)
-                ? fromAction
-                : grant;
-            return _Body(grant: shown, reservationId: reservationId);
-          },
+        child: PullToRefresh(
+          onRefresh: () => refreshAll(<Future<Object?>>[
+            ref.refresh(accessGrantProvider(reservationId).future),
+            ref.refresh(reservationDetailProvider(reservationId).future),
+          ]),
+          child: grantAsync.when(
+            // A failed refresh keeps the last key on screen.
+            skipError: true,
+            loading: () => fromAction != null
+                ? _Body(grant: fromAction, reservationId: reservationId)
+                : Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object error, StackTrace _) {
+              final failure = ErrorMapper.toFailure(error);
+              return MessageView(
+                icon: AppIcons.key,
+                title: l10n.accessUnavailableTitle,
+                message: failure.localizedMessage(l10n),
+                actionLabel: l10n.actionRetry,
+                onAction: () =>
+                    ref.invalidate(accessGrantProvider(reservationId)),
+              );
+            },
+            data: (AccessGrant grant) {
+              final AccessGrant shown = (fromAction != null && !grant.isActive)
+                  ? fromAction
+                  : grant;
+              return _Body(grant: shown, reservationId: reservationId);
+            },
+          ),
         ),
       ),
     );
@@ -98,8 +109,9 @@ class _Body extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final Reservation? reservation =
-        ref.watch(reservationDetailProvider(reservationId)).valueOrNull;
+    final Reservation? reservation = ref
+        .watch(reservationDetailProvider(reservationId))
+        .valueOrNull;
     final String? roomNumber = reservation?.roomNumber;
     final Locale locale = Localizations.localeOf(context);
 
@@ -159,7 +171,9 @@ class _Body extends ConsumerWidget {
                   child: TextButton(
                     onPressed: () => context.pushNamed(
                       AppRoutes.contactReceptionName,
-                      pathParameters: <String, String>{'reservationId': reservationId},
+                      pathParameters: <String, String>{
+                        'reservationId': reservationId,
+                      },
                     ),
                     child: Text(l10n.accessKeyNotWorking),
                   ),
@@ -313,7 +327,11 @@ class _TwoActions extends StatelessWidget {
 /// `CHECKIN_DigitalKey` stay card: white, 1px border, radius 20, 16px
 /// padding — "hotel · city" (18 bold) over "dates · nights" (14 secondary).
 class _StayCard extends StatelessWidget {
-  const _StayCard({required this.title, required this.subtitle, required this.onTap});
+  const _StayCard({
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   final String title;
   final String subtitle;
@@ -330,16 +348,32 @@ class _StayCard extends StatelessWidget {
         side: BorderSide(color: c.borderDefault),
       ),
       child: InkWell(
-        customBorder: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
+        customBorder: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(title, style: text.titleMedium?.copyWith(fontSize: 18, height: 28 / 18, fontWeight: FontWeight.w700)),
+              Text(
+                title,
+                style: text.titleMedium?.copyWith(
+                  fontSize: 18,
+                  height: 28 / 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
               const SizedBox(height: 6),
-              Text(subtitle, style: text.bodyMedium?.copyWith(fontSize: 14, height: 24 / 14, color: c.textSecondary)),
+              Text(
+                subtitle,
+                style: text.bodyMedium?.copyWith(
+                  fontSize: 14,
+                  height: 24 / 14,
+                  color: c.textSecondary,
+                ),
+              ),
             ],
           ),
         ),

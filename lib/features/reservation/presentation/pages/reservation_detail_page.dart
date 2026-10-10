@@ -18,6 +18,8 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/secondary_button.dart';
+import '../../../../core/widgets/live_refresh.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../bookings/presentation/widgets/booking_summary_card.dart';
 import '../../../bookings/presentation/widgets/booking_timeline_card.dart';
 import '../../../bookings/presentation/widgets/cancellation_policy_card.dart';
@@ -48,43 +50,58 @@ class ReservationDetailPage extends ConsumerWidget {
       reservationDetailProvider(reservationId),
     );
 
-    return Scaffold(
-      appBar: HotelAppBar(
-        title: l10n.bookingDetailTitle,
-        fallbackLocation: AppRoutes.home,
-      ),
-      body: SafeArea(
-        child: async.when(
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object error, StackTrace _) {
-            final failure = ErrorMapper.toFailure(error);
-            return MessageView(
-              icon: AppIcons.invoice,
-              title: l10n.bookingNotFoundTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () =>
-                  ref.invalidate(reservationDetailProvider(reservationId)),
-            );
-          },
-          data: (Reservation reservation) => _Body(reservation: reservation),
+    return LiveRefresh(
+      onRefresh: () => ref.invalidate(reservationDetailProvider(reservationId)),
+      child: Scaffold(
+        appBar: HotelAppBar(
+          title: l10n.bookingDetailTitle,
+          // Reached with `go` (payment / identity / check-in hand-offs) there
+          // is nothing to pop: back leads to the bookings list. (Not the
+          // diagnostics home — that route is debug-only, so in a release
+          // build it hit the router's error page.)
+          fallbackLocation: AppRoutes.bookings,
         ),
-      ),
-      bottomNavigationBar: async.maybeWhen(
-        data: (Reservation reservation) => SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.pageGutter,
-              AppSpacing.bottomBarTop,
-              AppSpacing.pageGutter,
-              AppSpacing.bottomBarBottom,
+        body: SafeArea(
+          child: PullToRefresh(
+            onRefresh: () =>
+                ref.refresh(reservationDetailProvider(reservationId).future),
+            child: async.when(
+              // A failed background refresh keeps the last good data on screen.
+              skipError: true,
+              loading: () =>
+                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+              error: (Object error, StackTrace _) {
+                final failure = ErrorMapper.toFailure(error);
+                return MessageView(
+                  icon: AppIcons.invoice,
+                  title: l10n.bookingNotFoundTitle,
+                  message: failure.localizedMessage(l10n),
+                  actionLabel: l10n.actionRetry,
+                  onAction: () =>
+                      ref.invalidate(reservationDetailProvider(reservationId)),
+                );
+              },
+              data: (Reservation reservation) =>
+                  _Body(reservation: reservation),
             ),
-            child: _Actions(reservation: reservation),
           ),
         ),
-        orElse: () => null,
+        bottomNavigationBar: async.maybeWhen(
+          skipError: true,
+          data: (Reservation reservation) => SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.pageGutter,
+                AppSpacing.bottomBarTop,
+                AppSpacing.pageGutter,
+                AppSpacing.bottomBarBottom,
+              ),
+              child: _Actions(reservation: reservation),
+            ),
+          ),
+          orElse: () => null,
+        ),
       ),
     );
   }
@@ -385,6 +402,23 @@ class _Actions extends ConsumerWidget {
                 },
               ),
             ),
+            // Checkout opens from `in_stay` (or resumes) — any day of the stay.
+            if (reservation.status == ReservationStatus.inStay ||
+                reservation.status ==
+                    ReservationStatus.checkoutInProgress) ...<Widget>[
+              const SizedBox(height: AppSpacing.xs),
+              SecondaryButton(
+                key: const ValueKey<String>('booking-checkout-button'),
+                label: l10n.stayCheckoutCta,
+                icon: AppIcons.checkout,
+                onPressed: () => context.pushNamed(
+                  AppRoutes.checkoutName,
+                  pathParameters: <String, String>{
+                    'reservationId': reservation.id,
+                  },
+                ),
+              ),
+            ],
           ],
         );
 

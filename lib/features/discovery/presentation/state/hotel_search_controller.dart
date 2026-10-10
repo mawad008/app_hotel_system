@@ -98,9 +98,18 @@ class HotelSearchController extends Notifier<HotelSearchState> {
 
   Future<void> retry() => _run();
 
-  Future<void> _run() async {
+  /// Pull-to-refresh: re-runs the current search while the shown results stay
+  /// on screen. On failure they are kept and the error is rethrown.
+  Future<void> refresh() => _run(keepShown: true);
+
+  Future<void> _run({bool keepShown = false}) async {
     final int requestId = ++_requestId;
-    state = state.copyWith(results: const UiLoading<HotelSearchResult>());
+    final bool showing = keepShown &&
+        (state.results is UiSuccess<HotelSearchResult> ||
+            state.results is UiEmpty<HotelSearchResult>);
+    if (!showing) {
+      state = state.copyWith(results: const UiLoading<HotelSearchResult>());
+    }
 
     try {
       final HotelSearchResult result =
@@ -117,6 +126,7 @@ class HotelSearchController extends Notifier<HotelSearchState> {
       );
     } catch (error) {
       if (requestId != _requestId) return;
+      if (showing) rethrow;
       state = state.copyWith(
         results: UiState<HotelSearchResult>.failure(ErrorMapper.toFailure(error)),
       );

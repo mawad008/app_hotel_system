@@ -16,6 +16,7 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/settings_row.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../domain/entities/guest_notification.dart';
 import '../state/notifications_providers.dart';
 import '../../../../core/localization/numerals.dart';
@@ -30,27 +31,35 @@ class NotificationsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<NotificationFeed> feed = ref.watch(notificationFeedProvider);
+    final AsyncValue<NotificationFeed> feed = ref.watch(
+      notificationFeedProvider,
+    );
 
     return Scaffold(
       appBar: HotelAppBar(title: l10n.notificationsTitle),
       body: SafeArea(
-        child: feed.when(
-          loading: () => Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e, StackTrace _) => MessageView(
-            icon: AppIcons.notifications,
-            title: l10n.stateErrorTitle,
-            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-            actionLabel: l10n.actionRetry,
-            onAction: () => ref.invalidate(notificationFeedProvider),
+        child: PullToRefresh(
+          onRefresh: () => ref.refresh(notificationFeedProvider.future),
+          child: feed.when(
+            // A failed refresh keeps the last good data on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e, StackTrace _) => MessageView(
+              icon: AppIcons.notifications,
+              title: l10n.stateErrorTitle,
+              message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+              actionLabel: l10n.actionRetry,
+              onAction: () => ref.invalidate(notificationFeedProvider),
+            ),
+            data: (NotificationFeed data) => data.items.isEmpty
+                ? MessageView(
+                    icon: AppIcons.notifications,
+                    title: l10n.notificationsEmptyTitle,
+                    message: l10n.notificationsEmptyBody,
+                  )
+                : _Feed(feed: data),
           ),
-          data: (NotificationFeed data) => data.items.isEmpty
-              ? MessageView(
-                  icon: AppIcons.notifications,
-                  title: l10n.notificationsEmptyTitle,
-                  message: l10n.notificationsEmptyBody,
-                )
-              : _Feed(feed: data),
         ),
       ),
       bottomNavigationBar: switch (feed) {
@@ -79,7 +88,11 @@ class _Feed extends ConsumerWidget {
     final List<GuestNotification> yesterdayItems = <GuestNotification>[];
     final List<GuestNotification> earlier = <GuestNotification>[];
     for (final GuestNotification n in feed.items) {
-      final DateTime day = DateTime(n.createdAt.year, n.createdAt.month, n.createdAt.day);
+      final DateTime day = DateTime(
+        n.createdAt.year,
+        n.createdAt.month,
+        n.createdAt.day,
+      );
       if (!day.isBefore(today)) {
         todayItems.add(n);
       } else if (!day.isBefore(yesterday)) {
@@ -89,35 +102,36 @@ class _Feed extends ConsumerWidget {
       }
     }
 
-    return RefreshIndicator(
-      onRefresh: () => ref.refresh(notificationFeedProvider.future),
-      child: ListView(
-        padding: const EdgeInsets.all(24),
-        children: <Widget>[
-          InfoBanner(
-            tone: InfoBannerTone.info,
-            title: feed.unreadCount > 0
-                ? l10n.notificationsUnreadTitle(feed.unreadCount)
-                : l10n.notificationsAllReadTitle,
-            message: l10n.notificationsBannerBody,
-          ),
-          for (final List<GuestNotification> group in <List<GuestNotification>>[
-            todayItems,
-            yesterdayItems,
-            earlier,
-          ])
-            if (group.isNotEmpty) ...<Widget>[
-              const SizedBox(height: 18),
-              SettingsCard(
-                borderWidth: 1,
-                children: <Widget>[
-                  for (final GuestNotification n in group)
-                    _NotificationRow(notification: n, now: now, yesterday: yesterday),
-                ],
-              ),
-            ],
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: <Widget>[
+        InfoBanner(
+          tone: InfoBannerTone.info,
+          title: feed.unreadCount > 0
+              ? l10n.notificationsUnreadTitle(feed.unreadCount)
+              : l10n.notificationsAllReadTitle,
+          message: l10n.notificationsBannerBody,
+        ),
+        for (final List<GuestNotification> group in <List<GuestNotification>>[
+          todayItems,
+          yesterdayItems,
+          earlier,
+        ])
+          if (group.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 18),
+            SettingsCard(
+              borderWidth: 1,
+              children: <Widget>[
+                for (final GuestNotification n in group)
+                  _NotificationRow(
+                    notification: n,
+                    now: now,
+                    yesterday: yesterday,
+                  ),
+              ],
+            ),
+          ],
+      ],
     );
   }
 }
@@ -135,11 +149,14 @@ class _NotificationRow extends ConsumerWidget {
 
   String _when(BuildContext context, AppLocalizations l10n) {
     final DateTime at = notification.createdAt;
-    if (now.difference(at) < const Duration(minutes: 1)) return l10n.notificationsNow;
+    if (now.difference(at) < const Duration(minutes: 1))
+      return l10n.notificationsNow;
     final DateTime day = DateTime(at.year, at.month, at.day);
     final MaterialLocalizations ml = MaterialLocalizations.of(context);
     if (day == DateTime(now.year, now.month, now.day)) {
-      return context.localDigits(ml.formatTimeOfDay(TimeOfDay.fromDateTime(at)));
+      return context.localDigits(
+        ml.formatTimeOfDay(TimeOfDay.fromDateTime(at)),
+      );
     }
     if (day == yesterday) return l10n.notificationsYesterday;
     return ml.formatShortMonthDay(at);
@@ -164,7 +181,9 @@ class _NotificationRow extends ConsumerWidget {
     final GoRouter router = GoRouter.of(context);
     if (!notification.isRead) {
       try {
-        await ref.read(notificationsRepositoryProvider).markRead(notification.id);
+        await ref
+            .read(notificationsRepositoryProvider)
+            .markRead(notification.id);
       } on Failure {
         // The row simply stays unread — the feed below is re-read from the
         // server, which stays authoritative. Opening the context must not
@@ -173,10 +192,15 @@ class _NotificationRow extends ConsumerWidget {
       ref.invalidate(notificationFeedProvider);
     }
     if (reservationId == null) return;
-    final Map<String, String> params = <String, String>{'reservationId': reservationId};
+    final Map<String, String> params = <String, String>{
+      'reservationId': reservationId,
+    };
     switch (notification.type) {
       case GuestNotificationType.identityVerified:
-        router.pushNamed(AppRoutes.identityVerificationResultName, pathParameters: params);
+        router.pushNamed(
+          AppRoutes.identityVerificationResultName,
+          pathParameters: params,
+        );
       case GuestNotificationType.checkedIn:
         router.pushNamed(AppRoutes.digitalAccessName, pathParameters: params);
       case GuestNotificationType.invoiced:
@@ -184,7 +208,10 @@ class _NotificationRow extends ConsumerWidget {
       case GuestNotificationType.depositHeld:
       case GuestNotificationType.cancelled:
       case GuestNotificationType.unknown:
-        router.pushNamed(AppRoutes.reservationDetailName, pathParameters: params);
+        router.pushNamed(
+          AppRoutes.reservationDetailName,
+          pathParameters: params,
+        );
     }
   }
 }
@@ -211,7 +238,9 @@ class _MarkAllReadBarState extends ConsumerState<_MarkAllReadBar> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(failure.localizedMessage(l10n))));
+          ..showSnackBar(
+            SnackBar(content: Text(failure.localizedMessage(l10n))),
+          );
       }
     } finally {
       if (mounted) setState(() => _busy = false);

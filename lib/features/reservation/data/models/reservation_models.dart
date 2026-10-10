@@ -82,6 +82,7 @@ class ReservationModel {
     this.roomNumber,
     this.nightlyRate,
     this.depositAmount,
+    this.pricesIncludeTaxes,
     this.serviceFee,
     this.cancelledAt,
     this.cancellation = CancellationState.unknown,
@@ -136,6 +137,7 @@ class ReservationModel {
       depositAmount: hotel?['deposit_amount'] == null
           ? null
           : Money(amount: _priceAmount(hotel!['deposit_amount']), currency: currency),
+      pricesIncludeTaxes: hotel?['prices_include_taxes'] as bool?,
       cancelledAt: json['cancelled_at'] == null
           ? null
           : DateTime.parse(json['cancelled_at'] as String),
@@ -183,6 +185,7 @@ class ReservationModel {
   final String? roomNumber;
   final Money? nightlyRate;
   final Money? depositAmount;
+  final bool? pricesIncludeTaxes;
   final Money? serviceFee;
   final DateTime? cancelledAt;
   final CancellationState cancellation;
@@ -208,6 +211,7 @@ class ReservationModel {
         roomNumber: roomNumber,
         nightlyRate: nightlyRate,
         depositAmount: depositAmount,
+        pricesIncludeTaxes: pricesIncludeTaxes,
         serviceFee: serviceFee,
         cancelledAt: cancelledAt,
         cancellation: cancellation,

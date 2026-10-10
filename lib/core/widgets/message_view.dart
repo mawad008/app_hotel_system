@@ -43,59 +43,83 @@ class MessageView extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final Color tint = iconColor ?? theme.colorScheme.onSurfaceVariant;
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.space6),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            // Figma: the icon "sits in a soft tile so the block has weight
-            // rather than floating" — a rounded square, not a circle. v2: a
-            // white tile lifted by a soft shadow (was a stone/100 fill).
-            Container(
-              width: AppSizes.emptyStateTile,
-              height: AppSizes.emptyStateTile,
-              decoration: BoxDecoration(
-                color: context.colors.bgSurface,
-                borderRadius: AppRadius.allXl,
-                boxShadow: theme.brightness == Brightness.light
-                    ? AppShadows.tile
-                    : AppShadows.none,
-              ),
-              child: Icon(icon, size: 32, color: tint),
-            ),
-            const SizedBox(height: AppSpacing.space4),
-            Text(
-              title,
-              // v2 `Empty State` title: 18 Medium.
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: AppTypography.medium,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (message != null) ...<Widget>[
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                message!,
-                style: theme.textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (actionLabel != null && onAction != null) ...<Widget>[
-              const SizedBox(height: AppSpacing.lg),
-              PrimaryButton(label: actionLabel!, onPressed: onAction),
-            ],
-            if (secondaryActionLabel != null &&
-                onSecondaryAction != null) ...<Widget>[
-              const SizedBox(height: AppSpacing.xs),
-              SecondaryButton(
-                label: secondaryActionLabel!,
-                onPressed: onSecondaryAction,
-              ),
-            ],
-          ],
+    final Widget content = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        // Figma: the icon "sits in a soft tile so the block has weight
+        // rather than floating" — a rounded square, not a circle. v2: a
+        // white tile lifted by a soft shadow (was a stone/100 fill).
+        Container(
+          width: AppSizes.emptyStateTile,
+          height: AppSizes.emptyStateTile,
+          decoration: BoxDecoration(
+            color: context.colors.bgSurface,
+            borderRadius: AppRadius.allXl,
+            boxShadow: theme.brightness == Brightness.light
+                ? AppShadows.tile
+                : AppShadows.none,
+          ),
+          child: Icon(icon, size: 32, color: tint),
         ),
-      ),
+        const SizedBox(height: AppSpacing.space4),
+        Text(
+          title,
+          // v2 `Empty State` title: 18 Medium.
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: AppTypography.medium,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        if (message != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            message!,
+            style: theme.textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ],
+        if (actionLabel != null && onAction != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.lg),
+          PrimaryButton(label: actionLabel!, onPressed: onAction),
+        ],
+        if (secondaryActionLabel != null &&
+            onSecondaryAction != null) ...<Widget>[
+          const SizedBox(height: AppSpacing.xs),
+          SecondaryButton(
+            label: secondaryActionLabel!,
+            onPressed: onSecondaryAction,
+          ),
+        ],
+      ],
+    );
+
+    // With a bounded height the scroll view fills it (content centred), so a
+    // surrounding `PullToRefresh` can be pulled from anywhere on the state,
+    // not just from the small centred block.
+    const double padding = AppSpacing.space6;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        if (!constraints.hasBoundedHeight) {
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(padding),
+              child: content,
+            ),
+          );
+        }
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(padding),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: (constraints.maxHeight - padding * 2).clamp(
+                0,
+                double.infinity,
+              ),
+            ),
+            child: Center(child: content),
+          ),
+        );
+      },
     );
   }
 }

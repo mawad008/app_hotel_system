@@ -20,6 +20,7 @@ import '../state/loyalty_providers.dart';
 import '../widgets/loyalty_balance_card.dart';
 import '../widgets/loyalty_transaction_tile.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `14 · Entry, loyalty & completion` — the guest's loyalty screen for a
 /// reservation: balance, contextual earn / redeem, and the points history.
@@ -49,27 +50,34 @@ class LoyaltyPage extends ConsumerWidget {
     return Scaffold(
       appBar: HotelAppBar(title: l10n.loyaltyTitle),
       body: SafeArea(
-        child: _merge(
-          ctxAsync,
-          accountAsync,
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e) => MessageView(
-            icon: AppIcons.loyalty,
-            title: l10n.loyaltyUnavailableTitle,
-            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-            actionLabel: l10n.actionRetry,
-            onAction: () {
-              ref.invalidate(loyaltyContextProvider(reservationId));
-              ref.invalidate(loyaltyAccountProvider(reservationId));
-              ref.invalidate(loyaltyTransactionsProvider(reservationId));
-            },
-          ),
-          data: (LoyaltyContext ctx, LoyaltyAccount account) => _Body(
-            reservationId: reservationId,
-            context: ctx,
-            account: account,
-            transactions: txAsync,
+        child: PullToRefresh(
+          onRefresh: () => refreshAll(<Future<Object?>>[
+            ref.refresh(loyaltyContextProvider(reservationId).future),
+            ref.refresh(loyaltyAccountProvider(reservationId).future),
+            ref.refresh(loyaltyTransactionsProvider(reservationId).future),
+          ]),
+          child: _merge(
+            ctxAsync,
+            accountAsync,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e) => MessageView(
+              icon: AppIcons.loyalty,
+              title: l10n.loyaltyUnavailableTitle,
+              message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+              actionLabel: l10n.actionRetry,
+              onAction: () {
+                ref.invalidate(loyaltyContextProvider(reservationId));
+                ref.invalidate(loyaltyAccountProvider(reservationId));
+                ref.invalidate(loyaltyTransactionsProvider(reservationId));
+              },
+            ),
+            data: (LoyaltyContext ctx, LoyaltyAccount account) => _Body(
+              reservationId: reservationId,
+              context: ctx,
+              account: account,
+              transactions: txAsync,
+            ),
           ),
         ),
       ),
@@ -83,9 +91,10 @@ class LoyaltyPage extends ConsumerWidget {
     required Widget Function(Object) error,
     required Widget Function(LoyaltyContext, LoyaltyAccount) data,
   }) {
+    // A failed refresh keeps the last good data on screen.
+    if (a.hasValue && b.hasValue) return data(a.requireValue, b.requireValue);
     if (a.hasError) return error(a.error!);
     if (b.hasError) return error(b.error!);
-    if (a.hasValue && b.hasValue) return data(a.requireValue, b.requireValue);
     return loading();
   }
 }
@@ -109,12 +118,12 @@ class _Body extends ConsumerWidget {
     // Points accrue automatically when the stay completes (backend lifecycle
     // listener) — the ledger shows whether this stay has been credited.
     final bool alreadyEarned = transactions.maybeWhen(
-          data: (List<LoyaltyTransaction> txs) => txs.any(
-            (LoyaltyTransaction t) =>
-                t.type.isCredit && t.isForReservation(reservationId),
-          ),
-          orElse: () => false,
-        );
+      data: (List<LoyaltyTransaction> txs) => txs.any(
+        (LoyaltyTransaction t) =>
+            t.type.isCredit && t.isForReservation(reservationId),
+      ),
+      orElse: () => false,
+    );
 
     final bool canRedeem =
         account.isActive && account.hasPoints && context.isRedeemableBooking;

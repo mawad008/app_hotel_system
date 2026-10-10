@@ -14,6 +14,10 @@ Reservation fakeReservation({
   ReservationStatus status = ReservationStatus.pending,
   String? roomNumber,
   num? depositAmount,
+  num? nightlyRate,
+  num? serviceFee,
+  bool? pricesIncludeTaxes,
+  StayRange? stay,
 }) {
   return Reservation(
     id: id,
@@ -22,7 +26,7 @@ Reservation fakeReservation({
     hotelName: const LocalizedText(ar: 'فندق الواحة', en: 'The Oasis Hotel'),
     roomTypeId: 'deluxe',
     roomName: const LocalizedText(ar: 'ديلوكس', en: 'Deluxe Room'),
-    stay: StayRange(checkIn: DateTime(2026, 9, 6), checkOut: DateTime(2026, 9, 8)),
+    stay: stay ?? StayRange(checkIn: DateTime(2026, 9, 6), checkOut: DateTime(2026, 9, 8)),
     party: const GuestParty(adults: 2, children: 0),
     status: status,
     priceSnapshot: Money(amount: amount, currency: currency),
@@ -31,6 +35,11 @@ Reservation fakeReservation({
     depositAmount: depositAmount == null
         ? null
         : Money(amount: depositAmount, currency: currency),
+    nightlyRate:
+        nightlyRate == null ? null : Money(amount: nightlyRate, currency: currency),
+    serviceFee:
+        serviceFee == null ? null : Money(amount: serviceFee, currency: currency),
+    pricesIncludeTaxes: pricesIncludeTaxes,
   );
 }
 

@@ -75,22 +75,25 @@ void main() {
     expect(find.text(en.roomSelected), findsWidgets);
   });
 
-  testWidgets('changing the guest party clears a room selection with a notice',
-      (WidgetTester tester) async {
+  testWidgets(
+      'with a room selected, the guests sheet stops at its capacity and keeps '
+      'the selection', (WidgetTester tester) async {
+    // The first room (Standard Room, double bed) fits 2; the party is 2 adults.
     final AppLocalizations en = await _openRooms(tester);
     await _selectAndReturnToRooms(tester, en);
     expect(find.text(en.roomSelected), findsWidgets);
 
-    // Add an adult via the guests sheet ("Edit" in the summary card).
+    // Try to add an adult via the guests sheet ("Edit" in the summary card).
     await tester.tap(find.text(en.commonEdit).first);
     await tester.pumpAndSettle();
+    expect(find.text(en.roomMaxAdultsReached(2)), findsOneWidget);
     await tester.tap(find.widgetWithIcon(IconButton, Icons.add).first);
     await tester.pump();
     await tester.tap(find.text(en.guestsConfirm));
     await tester.pumpAndSettle();
 
-    expect(find.text(en.roomsSelectionClearedNotice), findsOneWidget);
-    expect(find.text(en.roomSelected), findsNothing);
+    expect(find.text(en.roomsSelectionClearedNotice), findsNothing);
+    expect(find.text(en.roomSelected), findsWidgets);
   });
 
   testWidgets('changing dates after selecting clears the selection',

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/loading_view.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
 import '../../../bookings/presentation/widgets/cancellation_policy_card.dart';
 
@@ -14,18 +15,24 @@ class CancellationPolicyPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final int? hours = ref.watch(appContentProvider).valueOrNull?.freeCancellationHours;
+    final int? hours = ref
+        .watch(appContentProvider)
+        .valueOrNull
+        ?.freeCancellationHours;
     return Scaffold(
       appBar: HotelAppBar(title: context.l10n.bookingCancellationPolicyHeading),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Align(
-            alignment: Alignment.topCenter,
-            // The platform rule, with the window the server configures.
-            child: hours == null
-                ? const LoadingView()
-                : CancellationPolicyCard(freeCancellationHours: hours),
+        child: PullToRefresh(
+          onRefresh: () => ref.refresh(appContentProvider.future),
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            children: <Widget>[
+              // The platform rule, with the window the server configures.
+              if (hours == null)
+                const LoadingView()
+              else
+                CancellationPolicyCard(freeCancellationHours: hours),
+            ],
           ),
         ),
       ),
