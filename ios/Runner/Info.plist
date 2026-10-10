@@ -14,7 +14,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>The camera is used to photograph your ID and take a live selfie to verify your identity before check-in.</string>
 	<key>CFBundleDisplayName</key>
-	<string>Hotel Guest App</string>
+	<string>Stdy Hotel</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -31,6 +31,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<!-- Dev-only: lets the app reach the local Laravel backend over plain
