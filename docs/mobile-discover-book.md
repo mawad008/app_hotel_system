@@ -230,7 +230,10 @@ party that no longer fits. This is what lets the inline steppers work.
   (cancellation from the server's free-cancellation hours + the hotel's
   **check-in / check-out** times, noon shown as "ظهرًا"). Cards 16px apart.
   Bottom bar: "السعر الحالي" + nights · guests + stay total over the select /
-  deselect CTAs. Every section hides when it has no data — nothing is invented.
+  deselect CTAs; an already-selected room (e.g. back from payment) shows
+  "متابعة" → booking summary instead of "اختيار هذه الغرفة". On the summary,
+  a reservation already created for the same selection reopens its payment
+  rather than re-submitting. Every section hides when it has no data — nothing is invented.
   Editors: dashboard room-type form (badge, "the rate includes", facilities) and
   hotel form ("Price display" + "Service fee": on/off, fixed per booking or %
   of the stay). The fee is snapshotted on the reservation

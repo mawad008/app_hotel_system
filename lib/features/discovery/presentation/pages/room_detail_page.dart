@@ -184,6 +184,16 @@ class RoomDetailPage extends ConsumerWidget {
         selection.matches(request) &&
         selection.roomTypeId == roomTypeId;
 
+    // Figma routing: ROOM_Detail → booking summary (the v2 rooms list has no
+    // Continue bar). BOOKING_GuestDetails is covered by the deferred sign-in +
+    // profile step the summary routes through, since the booker is the guest
+    // account itself. Replacing this page keeps "back" on the summary
+    // returning to the rooms list.
+    void toSummary() => context.pushReplacementNamed(
+      AppRoutes.roomSelectionReviewName,
+      pathParameters: <String, String>{'hotelId': hotel.id},
+    );
+
     void select() {
       ref
           .read(roomSelectionControllerProvider.notifier)
@@ -196,15 +206,7 @@ class RoomDetailPage extends ConsumerWidget {
               party: party,
             ),
           );
-      // Figma routing: ROOM_Detail "اختيار هذه الغرفة" → booking summary
-      // (the v2 rooms list has no Continue bar). BOOKING_GuestDetails is
-      // covered by the deferred sign-in + profile step the summary routes
-      // through, since the booker is the guest account itself. Replacing
-      // this page keeps "back" on the summary returning to the rooms list.
-      context.pushReplacementNamed(
-        AppRoutes.roomSelectionReviewName,
-        pathParameters: <String, String>{'hotelId': hotel.id},
-      );
+      toSummary();
     }
 
     void deselect() {
@@ -212,8 +214,9 @@ class RoomDetailPage extends ConsumerWidget {
       context.pop();
     }
 
-    final Money? serviceFee =
-        hotel.details.serviceFee?.feeFor(room.stayTotal(stay.nights));
+    final Money? serviceFee = hotel.details.serviceFee?.feeFor(
+      room.stayTotal(stay.nights),
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -240,11 +243,12 @@ class RoomDetailPage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.space3),
+            // An already-selected room (e.g. back from payment) must still
+            // lead on to the booking summary, not just back to the list.
             if (isSelected) ...<Widget>[
               PrimaryButton(
-                label: l10n.roomSelected,
-                icon: AppIcons.check,
-                onPressed: () => context.pop(),
+                label: l10n.commonContinue,
+                onPressed: room.isAvailable ? toSummary : null,
               ),
               const SizedBox(height: AppSpacing.xs),
               SecondaryButton(
@@ -292,7 +296,8 @@ class _CurrentPriceRow extends StatelessWidget {
     final TextTheme text = Theme.of(context).textTheme;
     final AppColorTokens c = context.colors;
     // What the guest pays: the stay plus the hotel's service fee and tax.
-    final num total = room.stayTotal(stay.nights).amount +
+    final num total =
+        room.stayTotal(stay.nights).amount +
         (serviceFee?.amount ?? 0) +
         (tax?.amount ?? 0);
     return Row(
@@ -435,7 +440,9 @@ class _Body extends ConsumerWidget {
             taxRate: details.taxRate,
             tax: details.taxFor(
               room.stayTotal(stay.nights),
-              serviceFee: details.serviceFee?.feeFor(room.stayTotal(stay.nights)),
+              serviceFee: details.serviceFee?.feeFor(
+                room.stayTotal(stay.nights),
+              ),
             ),
           ),
           if (included.isNotEmpty) ...<Widget>[
@@ -760,7 +767,8 @@ class _BookingDetailsCard extends StatelessWidget {
     final AppColorTokens c = context.colors;
     final Locale locale = Localizations.localeOf(context);
     // What the guest pays: the stay plus the hotel's service fee and tax.
-    final num total = room.stayTotal(stay.nights).amount +
+    final num total =
+        room.stayTotal(stay.nights).amount +
         (serviceFee?.amount ?? 0) +
         (tax?.amount ?? 0);
 

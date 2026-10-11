@@ -53,12 +53,12 @@ class RoomSelectionReviewPage extends ConsumerWidget {
   final String hotelId;
 
   String? _guestReference(AuthState auth) => auth.map(
-        unknown: () => null,
-        unauthenticated: () => null,
-        awaitingProfile: (session) => session.profile.phone.e164,
-        authenticated: (session) => session.profile.phone.e164,
-        sessionExpired: () => null,
-      );
+    unknown: () => null,
+    unauthenticated: () => null,
+    awaitingProfile: (session) => session.profile.phone.e164,
+    authenticated: (session) => session.profile.phone.e164,
+    sessionExpired: () => null,
+  );
 
   void _signInToConfirm(BuildContext context, WidgetRef ref) {
     ref
@@ -83,14 +83,15 @@ class RoomSelectionReviewPage extends ConsumerWidget {
       final String failedText = context.l10n.bookingLoyaltyRedeemFailed;
       bool ok = false;
       try {
-        final RedeemPointsResult result =
-            await ref.read(loyaltyRepositoryProvider).redeem(
-                  RedeemPointsRequest(
-                    reservationId: reservation.id,
-                    points: points,
-                  ),
-                  LoyaltyContext.forReservation(reservation),
-                );
+        final RedeemPointsResult result = await ref
+            .read(loyaltyRepositoryProvider)
+            .redeem(
+              RedeemPointsRequest(
+                reservationId: reservation.id,
+                points: points,
+              ),
+              LoyaltyContext.forReservation(reservation),
+            );
         ok = result.outcome.isSuccess;
       } catch (_) {
         ok = false;
@@ -135,11 +136,14 @@ class RoomSelectionReviewPage extends ConsumerWidget {
     final LoyaltyProgram? program = signedIn
         ? ref.watch(loyaltyProgramProvider(hotelId)).valueOrNull
         : null;
-    final HotelGuestDetails? hotelDetails =
-        ref.watch(hotelDetailProvider(hotelId)).valueOrNull?.details;
+    final HotelGuestDetails? hotelDetails = ref
+        .watch(hotelDetailProvider(hotelId))
+        .valueOrNull
+        ?.details;
     // The hotel's own service fee and tax (dashboard-managed); none when off.
-    final Money? serviceFee =
-        hotelDetails?.serviceFee?.feeFor(selection.stayTotal);
+    final Money? serviceFee = hotelDetails?.serviceFee?.feeFor(
+      selection.stayTotal,
+    );
     final BookingPriceBreakdown breakdown = BookingPriceBreakdown.of(
       selection,
       serviceFee: serviceFee,
@@ -159,8 +163,9 @@ class RoomSelectionReviewPage extends ConsumerWidget {
             guestReference: guestReference,
           )
         : null;
-    final CreateReservationState reservationState =
-        ref.watch(createReservationControllerProvider);
+    final CreateReservationState reservationState = ref.watch(
+      createReservationControllerProvider,
+    );
 
     // Once this exact request succeeds, go straight to payment.
     ref.listen<CreateReservationState>(createReservationControllerProvider, (
@@ -172,11 +177,20 @@ class RoomSelectionReviewPage extends ConsumerWidget {
       }
     });
 
-    final bool submitting = reservationState is CreateReservationSubmitting &&
+    final bool submitting =
+        reservationState is CreateReservationSubmitting &&
         reservationState.request == request;
-    final Failure? failure = reservationState is CreateReservationFailed &&
+    final Failure? failure =
+        reservationState is CreateReservationFailed &&
             reservationState.request == request
         ? reservationState.failure
+        : null;
+    // Back from payment with the same room: that reservation already exists,
+    // so continuing reopens its payment instead of a no-op re-submit.
+    final Reservation? created =
+        reservationState is CreateReservationDone &&
+            reservationState.request == request
+        ? reservationState.reservation
         : null;
 
     return Scaffold(
@@ -198,9 +212,8 @@ class RoomSelectionReviewPage extends ConsumerWidget {
             _PartyCard(
               party: party,
               selection: selection,
-              onAdults: (int v) => ref
-                  .read(guestPartyControllerProvider.notifier)
-                  .setAdults(v),
+              onAdults: (int v) =>
+                  ref.read(guestPartyControllerProvider.notifier).setAdults(v),
               onChildren: (int v) => ref
                   .read(guestPartyControllerProvider.notifier)
                   .setChildren(v),
@@ -242,9 +255,11 @@ class RoomSelectionReviewPage extends ConsumerWidget {
                 isLoading: submitting,
                 onPressed: submitting
                     ? null
+                    : created != null
+                    ? () => _redeemThenPay(context, ref, created, redeemPoints)
                     : () => ref
-                        .read(createReservationControllerProvider.notifier)
-                        .submit(request!),
+                          .read(createReservationControllerProvider.notifier)
+                          .submit(request!),
               )
             : PrimaryButton(
                 label: l10n.reviewSignInToConfirm,
@@ -304,7 +319,8 @@ class _RoomCard extends StatelessWidget {
                 Row(
                   children: <Widget>[
                     MoneyText(
-                      selection.nightlyRate.amount, currency: selection.nightlyRate.currency,
+                      selection.nightlyRate.amount,
+                      currency: selection.nightlyRate.currency,
                       suffix: l10n.priceNightSuffix,
                       markSize: 13,
                     ),
@@ -347,18 +363,23 @@ class _DatesCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.bookingDatesLabel,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: context.colors.textSecondary),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: context.colors.textSecondary,
+                  ),
                 ),
               ),
               InkWell(
                 onTap: onEdit,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 4,
+                  ),
                   child: Text(
                     l10n.commonEdit,
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: theme.colorScheme.primary),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
               ),
@@ -402,8 +423,9 @@ class _PartyCard extends StatelessWidget {
     // the room would otherwise drop the selection (RoomSelectionController).
     final int maxAdults = selection.maxAdultsWith(party.children);
     final int maxChildren = selection.maxChildrenWith(party.adults);
-    final String adultsLimit =
-        context.localDigits(l10n.roomMaxAdultsReached(maxAdults));
+    final String adultsLimit = context.localDigits(
+      l10n.roomMaxAdultsReached(maxAdults),
+    );
     final String occupancyLimit = context.localDigits(
       l10n.roomMaxGuestsReached(selection.roomType.maxOccupancy),
     );
@@ -434,9 +456,7 @@ class _PartyCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               party.children == 0 ? adultsLimit : occupancyLimit,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
+              style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: context.colors.textSecondary),
             ),
           ],

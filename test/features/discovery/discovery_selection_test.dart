@@ -131,6 +131,19 @@ void main() {
     expect(find.text(en.roomSelected), findsNothing);
   });
 
+  testWidgets('re-opening the selected room offers Continue to the summary',
+      (WidgetTester tester) async {
+    final AppLocalizations en = await _openRooms(tester);
+    await _selectAndReturnToRooms(tester, en);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, en.roomViewDetails).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, en.commonContinue));
+    await tester.pumpAndSettle();
+
+    expect(find.text(en.bookingDetailsTitle), findsOneWidget);
+  });
+
   testWidgets('the review route shows an empty state when nothing is selected',
       (WidgetTester tester) async {
     final ProviderContainer container = await pumpApp(
