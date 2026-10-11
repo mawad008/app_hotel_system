@@ -12,6 +12,7 @@ import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/time/clock.dart';
+import '../../../../core/widgets/back_fallback_scope.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/info_banner.dart';
 import '../../../../core/widgets/loading_view.dart';
@@ -138,7 +139,10 @@ class _AvailableRoomsPageState extends ConsumerState<AvailableRoomsPage> {
             title: l10n.stateErrorTitle,
             message: ErrorMapper.toFailure(error).localizedMessage(l10n),
             actionLabel: l10n.commonBack,
-            onAction: () => context.pop(),
+            onAction: () => popOr(
+              context,
+              AppRoutes.hotelDetail.replaceFirst(':hotelId', widget.hotelId),
+            ),
           ),
         ),
       ),
@@ -193,7 +197,10 @@ class _Loaded extends ConsumerWidget {
           title: l10n.roomsNoResultsTitle,
           message: l10n.roomsNoResultsBody,
           actionLabel: l10n.roomsChangeDates,
-          onAction: () => context.pop(),
+          onAction: () => popOr(
+            context,
+            AppRoutes.stayDates.replaceFirst(':hotelId', hotel.id),
+          ),
         ),
       );
     }
@@ -213,7 +220,10 @@ class _Loaded extends ConsumerWidget {
         hotel: hotel,
         range: range,
         party: party,
-        onEditDates: () => context.pop(),
+        onEditDates: () => popOr(
+          context,
+          AppRoutes.stayDates.replaceFirst(':hotelId', hotel.id),
+        ),
         onEditGuests: () => showGuestPartySheet(context),
       ),
       const SizedBox(height: AppSpacing.space4),
@@ -243,68 +253,80 @@ class _Loaded extends ConsumerWidget {
     );
 
     final UiState<AvailabilityResult> result = state.result;
-    return Scaffold(
-      // v2: a ✕ at the end of the bar, no back arrow.
-      appBar: HotelAppBar(
-        title: l10n.roomsTitle,
-        automaticallyImplyLeading: false,
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(AppIcons.dismiss, size: 22),
-            tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-            onPressed: () => Navigator.maybePop(context),
+    return BackFallbackScope(
+      fallback: AppRoutes.hotelDetail.replaceFirst(':hotelId', hotel.id),
+      child: Scaffold(
+        // v2: a ✕ at the end of the bar, no back arrow.
+        appBar: HotelAppBar(
+          title: l10n.roomsTitle,
+          automaticallyImplyLeading: false,
+          actions: <Widget>[
+            IconButton(
+              icon: const Icon(AppIcons.dismiss, size: 22),
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+              onPressed: () => popOr(
+                context,
+                AppRoutes.hotelDetail.replaceFirst(':hotelId', hotel.id),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.space3),
+          ],
+        ),
+        body: SafeArea(
+          child: PullToRefresh(
+            onRefresh: () =>
+                ref.read(roomAvailabilityControllerProvider.notifier).refresh(),
+            child: result is UiSuccess<AvailabilityResult>
+                ? ListView(
+                    padding: contentPadding,
+                    children: <Widget>[
+                      ...header,
+                      const SizedBox(height: AppSpacing.space4),
+                      ..._roomListChildren(
+                        context,
+                        result: result.data,
+                        nights: range.nights,
+                        selectedRoomTypeId: selectionMatches
+                            ? selection.roomTypeId
+                            : null,
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Padding(
+                        padding: contentPadding.copyWith(bottom: 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: header,
+                        ),
+                      ),
+                      Expanded(
+                        child: UiStateView<AvailabilityResult>(
+                          state: result,
+                          onRetry: () => ref
+                              .read(roomAvailabilityControllerProvider.notifier)
+                              .retry(),
+                          emptyTitle: l10n.roomsNoResultsTitle,
+                          emptyMessage: l10n.roomsNoResultsBody,
+                          onSuccess: (_) => const SizedBox.shrink(),
+                        ),
+                      ),
+                      if (result is UiEmpty<AvailabilityResult>)
+                        _NoResultsActions(
+                          onChangeDates: () => popOr(
+                            context,
+                            AppRoutes.stayDates.replaceFirst(
+                              ':hotelId',
+                              hotel.id,
+                            ),
+                          ),
+                          onChangeGuests: () => showGuestPartySheet(context),
+                        ),
+                    ],
+                  ),
           ),
-          const SizedBox(width: AppSpacing.space3),
-        ],
-      ),
-      body: SafeArea(
-        child: PullToRefresh(
-          onRefresh: () =>
-              ref.read(roomAvailabilityControllerProvider.notifier).refresh(),
-          child: result is UiSuccess<AvailabilityResult>
-              ? ListView(
-                  padding: contentPadding,
-                  children: <Widget>[
-                    ...header,
-                    const SizedBox(height: AppSpacing.space4),
-                    ..._roomListChildren(
-                      context,
-                      result: result.data,
-                      nights: range.nights,
-                      selectedRoomTypeId: selectionMatches
-                          ? selection.roomTypeId
-                          : null,
-                    ),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Padding(
-                      padding: contentPadding.copyWith(bottom: 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: header,
-                      ),
-                    ),
-                    Expanded(
-                      child: UiStateView<AvailabilityResult>(
-                        state: result,
-                        onRetry: () => ref
-                            .read(roomAvailabilityControllerProvider.notifier)
-                            .retry(),
-                        emptyTitle: l10n.roomsNoResultsTitle,
-                        emptyMessage: l10n.roomsNoResultsBody,
-                        onSuccess: (_) => const SizedBox.shrink(),
-                      ),
-                    ),
-                    if (result is UiEmpty<AvailabilityResult>)
-                      _NoResultsActions(
-                        onChangeDates: () => context.pop(),
-                        onChangeGuests: () => showGuestPartySheet(context),
-                      ),
-                  ],
-                ),
         ),
       ),
     );

@@ -233,7 +233,10 @@ party that no longer fits. This is what lets the inline steppers work.
   deselect CTAs; an already-selected room (e.g. back from payment) shows
   "متابعة" → booking summary instead of "اختيار هذه الغرفة". On the summary,
   a reservation already created for the same selection reopens its payment
-  rather than re-submitting. Every section hides when it has no data — nothing is invented.
+  rather than re-submitting. A guest who signs in mid-booking is returned
+  to the summary with `go` (a one-page stack), so the summary, payment
+  review and rooms list fall back (`popOr` / `BackFallbackScope`) to the
+  rooms list / hotel when there is nothing to pop. Every section hides when it has no data — nothing is invented.
   Editors: dashboard room-type form (badge, "the rate includes", facilities) and
   hotel form ("Price display" + "Service fee": on/off, fixed per booking or %
   of the stay). The fee is snapshotted on the reservation

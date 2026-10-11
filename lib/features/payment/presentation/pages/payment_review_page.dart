@@ -7,12 +7,15 @@ import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/back_fallback_scope.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/info_banner.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/secondary_button.dart';
+import '../../../discovery/domain/entities/room_selection.dart';
+import '../../../discovery/presentation/state/room_selection_controller.dart';
 import '../../../reservation/domain/entities/reservation.dart';
 import '../../../reservation/presentation/state/reservation_detail_provider.dart';
 import '../../domain/entities/payment.dart';
@@ -43,29 +46,46 @@ class PaymentReviewPage extends ConsumerWidget {
       currentPaymentProvider(reservationId),
     );
 
-    return Scaffold(
-      appBar: HotelAppBar(title: l10n.paymentReviewTitle),
-      body: SafeArea(
-        child: _merge(
-          reservationAsync,
-          paymentAsync,
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object error) {
-            final failure = ErrorMapper.toFailure(error);
-            return MessageView(
-              icon: AppIcons.payment,
-              title: l10n.paymentUnavailableTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () {
-                ref.invalidate(currentPaymentProvider(reservationId));
-                ref.invalidate(reservationDetailProvider(reservationId));
-              },
-            );
-          },
-          data: (Reservation reservation, Payment payment) =>
-              _Body(reservation: reservation, payment: payment),
+    // Reached from the booking summary by replacement — after a mid-booking
+    // sign-in it is the only page — so "back" falls back to the step where
+    // the guest can change the room; outside a booking, to the reservation.
+    final RoomSelection? selection = ref.watch(roomSelectionControllerProvider);
+    final String back = selection != null
+        ? AppRoutes.availableRooms.replaceFirst(':hotelId', selection.hotelId)
+        : AppRoutes.reservationDetail.replaceFirst(
+            ':reservationId',
+            reservationId,
+          );
+
+    return BackFallbackScope(
+      fallback: back,
+      child: Scaffold(
+        appBar: HotelAppBar(
+          title: l10n.paymentReviewTitle,
+          fallbackLocation: back,
+        ),
+        body: SafeArea(
+          child: _merge(
+            reservationAsync,
+            paymentAsync,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object error) {
+              final failure = ErrorMapper.toFailure(error);
+              return MessageView(
+                icon: AppIcons.payment,
+                title: l10n.paymentUnavailableTitle,
+                message: failure.localizedMessage(l10n),
+                actionLabel: l10n.actionRetry,
+                onAction: () {
+                  ref.invalidate(currentPaymentProvider(reservationId));
+                  ref.invalidate(reservationDetailProvider(reservationId));
+                },
+              );
+            },
+            data: (Reservation reservation, Payment payment) =>
+                _Body(reservation: reservation, payment: payment, back: back),
+          ),
         ),
       ),
     );
@@ -86,10 +106,15 @@ class PaymentReviewPage extends ConsumerWidget {
 }
 
 class _Body extends ConsumerWidget {
-  const _Body({required this.reservation, required this.payment});
+  const _Body({
+    required this.reservation,
+    required this.payment,
+    required this.back,
+  });
 
   final Reservation reservation;
   final Payment payment;
+  final String back;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -136,34 +161,36 @@ class _Body extends ConsumerWidget {
               AppSpacing.bottomBarBottom,
             ),
             child: secured
-              ? PrimaryButton(
-                  label: l10n.paymentBackToReservation,
-                  onPressed: () => context.goNamed(
-                    AppRoutes.reservationDetailName,
-                    pathParameters: <String, String>{
-                      'reservationId': reservation.id,
-                    },
-                  ),
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    PrimaryButton(
-                      label: l10n.paymentPayNowCta,
-                      onPressed: () => context.pushNamed(
-                        AppRoutes.paymentMethodName,
-                        pathParameters: <String, String>{
-                          'reservationId': reservation.id,
-                        },
+                ? PrimaryButton(
+                    label: l10n.paymentBackToReservation,
+                    onPressed: () => context.goNamed(
+                      AppRoutes.reservationDetailName,
+                      pathParameters: <String, String>{
+                        'reservationId': reservation.id,
+                      },
+                    ),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      PrimaryButton(
+                        label: l10n.paymentPayNowCta,
+                        onPressed: () => context.pushNamed(
+                          AppRoutes.paymentMethodName,
+                          pathParameters: <String, String>{
+                            'reservationId': reservation.id,
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    SecondaryButton(
-                      label: l10n.commonBack,
-                      onPressed: submitting ? null : () => context.pop(),
-                    ),
-                  ],
-                ),
+                      const SizedBox(height: AppSpacing.xs),
+                      SecondaryButton(
+                        label: l10n.commonBack,
+                        onPressed: submitting
+                            ? null
+                            : () => popOr(context, back),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],
