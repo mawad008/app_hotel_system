@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../bookings/presentation/state/bookings_providers.dart';
-import '../../../reservation/presentation/state/reservation_detail_provider.dart';
 import '../../domain/entities/payment_request.dart';
 import '../../domain/entities/payment_result.dart';
 import 'payment_providers.dart';
@@ -105,8 +104,7 @@ class PaymentController extends Notifier<PaymentActionState> {
       // (Reservation Detail's CTA, the Bookings tab) must be refetched
       // rather than kept showing the pre-payment PENDING state. Same
       // invalidate-after-mutation convention as check-in/checkout/extend.
-      ref.invalidate(reservationDetailProvider(request.reservationId));
-      ref.invalidate(bookingsListProvider);
+      refreshGuestReservations(ref.invalidate, reservationId: request.reservationId);
     } catch (error) {
       if (_superseded(request)) return;
       state = PaymentActionFailed(request, ErrorMapper.toFailure(error));

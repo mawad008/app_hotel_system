@@ -17,9 +17,15 @@ abstract final class AppTheme {
   static ThemeData get light => _build(Brightness.light);
   static ThemeData get dark => _build(Brightness.dark);
 
-  static ThemeData _build(Brightness brightness) {
+  /// [light] recoloured with the hotel's dashboard-managed brand colour
+  /// (`primary_color`); `null` = the built-in palette.
+  static ThemeData lightBranded(Color? brand) =>
+      brand == null ? light : _build(Brightness.light, brand: brand);
+
+  static ThemeData _build(Brightness brightness, {Color? brand}) {
     final bool isDark = brightness == Brightness.dark;
-    final AppColorTokens c = AppColorTokens.of(brightness);
+    final AppColorTokens base = AppColorTokens.of(brightness);
+    final AppColorTokens c = brand == null ? base : _withBrand(base, brand);
 
     final ColorScheme scheme = ColorScheme(
       brightness: brightness,
@@ -247,6 +253,20 @@ abstract final class AppTheme {
       ),
 
       progressIndicatorTheme: ProgressIndicatorThemeData(color: c.bgPrimary),
+    );
+  }
+
+  /// The primary-action tokens re-pointed at [brand]: fill, hover/pressed
+  /// (8% / 16% darker), focus ring, and a readable label (near-black on a
+  /// light brand colour, white otherwise).
+  static AppColorTokens _withBrand(AppColorTokens c, Color brand) {
+    final bool lightBrand = brand.computeLuminance() > 0.4;
+    return c.copyWith(
+      bgPrimary: brand,
+      bgPrimaryHover: Color.lerp(brand, const Color(0xFF000000), 0.08),
+      bgPrimaryPressed: Color.lerp(brand, const Color(0xFF000000), 0.16),
+      textOnPrimary: lightBrand ? AppPrimitives.stone950 : AppPrimitives.white,
+      borderFocus: brand,
     );
   }
 }

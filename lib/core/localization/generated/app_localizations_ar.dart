@@ -3445,4 +3445,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get roomCapacityChangeRoomHint => 'لإضافة ضيوف أكثر، اختر غرفة أكبر.';
+
+  @override
+  String get supportContactTitle => 'تواصل معنا';
+
+  @override
+  String get supportCall => 'اتصل بنا';
+
+  @override
+  String get supportWhatsapp => 'واتساب';
+
+  @override
+  String get supportEmail => 'البريد الإلكتروني';
+
+  @override
+  String get supportWebsite => 'الموقع الإلكتروني';
+
+  @override
+  String get legalTerms => 'شروط الاستخدام';
+
+  @override
+  String get legalPrivacy => 'سياسة الخصوصية';
+
+  @override
+  String get linkOpenFailed => 'تعذّر فتح هذا الرابط على جهازك.';
 }

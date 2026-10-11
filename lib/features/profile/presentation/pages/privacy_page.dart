@@ -17,7 +17,9 @@ import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/settings_row.dart';
 import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../app_content/domain/entities/app_content.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
+import '../../../app_content/presentation/widgets/brand_link_actions.dart';
 import '../../../bookings/domain/bookings_filter.dart';
 import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../domain/entities/guest_preferences.dart';
@@ -65,6 +67,7 @@ class PrivacyPage extends ConsumerWidget {
       ),
       data: (GuestAccountSettings s) {
         final DateTime? requestedAt = s.dataDeletionRequestedAt;
+        final AppContent branding = ref.watch(brandingProvider);
         return ProfileSubpage(
           onRefresh: refresh,
           title: l10n.accountPrivacyLabel,
@@ -104,6 +107,23 @@ class PrivacyPage extends ConsumerWidget {
                 ),
               ],
             ),
+            // The hotel's own legal pages (dashboard → Guest app → Legal links).
+            if (branding.privacyUrl != null || branding.termsUrl != null)
+              SettingsCard(
+                borderWidth: 1,
+                children: <Widget>[
+                  if (branding.privacyUrl case final String url)
+                    SettingsRow(
+                      label: l10n.legalPrivacy,
+                      onTap: () => openBrandLink(context, ref, (l) => l.openUrl(url)),
+                    ),
+                  if (branding.termsUrl case final String url)
+                    SettingsRow(
+                      label: l10n.legalTerms,
+                      onTap: () => openBrandLink(context, ref, (l) => l.openUrl(url)),
+                    ),
+                ],
+              ),
             // The guest's identity-image choice (stored on the backend).
             SettingsCard(
               borderWidth: 1,

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/localization/l10n.dart';
 import '../../core/widgets/hotel_app_bar.dart';
 import '../../core/widgets/message_view.dart';
+import '../../features/app_content/presentation/state/app_content_providers.dart';
 import '../../features/authentication/presentation/pages/auth_splash_page.dart';
 import '../../features/authentication/presentation/pages/complete_profile_page.dart';
 import '../../features/authentication/presentation/pages/entry_welcome_page.dart';
@@ -584,7 +585,12 @@ final appRouterProvider = Provider<GoRouter>((Ref ref) {
       ),
     ],
     errorBuilder: (BuildContext context, GoRouterState state) => Scaffold(
-      appBar: HotelAppBar(title: context.l10n.appName),
+      appBar: HotelAppBar(
+        title: ref.read(brandingProvider).appName.resolve(
+              Localizations.localeOf(context),
+            ) ??
+            context.l10n.appName,
+      ),
       body: ErrorView(
         title: context.l10n.stateErrorTitle,
         message: context.l10n.errorGeneric,

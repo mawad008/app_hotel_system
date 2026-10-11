@@ -27,15 +27,14 @@ import '../state/language_selection_controller.dart';
 /// white headline + sub-line, and one `ابدأ الآن` call to action. RTL-first.
 ///
 /// Only defined in light in the Figma, so the subtree is pinned to
-/// [AppTheme.light] (the CTA must stay near-black on the photo in dark mode).
+/// [AppTheme.light] — recoloured with the hotel's brand colour when one is
+/// set on the dashboard (the CTA then takes it).
 ///
 /// The photo, avatar logo, headline, sub-line and button label are
 /// dashboard-managed (`GET /guest/app-content`); anything not configured
 /// keeps its bundled Figma default.
 class EntryWelcomePage extends ConsumerWidget {
   const EntryWelcomePage({super.key});
-
-  static final ThemeData _theme = AppTheme.light;
 
   /// Figma: the card sits 16px from the screen's bottom edge on a device with a
   /// 34px home indicator (it floats over the indicator zone). Larger system
@@ -54,7 +53,7 @@ class EntryWelcomePage extends ConsumerWidget {
         statusBarColor: Colors.transparent,
       ),
       child: Theme(
-        data: _theme,
+        data: AppTheme.lightBranded(content.value?.primaryColor),
         child: Scaffold(
           body: Stack(
             fit: StackFit.expand,

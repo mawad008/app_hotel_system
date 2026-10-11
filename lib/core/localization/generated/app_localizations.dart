@@ -6049,6 +6049,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'To add more guests, choose a larger room.'**
   String get roomCapacityChangeRoomHint;
+
+  /// PROFILE_Support: dashboard-managed hotel contact actions (call / WhatsApp / email / website).
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get supportContactTitle;
+
+  /// No description provided for @supportCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call us'**
+  String get supportCall;
+
+  /// No description provided for @supportWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get supportWhatsapp;
+
+  /// No description provided for @supportEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get supportEmail;
+
+  /// No description provided for @supportWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get supportWebsite;
+
+  /// No description provided for @legalTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of use'**
+  String get legalTerms;
+
+  /// No description provided for @legalPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get legalPrivacy;
+
+  /// No description provided for @linkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this on your device.'**
+  String get linkOpenFailed;
 }
 
 class _AppLocalizationsDelegate

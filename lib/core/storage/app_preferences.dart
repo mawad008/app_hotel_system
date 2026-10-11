@@ -28,6 +28,13 @@ abstract interface class AppPreferences {
   String? get pendingIdentityCapture;
 
   Future<void> setPendingIdentityCapture(String? value);
+
+  /// The last `GET /guest/app-content` response (raw JSON), so the next launch
+  /// shows the hotel's name, colour and logo at once — and offline — instead
+  /// of the bundled defaults. `null` when never fetched.
+  String? get appContentCache;
+
+  Future<void> setAppContentCache(String value);
 }
 
 /// Default (tests, and the fallback if platform storage is unavailable):
@@ -37,6 +44,7 @@ class InMemoryAppPreferences implements AppPreferences {
     this.onboardingCompleted = false,
     this.localeCode,
     this.pendingIdentityCapture,
+    this.appContentCache,
   });
 
   @override
@@ -57,6 +65,12 @@ class InMemoryAppPreferences implements AppPreferences {
   @override
   Future<void> setPendingIdentityCapture(String? value) async =>
       pendingIdentityCapture = value;
+
+  @override
+  String? appContentCache;
+
+  @override
+  Future<void> setAppContentCache(String value) async => appContentCache = value;
 }
 
 /// Platform-backed [AppPreferences] (NSUserDefaults / SharedPreferences /
@@ -67,6 +81,7 @@ class SharedAppPreferences implements AppPreferences {
   static const String _onboardingKey = 'onboarding_completed';
   static const String _localeKey = 'app_locale';
   static const String _pendingIdentityKey = 'pending_identity_capture';
+  static const String _appContentKey = 'app_content_cache';
 
   final SharedPreferencesWithCache _prefs;
 
@@ -74,7 +89,12 @@ class SharedAppPreferences implements AppPreferences {
     final SharedPreferencesWithCache prefs =
         await SharedPreferencesWithCache.create(
           cacheOptions: const SharedPreferencesWithCacheOptions(
-            allowList: <String>{_onboardingKey, _localeKey, _pendingIdentityKey},
+            allowList: <String>{
+              _onboardingKey,
+              _localeKey,
+              _pendingIdentityKey,
+              _appContentKey,
+            },
           ),
         );
     return SharedAppPreferences._(prefs);
@@ -99,6 +119,13 @@ class SharedAppPreferences implements AppPreferences {
   Future<void> setPendingIdentityCapture(String? value) => value == null
       ? _prefs.remove(_pendingIdentityKey)
       : _prefs.setString(_pendingIdentityKey, value);
+
+  @override
+  String? get appContentCache => _prefs.getString(_appContentKey);
+
+  @override
+  Future<void> setAppContentCache(String value) =>
+      _prefs.setString(_appContentKey, value);
 }
 
 /// In-memory by default; `bootstrap()` overrides it with the loaded

@@ -1387,5 +1387,14 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "roomCapacityChangeRoomHint": "To add more guests, choose a larger room.",
-  "@roomCapacityChangeRoomHint": { "description": "Guest-count sheet: shown under the capacity limit while a room is selected." }
+  "@roomCapacityChangeRoomHint": { "description": "Guest-count sheet: shown under the capacity limit while a room is selected." },
+  "supportContactTitle": "Contact us",
+  "supportCall": "Call us",
+  "supportWhatsapp": "WhatsApp",
+  "supportEmail": "Email",
+  "supportWebsite": "Website",
+  "legalTerms": "Terms of use",
+  "legalPrivacy": "Privacy policy",
+  "linkOpenFailed": "Couldn't open this on your device.",
+  "@supportContactTitle": { "description": "PROFILE_Support: dashboard-managed hotel contact actions (call / WhatsApp / email / website)." }
 }

@@ -3471,4 +3471,28 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get roomCapacityChangeRoomHint =>
       'To add more guests, choose a larger room.';
+
+  @override
+  String get supportContactTitle => 'Contact us';
+
+  @override
+  String get supportCall => 'Call us';
+
+  @override
+  String get supportWhatsapp => 'WhatsApp';
+
+  @override
+  String get supportEmail => 'Email';
+
+  @override
+  String get supportWebsite => 'Website';
+
+  @override
+  String get legalTerms => 'Terms of use';
+
+  @override
+  String get legalPrivacy => 'Privacy policy';
+
+  @override
+  String get linkOpenFailed => 'Couldn\'t open this on your device.';
 }

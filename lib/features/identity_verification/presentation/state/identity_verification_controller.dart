@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../domain/entities/identity_document.dart';
 import '../../domain/entities/identity_verification_request.dart';
 import '../../domain/entities/identity_verification_session.dart';
-import '../../../reservation/presentation/state/reservation_detail_provider.dart';
 import 'identity_verification_providers.dart';
 
 /// What the verification flow is doing right now, on top of the authoritative
@@ -240,7 +240,7 @@ class IdentityVerificationController
   /// invalidate-after-mutation convention as payment/check-in/checkout.
   void _refreshReservationIfApproved(IdentityVerificationSession session) {
     if (session.isApproved) {
-      ref.invalidate(reservationDetailProvider(_reservationId));
+      refreshGuestReservations(ref.invalidate, reservationId: _reservationId);
     }
   }
 

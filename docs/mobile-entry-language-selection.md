@@ -117,7 +117,7 @@ the **bundled defaults**, used for any field that isn't configured.
   text is stored as `{"en","ar"}` maps. The resource returns **both** locales,
   because the entry screens are shown before and while the guest picks a
   language. Images live on the hotel-media public disk under `guest-app/{slot}/`
-  (slots `logo`, `onboarding_image`). Staff editor: `GET|PATCH /app-content`,
+  (slots `logo`, `onboarding_image`, `app_icon`). Staff editor: `GET|PATCH /app-content`,
   `POST /app-content/images` (`slot` + `image`), `DELETE /app-content/images/{slot}`.
 * Mobile: `lib/features/app_content/` (dummy/api data sources → repository →
   `appContentProvider`). The provider is fetched once per launch and **never
@@ -131,6 +131,26 @@ the **bundled defaults**, used for any field that isn't configured.
   photo as soon as the content arrives. Onboarding shows a dark ground while
   loading, never the bundled photo first. An uploaded image that fails to load
   falls back to the bundled mark or photo.
+
+### App-wide branding controls (2026-10-10)
+
+The same dashboard page also manages the app's basic branding, read through
+`brandingProvider` (fresh content once loaded → the **cached** last response
+meanwhile → bundled defaults):
+
+| Dashboard field | Where the app uses it |
+| --- | --- |
+| App name | `MaterialApp` title (task switcher / browser tab), router error page, splash wordmark |
+| App icon (`app_icon` slot, square ≥192px) | Web favicon + apple-touch icon at runtime (`core/platform/web_app_icon.dart`). **Android/iOS launcher icons are build-time assets and do not change.** |
+| Brand colour (`primary_color`, `#RRGGBB`) | `AppTheme.lightBranded`: primary fill, hover/pressed, focus ring, readable on-primary label — whole app incl. the onboarding CTA |
+| Support phone / WhatsApp / email / website | `PROFILE_Support` "تواصل معنا" card (`SupportContactsCard`); unset ones hidden |
+| Terms / privacy URLs | Under the sign-in terms line (`LegalLinksRow`) and on `PROFILE_Privacy` |
+
+* The raw `GET /guest/app-content` response is persisted
+  (`AppPreferences.appContentCache`), so a relaunch — or an offline launch —
+  shows the hotel's name, colour and icon from the first frame.
+* Contacts/links open through `ExternalLauncher` (`dial`, `whatsapp` → wa.me,
+  `email` → mailto, `openUrl` — http/https only); a failure shows a snackbar.
 
 ## Pending / known deviations
 

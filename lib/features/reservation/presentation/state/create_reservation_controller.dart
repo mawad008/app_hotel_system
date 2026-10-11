@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../domain/entities/create_reservation_request.dart';
@@ -109,6 +110,8 @@ class CreateReservationController extends Notifier<CreateReservationState> {
       // Booked: booking the same criteria again later is a new booking.
       if (_attemptFor == request.idempotencyKey) _attemptToken = null;
       state = CreateReservationDone(request, reservation);
+      // The new PENDING booking must show on the Bookings tab right away.
+      refreshGuestReservations(ref.invalidate);
     } catch (error) {
       final CreateReservationState now = state;
       if (now is CreateReservationSubmitting && now.request != request) return;

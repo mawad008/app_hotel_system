@@ -137,6 +137,9 @@ abstract final class AppIcons {
 
   // v2 profile list rows (`PROFILE_*` tiles, Hicon Linear set).
   static const IconData email = IconsaxPlusLinear.sms;
+  static const IconData whatsapp = IconsaxPlusLinear.message_text;
+  static const IconData website = IconsaxPlusLinear.global;
+  static const IconData document = IconsaxPlusLinear.document_text;
   static const IconData profileRow = IconsaxPlusLinear.profile;
   static const IconData settings = IconsaxPlusLinear.setting_2;
   static const IconData ticket = IconsaxPlusLinear.ticket;

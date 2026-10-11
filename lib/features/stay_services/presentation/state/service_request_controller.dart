@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
+import '../../../checkout/presentation/state/checkout_providers.dart';
 import '../../domain/entities/service_order.dart';
 import 'stay_services_providers.dart';
 
@@ -74,6 +75,8 @@ class ServiceRequestController extends Notifier<ServiceRequestState> {
       if (_superseded(request)) return;
       state = ServiceRequestDone(request, order);
       ref.invalidate(serviceOrdersProvider(request.reservationId));
+      // A chargeable order posts to the stay's folio.
+      ref.invalidate(folioProvider(request.reservationId));
     } catch (error) {
       if (_superseded(request)) return;
       state = ServiceRequestFailed(request, ErrorMapper.toFailure(error));
@@ -140,6 +143,7 @@ class CancelOrderController
       state = CancelOrderDone(order);
       ref.invalidate(serviceOrdersProvider(_key.reservationId));
       ref.invalidate(serviceOrderProvider(_key));
+      ref.invalidate(folioProvider(_key.reservationId));
     } catch (error) {
       state = CancelOrderFailed(ErrorMapper.toFailure(error));
     }

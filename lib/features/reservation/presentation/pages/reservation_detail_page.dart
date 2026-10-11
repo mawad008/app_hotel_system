@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
@@ -510,7 +511,7 @@ class _Actions extends ConsumerWidget {
 
     try {
       await ref.read(reservationRepositoryProvider).cancel(reservation.id);
-      ref.invalidate(reservationDetailProvider(reservation.id));
+      refreshGuestReservations(ref.invalidate, reservationId: reservation.id);
     } catch (error) {
       if (!context.mounted) return;
       final failure = ErrorMapper.toFailure(error);
