@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../domain/entities/checkout.dart';
@@ -91,6 +92,7 @@ class CheckoutController extends Notifier<CheckoutActionState> {
       if (result.outcome.isSuccess) {
         ref.invalidate(invoiceProvider(reservationId));
         ref.invalidate(folioProvider(reservationId));
+        refreshGuestReservations(ref.invalidate, reservationId: reservationId);
       }
     } catch (error) {
       if (_superseded(request)) return;

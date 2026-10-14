@@ -32,7 +32,7 @@ class ApiReservationDataSource
         'adults': request.party.adults,
         'children': request.party.children,
       },
-      headers: <String, String>{'Idempotency-Key': request.idempotencyKey},
+      headers: <String, String>{'Idempotency-Key': request.serverIdempotencyKey},
     );
     return _parse(
       json,

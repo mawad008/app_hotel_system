@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/di/core_providers.dart';
+import '../../../../core/storage/app_preferences.dart';
 import '../../data/datasources/api_app_content_data_source.dart';
 import '../../data/datasources/app_content_data_source.dart';
 import '../../data/datasources/dummy_app_content_data_source.dart';
@@ -14,7 +15,18 @@ final appContentDataSourceProvider = Provider<AppContentDataSource>((Ref ref) {
   final AppConfig config = ref.watch(appConfigProvider);
   return config.useDummyData
       ? const DummyAppContentDataSource()
-      : ApiAppContentDataSource(ref.watch(apiClientProvider));
+      : ApiAppContentDataSource(
+          ref.watch(apiClientProvider),
+          ref.watch(appPreferencesProvider),
+        );
+});
+
+/// The content this device last received (persisted), or null on a first
+/// launch / with dummy data. Read synchronously at startup so the app title,
+/// brand colour and icon are the hotel's from the first frame.
+final cachedAppContentProvider = Provider<AppContent?>((Ref ref) {
+  final AppContentDataSource source = ref.watch(appContentDataSourceProvider);
+  return source is ApiAppContentDataSource ? source.cachedContent() : null;
 });
 
 final appContentRepositoryProvider = Provider<AppContentRepository>(
@@ -31,7 +43,9 @@ const Duration appContentTimeout = Duration(seconds: 3);
 /// per launch (kept alive for the session).
 ///
 /// Branding must never block entry: any failure or a slow response resolves
-/// to [AppContent.empty], so every screen falls back to its bundled defaults.
+/// to the last content this device received, else [AppContent.empty] — so
+/// every screen falls back to its bundled defaults only when nothing was
+/// ever fetched.
 final appContentProvider = FutureProvider<AppContent>((Ref ref) async {
   try {
     return await ref
@@ -39,9 +53,23 @@ final appContentProvider = FutureProvider<AppContent>((Ref ref) async {
         .content()
         .timeout(appContentTimeout);
   } catch (error) {
-    if (kDebugMode) debugPrint('appContent: using bundled defaults — $error');
-    return AppContent.empty;
+    final AppContent? cached = ref.read(cachedAppContentProvider);
+    if (kDebugMode) {
+      debugPrint('appContent: using ${cached == null ? 'bundled defaults' : 'cached content'} — $error');
+    }
+    return cached ?? AppContent.empty;
   }
+});
+
+/// App-wide branding that never waits: the fresh content once loaded, the
+/// cached one meanwhile, else the bundled defaults. For chrome that must
+/// render immediately (app title, theme colour, web icon, support / legal
+/// links); the entry screens keep watching [appContentProvider] itself so
+/// they never swap one logo for another mid-animation.
+final brandingProvider = Provider<AppContent>((Ref ref) {
+  return ref.watch(appContentProvider).valueOrNull ??
+      ref.watch(cachedAppContentProvider) ??
+      AppContent.empty;
 });
 
 /// The FAQ for `PROFILE_Support` — fetched fresh, and unlike

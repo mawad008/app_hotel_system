@@ -12,6 +12,7 @@ import '../../../../core/widgets/info_banner.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/secondary_button.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../domain/entities/problem_report.dart';
 import '../../domain/entities/problem_report_status.dart';
 import '../problem_reports_l10n.dart';
@@ -34,23 +35,33 @@ class ProblemReportDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final ProblemReportKey key =
-        (reservationId: reservationId, reportId: reportId);
-    final AsyncValue<ProblemReport> reportAsync = ref.watch(problemReportProvider(key));
+    final ProblemReportKey key = (
+      reservationId: reservationId,
+      reportId: reportId,
+    );
+    final AsyncValue<ProblemReport> reportAsync = ref.watch(
+      problemReportProvider(key),
+    );
 
     return Scaffold(
       appBar: HotelAppBar(title: l10n.reportDetailTitle),
       body: SafeArea(
-        child: reportAsync.when(
-          loading: () => Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e, StackTrace _) => MessageView(
-            icon: AppIcons.report,
-            title: l10n.reportNotFoundTitle,
-            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-            actionLabel: l10n.actionRetry,
-            onAction: () => ref.invalidate(problemReportProvider(key)),
+        child: PullToRefresh(
+          onRefresh: () => ref.refresh(problemReportProvider(key).future),
+          child: reportAsync.when(
+            // A failed refresh keeps the last good data on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e, StackTrace _) => MessageView(
+              icon: AppIcons.report,
+              title: l10n.reportNotFoundTitle,
+              message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+              actionLabel: l10n.actionRetry,
+              onAction: () => ref.invalidate(problemReportProvider(key)),
+            ),
+            data: (ProblemReport report) => _Body(report: report),
           ),
-          data: (ProblemReport report) => _Body(report: report),
         ),
       ),
     );

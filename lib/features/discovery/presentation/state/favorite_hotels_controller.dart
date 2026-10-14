@@ -7,10 +7,13 @@ import '../../../authentication/presentation/state/auth_controller.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
 import '../../data/datasources/favorites/favorite_hotels_data_source.dart';
 
-final _dummyFavoritesProvider =
-    Provider<DummyFavoriteHotelsDataSource>((Ref ref) => DummyFavoriteHotelsDataSource());
+final _dummyFavoritesProvider = Provider<DummyFavoriteHotelsDataSource>(
+  (Ref ref) => DummyFavoriteHotelsDataSource(),
+);
 
-final favoriteHotelsDataSourceProvider = Provider<FavoriteHotelsDataSource>((Ref ref) {
+final favoriteHotelsDataSourceProvider = Provider<FavoriteHotelsDataSource>((
+  Ref ref,
+) {
   final AppConfig config = ref.watch(appConfigProvider);
   return config.useDummyData
       ? ref.watch(_dummyFavoritesProvider)
@@ -44,10 +47,21 @@ class FavoriteHotelsController extends Notifier<Set<String>> {
     return const <String>{};
   }
 
+  /// Pull-to-refresh: refetches from the server while the current list stays
+  /// on screen (no empty flash). Signed-out guests have nothing to fetch.
+  Future<void> reload() {
+    if (ref.read(authControllerProvider) is! Authenticated) {
+      return Future<void>.value();
+    }
+    return _loaded = _load();
+  }
+
   Future<void> _load() async {
     final int writesAtStart = _writes;
     try {
-      final Set<String> ids = await ref.read(favoriteHotelsDataSourceProvider).fetchIds();
+      final Set<String> ids = await ref
+          .read(favoriteHotelsDataSourceProvider)
+          .fetchIds();
       if (_writes == writesAtStart) state = ids;
     } catch (_) {
       // Hearts simply render empty when the list can't be fetched; the next
@@ -68,13 +82,17 @@ class FavoriteHotelsController extends Notifier<Set<String>> {
         ? (Set<String>.of(before)..remove(hotelId))
         : <String>{...before, hotelId};
     try {
-      final FavoriteHotelsDataSource source = ref.read(favoriteHotelsDataSourceProvider);
+      final FavoriteHotelsDataSource source = ref.read(
+        favoriteHotelsDataSourceProvider,
+      );
       if (removing) {
         await source.remove(hotelId);
       } else {
         await source.add(hotelId);
       }
-      return removing ? FavoriteToggleOutcome.removed : FavoriteToggleOutcome.saved;
+      return removing
+          ? FavoriteToggleOutcome.removed
+          : FavoriteToggleOutcome.saved;
     } catch (error) {
       state = before;
       throw ErrorMapper.toFailure(error);

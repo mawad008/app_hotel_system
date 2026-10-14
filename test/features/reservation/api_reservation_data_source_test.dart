@@ -109,7 +109,12 @@ void main() {
       'adults': 2,
       'children': 0,
     });
-    expect(adapter.received.single.headers['Idempotency-Key'], isNotNull);
+    // Header-safe for the backend (`[A-Za-z0-9._:-]`) and per attempt.
+    final String key = adapter.received.single.headers['Idempotency-Key'] as String;
+    expect(key, matches(RegExp(r'^[A-Za-z0-9._:-]+$')));
+    final adapter2 = _FakeAdapter(adapter.routes);
+    await _source(adapter2).create(request.withAttempt('abc123'));
+    expect(adapter2.received.single.headers['Idempotency-Key'], 'rsv-abc123');
   });
 
   test('fetchById parses the nested hotel/room_type summaries', () async {
@@ -129,13 +134,19 @@ void main() {
           'price_snapshot': '600.00',
           'currency': 'SAR',
           'created_at': '2026-09-01T00:00:00Z',
-          'hotel': <String, dynamic>{'id': 1, 'name': 'Oasis', 'city': 'Riyadh'},
+          'hotel': <String, dynamic>{
+            'id': 1,
+            'name': 'Oasis',
+            'city': 'Riyadh',
+            'prices_include_taxes': true,
+          },
           'room_type': <String, dynamic>{'id': 5, 'name': 'Deluxe', 'capacity': 3},
         },
       }),
     });
 
     final model = await _source(adapter).fetchById('9');
+    expect(model.pricesIncludeTaxes, isTrue);
     expect(model.hotelName.en, 'Oasis');
     expect(model.roomName.en, 'Deluxe');
   });

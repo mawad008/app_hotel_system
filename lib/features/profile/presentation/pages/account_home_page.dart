@@ -18,9 +18,11 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/settings_row.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../bookings/domain/bookings_filter.dart';
 import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../discovery/presentation/state/favorite_hotels_controller.dart';
+import '../../../discovery/presentation/state/favorite_rooms_controller.dart';
 import '../state/account_providers.dart';
 import '../state/account_summary.dart';
 
@@ -36,24 +38,40 @@ class AccountHomePage extends ConsumerWidget {
     final AsyncValue<AccountSummary> async = ref.watch(accountSummaryProvider);
 
     return Scaffold(
-      appBar: HotelAppBar(title: l10n.accountTitle, automaticallyImplyLeading: false),
+      appBar: HotelAppBar(
+        title: l10n.accountTitle,
+        automaticallyImplyLeading: false,
+      ),
       body: SafeArea(
-        child: async.when(
-          loading: () => Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object error, StackTrace _) {
-            final failure = ErrorMapper.toFailure(error);
-            return MessageView(
-              icon: AppIcons.warning,
-              title: l10n.stateErrorTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () {
-                ref.invalidate(accountSummaryProvider);
-                ref.invalidate(bookingsListProvider);
-              },
-            );
+        child: PullToRefresh(
+          onRefresh: () {
+            ref.invalidate(bookingsListProvider);
+            return refreshAll(<Future<Object?>>[
+              ref.refresh(accountSummaryProvider.future),
+              ref.read(favoriteHotelsProvider.notifier).reload(),
+              ref.read(favoriteRoomsProvider.notifier).reload(),
+            ]);
           },
-          data: (AccountSummary summary) => _Body(summary: summary),
+          child: async.when(
+            // A failed refresh keeps the last good data on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object error, StackTrace _) {
+              final failure = ErrorMapper.toFailure(error);
+              return MessageView(
+                icon: AppIcons.warning,
+                title: l10n.stateErrorTitle,
+                message: failure.localizedMessage(l10n),
+                actionLabel: l10n.actionRetry,
+                onAction: () {
+                  ref.invalidate(accountSummaryProvider);
+                  ref.invalidate(bookingsListProvider);
+                },
+              );
+            },
+            data: (AccountSummary summary) => _Body(summary: summary),
+          ),
         ),
       ),
       bottomNavigationBar: AppBottomNav(
@@ -76,7 +94,9 @@ class _Body extends ConsumerWidget {
     final AppColorTokens c = context.colors;
     final TextTheme text = Theme.of(context).textTheme;
     final String? loyaltyReservation = summary.loyaltyReservationId;
-    final int favoriteCount = ref.watch(favoriteHotelsProvider).length;
+    final int favoriteCount =
+        ref.watch(favoriteRoomsProvider).length +
+        ref.watch(favoriteHotelsProvider).length;
 
     // `PROFILE_Home`: 24px page inset (12 top), sections 16px apart; every
     // row opens its own screen (Figma prototype routing map, "PROFILE").
@@ -88,9 +108,11 @@ class _Body extends ConsumerWidget {
           onTap: loyaltyReservation == null
               ? null
               : () => context.pushNamed(
-                    AppRoutes.loyaltyName,
-                    pathParameters: <String, String>{'reservationId': loyaltyReservation},
-                  ),
+                  AppRoutes.loyaltyName,
+                  pathParameters: <String, String>{
+                    'reservationId': loyaltyReservation,
+                  },
+                ),
           child: AppCard(
             style: AppCardStyle.inverse,
             child: Column(
@@ -106,7 +128,9 @@ class _Body extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  context.localDigits('${summary.loyalty.pointsBalance} ${l10n.accountLoyaltyPointsSuffix}'),
+                  context.localDigits(
+                    '${summary.loyalty.pointsBalance} ${l10n.accountLoyaltyPointsSuffix}',
+                  ),
                   style: text.titleLarge?.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -133,7 +157,11 @@ class _Body extends ConsumerWidget {
                           color: c.textOnInverse.withValues(alpha: 0.7),
                         ),
                       ),
-                      MoneyText(summary.nightlyRate!.amount, currency: summary.nightlyRate!.currency, color: c.textOnInverse),
+                      MoneyText(
+                        summary.nightlyRate!.amount,
+                        currency: summary.nightlyRate!.currency,
+                        color: c.textOnInverse,
+                      ),
                     ],
                   ),
                 ],
@@ -154,14 +182,16 @@ class _Body extends ConsumerWidget {
               SettingsRow(
                 icon: AppIcons.profileRow,
                 label: l10n.profilePersonalInfoTitle,
-                onTap: () => context.pushNamed(AppRoutes.profilePersonalInfoName),
+                onTap: () =>
+                    context.pushNamed(AppRoutes.profilePersonalInfoName),
               ),
             SettingsRow(
               icon: AppIcons.ticket,
               label: l10n.accountPreviousStaysLabel,
               value: context.localDigits('${summary.previousStaysCount}'),
               onTap: () {
-                ref.read(bookingsFilterProvider.notifier).state = BookingsFilter.past;
+                ref.read(bookingsFilterProvider.notifier).state =
+                    BookingsFilter.past;
                 context.goNamed(AppRoutes.bookingsName);
               },
             ),
@@ -169,8 +199,10 @@ class _Body extends ConsumerWidget {
               key: const ValueKey<String>('account-favorites'),
               icon: AppIcons.favorite,
               label: l10n.favoritesTitle,
-              value: favoriteCount == 0 ? null : context.localDigits('$favoriteCount'),
-              onTap: () => context.pushNamed(AppRoutes.favoriteHotelsName),
+              value: favoriteCount == 0
+                  ? null
+                  : context.localDigits('$favoriteCount'),
+              onTap: () => context.pushNamed(AppRoutes.favoritesName),
             ),
             SettingsRow(
               icon: AppIcons.settings,

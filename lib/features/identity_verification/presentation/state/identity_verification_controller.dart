@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../domain/entities/identity_document.dart';
@@ -128,6 +129,7 @@ class IdentityVerificationController
         phase: IdentityFlowPhase.ready,
         session: session,
       );
+      _refreshReservationIfApproved(session);
     } catch (error) {
       if (_stale(token)) return;
       state = IdentityVerificationState(
@@ -221,6 +223,7 @@ class IdentityVerificationController
         phase: IdentityFlowPhase.ready,
         session: session,
       );
+      _refreshReservationIfApproved(session);
     } catch (error) {
       if (_stale(token)) return;
       state = IdentityVerificationState(
@@ -228,6 +231,16 @@ class IdentityVerificationController
         session: state.session,
         failure: ErrorMapper.toFailure(error),
       );
+    }
+  }
+
+  /// An approval moves the Reservation DEPOSIT_HELD -> VERIFIED server-side,
+  /// so the cached reservation (Reservation Detail's CTA, the check-in gate)
+  /// must be refetched rather than keep showing DEPOSIT_HELD — same
+  /// invalidate-after-mutation convention as payment/check-in/checkout.
+  void _refreshReservationIfApproved(IdentityVerificationSession session) {
+    if (session.isApproved) {
+      refreshGuestReservations(ref.invalidate, reservationId: _reservationId);
     }
   }
 

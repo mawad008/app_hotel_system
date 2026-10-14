@@ -14,6 +14,8 @@ import '../../../../core/widgets/app_bottom_nav.dart';
 import '../../../../core/widgets/app_icons.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
+import '../../../../core/widgets/live_refresh.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../authentication/presentation/state/auth_controller.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
 import '../../../authentication/presentation/widgets/sign_in_required_view.dart';
@@ -57,42 +59,49 @@ class BookingsListPage extends ConsumerWidget {
     final AsyncValue<List<Reservation>> async = ref.watch(bookingsListProvider);
     final bool isPast = filter == BookingsFilter.past;
 
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        leading: isPast
-            ? IconButton(
-                icon: Icon(AppIcons.backFor(Directionality.of(context))),
-                onPressed: () => ref
-                    .read(bookingsFilterProvider.notifier)
-                    .state = BookingsFilter.current,
-              )
-            : null,
-        title: Text(isPast ? l10n.bookingsPastTitle : l10n.navBookings),
-      ),
-      body: SafeArea(
-        child: async.when(
-          loading: () => Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object error, StackTrace _) {
-            final failure = ErrorMapper.toFailure(error);
-            return MessageView(
-              icon: AppIcons.warning,
-              title: l10n.stateErrorTitle,
-              message: failure.localizedMessage(l10n),
-              actionLabel: l10n.actionRetry,
-              onAction: () => ref.invalidate(bookingsListProvider),
-            );
-          },
-          data: (List<Reservation> reservations) => _Body(
-            reservations: reservations,
-            filter: filter,
+    return LiveRefresh(
+      onRefresh: () => ref.invalidate(bookingsListProvider),
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          leading: isPast
+              ? IconButton(
+                  icon: Icon(AppIcons.backFor(Directionality.of(context))),
+                  onPressed: () =>
+                      ref.read(bookingsFilterProvider.notifier).state =
+                          BookingsFilter.current,
+                )
+              : null,
+          title: Text(isPast ? l10n.bookingsPastTitle : l10n.navBookings),
+        ),
+        body: SafeArea(
+          child: PullToRefresh(
+            onRefresh: () => ref.refresh(bookingsListProvider.future),
+            child: async.when(
+              // A failed background refresh keeps the last good data on screen.
+              skipError: true,
+              loading: () =>
+                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+              error: (Object error, StackTrace _) {
+                final failure = ErrorMapper.toFailure(error);
+                return MessageView(
+                  icon: AppIcons.warning,
+                  title: l10n.stateErrorTitle,
+                  message: failure.localizedMessage(l10n),
+                  actionLabel: l10n.actionRetry,
+                  onAction: () => ref.invalidate(bookingsListProvider),
+                );
+              },
+              data: (List<Reservation> reservations) =>
+                  _Body(reservations: reservations, filter: filter),
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: AppBottomNav(
-        current: AppNavTab.bookings,
-        onSelected: (AppNavTab tab) => goToNavTab(context, tab),
+        bottomNavigationBar: AppBottomNav(
+          current: AppNavTab.bookings,
+          onSelected: (AppNavTab tab) => goToNavTab(context, tab),
+        ),
       ),
     );
   }
@@ -122,14 +131,15 @@ class _Body extends ConsumerWidget {
       return _GroupedByYear(reservations: past);
     }
 
-    final List<Reservation> ongoing =
-        reservations.where((Reservation r) => r.isOngoingStay).toList();
-    final List<Reservation> upcoming = reservations
-        .where((Reservation r) => r.isUpcomingBooking)
-        .toList()
-      ..sort((a, b) => a.stay.checkIn.compareTo(b.stay.checkIn));
+    final List<Reservation> ongoing = reservations
+        .where((Reservation r) => r.isOngoingStay)
+        .toList();
+    final List<Reservation> upcoming =
+        reservations.where((Reservation r) => r.isUpcomingBooking).toList()
+          ..sort((a, b) => a.stay.checkIn.compareTo(b.stay.checkIn));
 
-    final bool showOngoing = filter == BookingsFilter.current && ongoing.isNotEmpty;
+    final bool showOngoing =
+        filter == BookingsFilter.current && ongoing.isNotEmpty;
     if (!showOngoing && upcoming.isEmpty) {
       return EmptyView(
         icon: AppIcons.navBookingsOutline,
@@ -147,10 +157,8 @@ class _Body extends ConsumerWidget {
           Text(
             l10n.bookingsSectionOngoingStay,
             // Figma: 14px `text/secondary` section label.
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
-              color: context.colors.textSecondary,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(fontSize: 14, color: context.colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.sm),
           for (final Reservation r in ongoing) ...<Widget>[
@@ -163,10 +171,8 @@ class _Body extends ConsumerWidget {
           Text(
             l10n.bookingsSectionUpcoming,
             // Figma: 14px `text/secondary` section label.
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
-              color: context.colors.textSecondary,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium
+                ?.copyWith(fontSize: 14, color: context.colors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.sm),
           for (final Reservation r in upcoming) ...<Widget>[
@@ -199,8 +205,8 @@ class _PillSelector extends ConsumerWidget {
         _Pill(
           label: l10n.bookingsPillPast,
           selected: false,
-          onTap: () =>
-              ref.read(bookingsFilterProvider.notifier).state = BookingsFilter.past,
+          onTap: () => ref.read(bookingsFilterProvider.notifier).state =
+              BookingsFilter.past,
         ),
         const SizedBox(width: AppSpacing.sm),
         _Pill(
@@ -222,7 +228,11 @@ class _PillSelector extends ConsumerWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.selected, required this.onTap});
+  const _Pill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -236,7 +246,9 @@ class _Pill extends StatelessWidget {
       selected: selected,
       onSelected: (_) => onTap(),
       labelStyle: theme.textTheme.labelLarge?.copyWith(
-        color: selected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+        color: selected
+            ? theme.colorScheme.onPrimary
+            : theme.colorScheme.onSurface,
       ),
     );
   }
@@ -253,13 +265,17 @@ class _GroupedByYear extends StatelessWidget {
     for (final Reservation r in reservations) {
       byYear.putIfAbsent(r.stay.checkOut.year, () => <Reservation>[]).add(r);
     }
-    final List<int> years = byYear.keys.toList()..sort((a, b) => b.compareTo(a));
+    final List<int> years = byYear.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.pageGutter),
       children: <Widget>[
         for (final int year in years) ...<Widget>[
-          Text(context.localDigits('$year'), style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            context.localDigits('$year'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
           const SizedBox(height: AppSpacing.sm),
           for (final Reservation r in byYear[year]!) ...<Widget>[
             BookingCard(

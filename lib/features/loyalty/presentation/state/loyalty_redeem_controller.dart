@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../domain/entities/loyalty_operations.dart';
@@ -81,6 +82,8 @@ class LoyaltyRedeemController extends Notifier<RedeemActionState> {
       if (result.outcome.isSuccess) {
         ref.invalidate(loyaltyAccountProvider(reservationId));
         ref.invalidate(loyaltyTransactionsProvider(reservationId));
+        // Redeeming applies a discount to this booking's amounts.
+        refreshGuestReservations(ref.invalidate, reservationId: reservationId);
       }
     } catch (error) {
       if (_superseded(request)) return;

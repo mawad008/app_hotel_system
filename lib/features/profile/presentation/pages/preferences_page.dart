@@ -13,6 +13,7 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/settings_row.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../domain/entities/guest_preferences.dart';
 import '../state/account_providers.dart';
 import '../state/profile_providers.dart';
@@ -38,7 +39,9 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
     final AppLocalizations l10n = context.l10n;
     setState(() => _saving = true);
     try {
-      await ref.read(guestAccountSettingsProvider.notifier).savePreferences(_draft!);
+      await ref
+          .read(guestAccountSettingsProvider.notifier)
+          .savePreferences(_draft!);
       if (!mounted) return;
       setState(() => _draft = null);
       ScaffoldMessenger.of(context)
@@ -64,7 +67,7 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           child: SettingsCard(
-          borderWidth: 1,
+            borderWidth: 1,
             children: <Widget>[
               for (final (Locale locale, String label) in <(Locale, String)>[
                 (SupportedLocales.arabic, l10n.languageArabic),
@@ -88,22 +91,34 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<GuestAccountSettings> settings = ref.watch(guestAccountSettingsProvider);
+    final AsyncValue<GuestAccountSettings> settings = ref.watch(
+      guestAccountSettingsProvider,
+    );
     final Locale locale = Localizations.localeOf(context);
 
+    Future<void> refresh() {
+      ref.invalidate(accountSummaryProvider);
+      return ref.refresh(guestAccountSettingsProvider.future);
+    }
+
     return settings.when(
+      // A failed refresh keeps the last good data on screen.
+      skipError: true,
       loading: () => Scaffold(
         appBar: HotelAppBar(title: l10n.profilePreferencesTitle),
         body: Center(child: LoadingView(label: l10n.stateLoadingTitle)),
       ),
       error: (Object e, StackTrace _) => Scaffold(
         appBar: HotelAppBar(title: l10n.profilePreferencesTitle),
-        body: MessageView(
-          icon: AppIcons.settings,
-          title: l10n.stateErrorTitle,
-          message: ErrorMapper.toFailure(e).localizedMessage(l10n),
-          actionLabel: l10n.actionRetry,
-          onAction: () => ref.invalidate(guestAccountSettingsProvider),
+        body: PullToRefresh(
+          onRefresh: refresh,
+          child: MessageView(
+            icon: AppIcons.settings,
+            title: l10n.stateErrorTitle,
+            message: ErrorMapper.toFailure(e).localizedMessage(l10n),
+            actionLabel: l10n.actionRetry,
+            onAction: () => ref.invalidate(guestAccountSettingsProvider),
+          ),
         ),
       ),
       data: (GuestAccountSettings saved) {
@@ -118,12 +133,13 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
             ?.resolve(locale);
 
         return ProfileSubpage(
+          onRefresh: refresh,
           title: l10n.profilePreferencesTitle,
           bannerTitle: l10n.profilePreferencesBannerTitle,
           bannerMessage: l10n.profilePreferencesBannerBody,
           cards: <Widget>[
             SettingsCard(
-          borderWidth: 1,
+              borderWidth: 1,
               children: <Widget>[
                 SettingsRow(
                   label: l10n.profilePrefRoomType,
@@ -132,21 +148,25 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                 SettingsRow(
                   label: l10n.profilePrefHighFloor,
                   value: onOff(prefs.highFloor),
-                  onTap: () => edit(prefs.copyWith(highFloor: !prefs.highFloor)),
+                  onTap: () =>
+                      edit(prefs.copyWith(highFloor: !prefs.highFloor)),
                 ),
                 SettingsRow(
                   label: l10n.profilePrefExtraPillows,
                   value: onOff(prefs.extraPillows),
-                  onTap: () => edit(prefs.copyWith(extraPillows: !prefs.extraPillows)),
+                  onTap: () =>
+                      edit(prefs.copyWith(extraPillows: !prefs.extraPillows)),
                 ),
               ],
             ),
             SettingsCard(
-          borderWidth: 1,
+              borderWidth: 1,
               children: <Widget>[
                 SettingsRow(
                   label: l10n.profilePrefLanguage,
-                  value: locale.languageCode == 'ar' ? l10n.languageArabic : l10n.languageEnglish,
+                  value: locale.languageCode == 'ar'
+                      ? l10n.languageArabic
+                      : l10n.languageEnglish,
                   onTap: _pickLanguage,
                 ),
                 SettingsRow(
@@ -155,7 +175,9 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
                       ? l10n.profilePrefOnFeminine
                       : l10n.profilePrefOffFeminine,
                   onTap: () => edit(
-                    prefs.copyWith(notificationsEnabled: !prefs.notificationsEnabled),
+                    prefs.copyWith(
+                      notificationsEnabled: !prefs.notificationsEnabled,
+                    ),
                   ),
                 ),
               ],

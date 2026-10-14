@@ -11,6 +11,8 @@ import '../../../../core/localization/l10n.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../app_content/presentation/state/app_content_providers.dart';
+import '../../../app_content/presentation/widgets/brand_link_actions.dart';
 import '../../data/datasources/auth_demo_config.dart';
 import '../../domain/entities/guest_phone.dart';
 import '../../domain/validators/auth_validators.dart';
@@ -146,6 +148,8 @@ class _PhoneLoginPageState extends ConsumerState<PhoneLoginPage> {
                 style: theme.textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
+              // The hotel's own terms / privacy pages, when set on the dashboard.
+              LegalLinksRow(content: ref.watch(brandingProvider)),
             ],
           ),
         ),

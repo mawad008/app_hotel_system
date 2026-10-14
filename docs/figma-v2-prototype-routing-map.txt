@@ -41,8 +41,9 @@ OVERLAY SHEETS
   “احجز الآن” ................. R1 Dates & guests
 NOTE: the favourite (heart) is intentionally inert — there is no favourites
 feature in the product and the Icon Button has no selected state.
-UPDATE (app): the heart is now live — it saves the hotel (server-backed) and
-the saved hotels are listed under Account → المفضلة (/account/favorites).
+UPDATE (app): the heart is now live — Hotel Detail saves the hotel and Room
+Detail saves the room (both server-backed); saved rooms and hotels are listed
+under Account → المفضلة (/account/favorites).
 
 02 · ROOM → BOOKING → PAYMENT
 

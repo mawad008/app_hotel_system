@@ -116,4 +116,47 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+      'the guest sheet behind "edit dates" also stops at the selected room '
+      'capacity, so returning never shows "no room selected"',
+      (WidgetTester tester) async {
+    // Standard Room (double bed) fits 2 guests; the party starts at 2 adults.
+    final AppLocalizations en = await _toSummary(tester, 'Standard Room');
+
+    // Summary → edit dates → guests field → sheet.
+    await tester.tap(find.text(en.commonEdit).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(en.guestsTitle).first);
+    await tester.pumpAndSettle();
+
+    final Finder sheet = find.byType(BottomSheet);
+    expect(sheet, findsOneWidget);
+    expect(
+      find.descendant(of: sheet, matching: find.text(en.roomMaxAdultsReached(2))),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: sheet, matching: find.text(en.roomCapacityChangeRoomHint)),
+      findsOneWidget,
+    );
+
+    // A third adult is refused: the count holds at 2.
+    await tester.tap(
+      find.descendant(of: sheet, matching: find.widgetWithIcon(IconButton, Icons.add)).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: sheet, matching: find.text('2')), findsOneWidget);
+
+    // Confirm, go back: the room is still selected.
+    await tester.tap(find.descendant(of: sheet, matching: find.text(en.guestsConfirm)));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text(en.reviewNoSelectionTitle), findsNothing);
+    expect(
+      find.widgetWithText(FilledButton, en.bookingProceedToPayment),
+      findsOneWidget,
+    );
+  });
 }

@@ -8,7 +8,15 @@ import '../../../../core/widgets/money_text.dart';
 import '../../domain/entities/money.dart';
 import '../state/booking_price.dart';
 
-/// The stay-subtotal / service-fee / total card on the booking summary
+/// "15" for 15.00, "7.5" for 7.50 — the % shown in the tax row label.
+String formatTaxRate(num? rate) {
+  if (rate == null) return '';
+  return rate == rate.roundToDouble()
+      ? rate.toInt().toString()
+      : rate.toString();
+}
+
+/// The stay-subtotal / service-fee / tax / total card on the booking summary
 /// (`BOOKING_Summary`). The service-fee row is shown only when
 /// [BookingPriceBreakdown.serviceFee] is non-null (design-only mock — see
 /// `booking_price.dart`).
@@ -30,6 +38,13 @@ class PriceBreakdownCard extends StatelessWidget {
           if (breakdown.serviceFee != null) ...<Widget>[
             const SizedBox(height: AppSpacing.xs),
             _Row(label: l10n.bookingServiceFee, amount: breakdown.serviceFee!),
+          ],
+          if (breakdown.tax != null) ...<Widget>[
+            const SizedBox(height: AppSpacing.xs),
+            _Row(
+              label: l10n.bookingTaxRow(formatTaxRate(breakdown.taxRate)),
+              amount: breakdown.tax!,
+            ),
           ],
           if (breakdown.loyaltyDiscount != null) ...<Widget>[
             const SizedBox(height: AppSpacing.xs),

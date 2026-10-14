@@ -380,10 +380,10 @@ abstract class AppLocalizations {
   /// **'Hotel System'**
   String get brandWordmark;
 
-  /// Onboarding headline (v2 ENTRY_Onboarding). EN is a translation of the Figma AR copy — pending designer review.
+  /// Onboarding headline (v2 ENTRY_Onboarding). Platform-wide wording — the app lists many hotels, so it must never name a single one (QA 2026-10-08).
   ///
   /// In en, this message translates to:
-  /// **'Explore Al Waha Hotel and book from wherever you are'**
+  /// **'Explore our hotels and book your stay from wherever you are'**
   String get entryHeadline;
 
   /// No description provided for @entrySubtext.
@@ -1724,6 +1724,12 @@ abstract class AppLocalizations {
   /// **'Service fee'**
   String get bookingServiceFee;
 
+  /// No description provided for @bookingTaxRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax ({rate}%)'**
+  String bookingTaxRow(String rate);
+
   /// No description provided for @bookingTotal.
   ///
   /// In en, this message translates to:
@@ -2125,6 +2131,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Payment'**
   String get paymentCardDetailsTitle;
+
+  /// No description provided for @paymentBreakdownHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost breakdown'**
+  String get paymentBreakdownHeading;
+
+  /// No description provided for @paymentNightsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Nights'**
+  String get paymentNightsLabel;
+
+  /// No description provided for @paymentBookingTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Booking total'**
+  String get paymentBookingTotalLabel;
+
+  /// No description provided for @paymentDepositHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Held now as a refundable deposit'**
+  String get paymentDepositHint;
 
   /// No description provided for @paymentCardDepositLabel.
   ///
@@ -3620,6 +3650,18 @@ abstract class AppLocalizations {
   /// **'The amount due is charged in one payment to your card on file. Your invoice is sent electronically.'**
   String get checkoutSettleNote;
 
+  /// No description provided for @stayCheckoutCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Check out'**
+  String get stayCheckoutCta;
+
+  /// No description provided for @checkoutEarlyDepartureNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You are leaving before your booked check-out ({date}). You are only charged for the nights you stayed.'**
+  String checkoutEarlyDepartureNote(String date);
+
   /// No description provided for @checkoutCompleteCta.
   ///
   /// In en, this message translates to:
@@ -4379,25 +4421,25 @@ abstract class AppLocalizations {
   /// No description provided for @favoritesBannerTitle.
   ///
   /// In en, this message translates to:
-  /// **'Your saved hotels'**
+  /// **'Your saved rooms and hotels'**
   String get favoritesBannerTitle;
 
   /// No description provided for @favoritesBannerBody.
   ///
   /// In en, this message translates to:
-  /// **'Hotels you heart appear here. Tap one to open it, or the heart to remove it.'**
+  /// **'Rooms and hotels you saved with the heart appear here. Tap one to open it, or the heart to remove it.'**
   String get favoritesBannerBody;
 
   /// No description provided for @favoritesEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'No favourite hotels yet'**
+  /// **'No favourites yet'**
   String get favoritesEmptyTitle;
 
   /// No description provided for @favoritesEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Tap the heart on any hotel or room to save its hotel here.'**
+  /// **'Tap the heart on any room or hotel to save it here.'**
   String get favoritesEmptyBody;
 
   /// No description provided for @favoritesBrowse.
@@ -4435,6 +4477,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Undo'**
   String get favoriteUndoAction;
+
+  /// No description provided for @favoritesRoomsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooms'**
+  String get favoritesRoomsSection;
+
+  /// No description provided for @favoritesHotelsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Hotels'**
+  String get favoritesHotelsSection;
+
+  /// No description provided for @favoriteRoomSavedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Room saved to favourites'**
+  String get favoriteRoomSavedSnack;
+
+  /// No description provided for @favoriteRoomRemovedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Room removed from favourites'**
+  String get favoriteRoomRemovedSnack;
+
+  /// No description provided for @roomFavoriteAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Save room to favourites'**
+  String get roomFavoriteAdd;
+
+  /// No description provided for @roomFavoriteRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove room from favourites'**
+  String get roomFavoriteRemove;
+
+  /// No description provided for @roomDetailNeedsDatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your stay dates'**
+  String get roomDetailNeedsDatesTitle;
+
+  /// No description provided for @roomDetailNeedsDatesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick check-in and check-out dates to see this room\'s price and availability.'**
+  String get roomDetailNeedsDatesBody;
+
+  /// No description provided for @roomDetailChooseDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose dates'**
+  String get roomDetailChooseDates;
 
   /// No description provided for @hotelLocationMapSemantics.
   ///
@@ -5909,7 +6005,7 @@ abstract class AppLocalizations {
   /// No description provided for @roomTaxesLabel.
   ///
   /// In en, this message translates to:
-  /// **'Taxes & fees'**
+  /// **'Taxes'**
   String get roomTaxesLabel;
 
   /// No description provided for @roomPriceIncludedValue.
@@ -5947,6 +6043,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{This room takes at most 1 guest} other{This room takes at most {count} guests}}'**
   String roomMaxGuestsReached(int count);
+
+  /// Guest-count sheet: shown under the capacity limit while a room is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'To add more guests, choose a larger room.'**
+  String get roomCapacityChangeRoomHint;
+
+  /// PROFILE_Support: dashboard-managed hotel contact actions (call / WhatsApp / email / website).
+  ///
+  /// In en, this message translates to:
+  /// **'Contact us'**
+  String get supportContactTitle;
+
+  /// No description provided for @supportCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call us'**
+  String get supportCall;
+
+  /// No description provided for @supportWhatsapp.
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get supportWhatsapp;
+
+  /// No description provided for @supportEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get supportEmail;
+
+  /// No description provided for @supportWebsite.
+  ///
+  /// In en, this message translates to:
+  /// **'Website'**
+  String get supportWebsite;
+
+  /// No description provided for @legalTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of use'**
+  String get legalTerms;
+
+  /// No description provided for @legalPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy policy'**
+  String get legalPrivacy;
+
+  /// No description provided for @linkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open this on your device.'**
+  String get linkOpenFailed;
 }
 
 class _AppLocalizationsDelegate

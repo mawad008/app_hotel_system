@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../domain/entities/check_in.dart';
@@ -84,6 +85,11 @@ class CheckInController extends Notifier<CheckInActionState> {
           await ref.read(digitalAccessRepositoryProvider).checkIn(request);
       if (_superseded(request)) return;
       state = CheckInDone(request, result);
+      // Checking in moves the reservation to CHECKED_IN — the Bookings tab,
+      // STAY_Home and the detail screen must not keep the pre-check-in state.
+      if (result.outcome.isSuccess) {
+        refreshGuestReservations(ref.invalidate, reservationId: request.reservationId);
+      }
     } catch (error) {
       if (_superseded(request)) return;
       state = CheckInFailed(request, ErrorMapper.toFailure(error));

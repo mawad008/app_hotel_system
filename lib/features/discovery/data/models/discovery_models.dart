@@ -240,7 +240,10 @@ class HotelModel {
       _ => null,
     };
     if (value == null || value <= 0) return null;
-    return HotelServiceFee(isPercentage: raw['type'] == 'percentage', value: value);
+    return HotelServiceFee(
+      isPercentage: raw['type'] == 'percentage',
+      value: value,
+    );
   }
 
   static HotelGuestDetails parseGuestDetails(Json h) {
@@ -250,6 +253,11 @@ class HotelModel {
       checkOutTime: _nonBlank(h['check_out_time']),
       pricesIncludeTaxes: (h['prices_include_taxes'] as bool?) ?? false,
       serviceFee: _serviceFee(h['service_fee']),
+      // `tax_rate`: decimal string %, null when rates include taxes / none.
+      taxRate: switch (Money.parseAmount(h['tax_rate'])) {
+        final num r when r > 0 => r,
+        _ => null,
+      },
       suitableFor: _nonBlank(h['suitable_for']),
       roomsCount: (h['rooms_count'] as num?)?.toInt(),
       highlights: <HotelHighlight>[
@@ -440,13 +448,17 @@ class RoomTypeSummaryModel {
   static LocalizedText? parseRoomTag(Object? raw) => _localized(raw);
 
   /// `inclusions`: non-blank items, in order.
-  static List<LocalizedText> parseRoomInclusions(Object? raw) => <LocalizedText>[
+  static List<LocalizedText> parseRoomInclusions(
+    Object? raw,
+  ) => <LocalizedText>[
     for (final Object? item in raw is List<Object?> ? raw : const <Object?>[])
       if (_localized(item) != null) _localized(item)!,
   ];
 
   /// `facilities`: `{key, label, icon}` catalog entries, rendered by label.
-  static List<HotelFacility> parseRoomFacilities(Object? raw) => <HotelFacility>[
+  static List<HotelFacility> parseRoomFacilities(
+    Object? raw,
+  ) => <HotelFacility>[
     for (final Object? item in raw is List<Object?> ? raw : const <Object?>[])
       if (item is Map<String, Object?> && _localized(item['label']) != null)
         HotelFacility(
@@ -554,14 +566,24 @@ class AvailabilityResultModel {
   final int children;
   final List<AvailableRoomModel> rooms;
 
-  AvailabilityResult toEntity() => AvailabilityResult(
-    hotelId: hotelId,
-    stay: StayRange(checkIn: checkIn, checkOut: checkOut),
-    party: GuestParty(adults: adults, children: children),
-    rooms: rooms
-        .map((AvailableRoomModel m) => m.toEntity())
-        .toList(growable: false),
-  );
+  /// Room types that cannot seat the party are dropped, so the list never
+  /// offers a room that does not fit the chosen adults + children. Laravel
+  /// already omits them; this guards older servers that still return them
+  /// greyed out.
+  AvailabilityResult toEntity() {
+    final GuestParty party = GuestParty(adults: adults, children: children);
+    return AvailabilityResult(
+      hotelId: hotelId,
+      stay: StayRange(checkIn: checkIn, checkOut: checkOut),
+      party: party,
+      rooms: rooms
+          .where(
+            (AvailableRoomModel m) => party.fitsIn(m.roomType.maxOccupancy),
+          )
+          .map((AvailableRoomModel m) => m.toEntity())
+          .toList(growable: false),
+    );
+  }
 }
 
 class UpcomingStayModel {

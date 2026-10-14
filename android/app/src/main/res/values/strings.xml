@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Launcher name. Mirrors `appName` in lib/core/localization/arb. -->
-    <string name="app_name">Hotel System</string>
+    <!-- Launcher name. Matches the Play / App Store listing name. -->
+    <string name="app_name">Stdy Hotel</string>
 </resources>

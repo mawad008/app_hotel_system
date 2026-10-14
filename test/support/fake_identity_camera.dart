@@ -14,4 +14,15 @@ class FakeIdentityCamera implements IdentityCamera {
     captures.add(target);
     return result;
   }
+
+  /// What [recoverLostCapture] hands back (a photo taken before the app was
+  /// killed behind the system camera); `null` for none.
+  IdentityCaptured? lost;
+
+  @override
+  Future<IdentityCaptured?> recoverLostCapture(IdentityCaptureTarget target) async {
+    final IdentityCaptured? photo = lost;
+    lost = null;
+    return photo;
+  }
 }

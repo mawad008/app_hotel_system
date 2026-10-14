@@ -1,4 +1,5 @@
 import '../../../../core/localization/content_language_provider.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -65,7 +66,10 @@ class RoomAvailabilityController extends Notifier<RoomAvailabilityState> {
   RoomAvailabilityState build() {
     // Re-fetch the last request after a language switch so room names and
     // specs come back in the new language (selection state is untouched).
-    ref.listen<String>(contentLanguageProvider, (String? previous, String next) {
+    ref.listen<String>(contentLanguageProvider, (
+      String? previous,
+      String next,
+    ) {
       if (previous != next) retry();
     });
     return const RoomAvailabilityState();
@@ -81,12 +85,13 @@ class RoomAvailabilityController extends Notifier<RoomAvailabilityState> {
     state = state.copyWith(result: const UiLoading<AvailabilityResult>());
 
     try {
-      final AvailabilityResult result =
-          await ref.read(discoveryRepositoryProvider).availability(
-                hotelId: request.hotelId,
-                stay: request.stay,
-                party: request.party,
-              );
+      final AvailabilityResult result = await ref
+          .read(discoveryRepositoryProvider)
+          .availability(
+            hotelId: request.hotelId,
+            stay: request.stay,
+            party: request.party,
+          );
       if (requestId != _requestId) return; // superseded by a newer request
       _inFlight = null;
       state = RoomAvailabilityState(
@@ -99,10 +104,41 @@ class RoomAvailabilityController extends Notifier<RoomAvailabilityState> {
       _inFlight = null;
       state = RoomAvailabilityState(
         sort: state.sort,
-        result:
-            UiState<AvailabilityResult>.failure(ErrorMapper.toFailure(error)),
+        result: UiState<AvailabilityResult>.failure(
+          ErrorMapper.toFailure(error),
+        ),
         request: request,
       );
+    }
+  }
+
+  /// Pull-to-refresh: refetches the last request while the current rooms stay
+  /// on screen. On failure the shown result is kept and the error rethrown.
+  Future<void> refresh() async {
+    final AvailabilityRequest? last = state.request;
+    if (last == null) return;
+    if (state.result is! UiSuccess<AvailabilityResult> &&
+        state.result is! UiEmpty<AvailabilityResult>) {
+      return load(last, force: true);
+    }
+    final int requestId = ++_requestId;
+    _inFlight = last;
+    try {
+      final AvailabilityResult result = await ref
+          .read(discoveryRepositoryProvider)
+          .availability(
+            hotelId: last.hotelId,
+            stay: last.stay,
+            party: last.party,
+          );
+      if (requestId != _requestId) return;
+      state = RoomAvailabilityState(
+        sort: state.sort,
+        result: _present(result, state.sort),
+        request: last,
+      );
+    } finally {
+      if (requestId == _requestId) _inFlight = null;
     }
   }
 
@@ -116,10 +152,7 @@ class RoomAvailabilityController extends Notifier<RoomAvailabilityState> {
     if (sort == state.sort) return;
     final UiState<AvailabilityResult> current = state.result;
     if (current is UiSuccess<AvailabilityResult>) {
-      state = state.copyWith(
-        sort: sort,
-        result: _present(current.data, sort),
-      );
+      state = state.copyWith(sort: sort, result: _present(current.data, sort));
     } else {
       state = state.copyWith(sort: sort);
     }
@@ -130,7 +163,10 @@ class RoomAvailabilityController extends Notifier<RoomAvailabilityState> {
     state = const RoomAvailabilityState();
   }
 
-  UiState<AvailabilityResult> _present(AvailabilityResult result, RoomSort sort) {
+  UiState<AvailabilityResult> _present(
+    AvailabilityResult result,
+    RoomSort sort,
+  ) {
     if (result.rooms.isEmpty) return const UiEmpty<AvailabilityResult>();
     return UiState<AvailabilityResult>.success(
       AvailabilityResult(
@@ -156,5 +192,5 @@ class RoomAvailabilityController extends Notifier<RoomAvailabilityState> {
 
 final roomAvailabilityControllerProvider =
     NotifierProvider<RoomAvailabilityController, RoomAvailabilityState>(
-  RoomAvailabilityController.new,
-);
+      RoomAvailabilityController.new,
+    );

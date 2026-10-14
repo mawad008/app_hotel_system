@@ -41,6 +41,17 @@ completed branch also keeps the Phase 10 loyalty + review entry points
 (Figma's two buttons only cover invoice/book-again; dropping loyalty/review
 would have been a regression, not a redesign).
 
+**Refresh after a change.** Every successful reservation mutation calls
+`refreshGuestReservations(ref.invalidate, reservationId: …)`
+(`presentation/state/bookings_providers.dart`). That covers create, cancel,
+payment hold, identity approval, check-in, extend, checkout and loyalty redeem.
+It invalidates `bookingsListProvider` (so STAY_Home's current stay and the
+Account stats recompute), the notifications feed/bell, and that reservation's
+detail. Don't rely on `autoDispose` here: a root tab page can stay mounted
+under a pushed flow, and `go` back to it reuses the page, so the list would
+otherwise keep the pre-action snapshot (a new booking missing from حجوزاتي
+until a restart). New mutations must call it too.
+
 ## Account (`lib/features/profile/`)
 
 `AccountSummary` (`presentation/state/account_summary.dart`) composes,

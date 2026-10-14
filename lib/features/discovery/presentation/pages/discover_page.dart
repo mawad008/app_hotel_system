@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_bottom_nav.dart';
 import '../../../../core/widgets/app_icons.dart';
 import '../../../../core/widgets/skeleton.dart';
 import '../../../../core/widgets/ui_state_view.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../authentication/presentation/state/auth_controller.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
 import '../../../authentication/presentation/state/login_flow_controller.dart';
@@ -128,7 +129,7 @@ class DiscoverPage extends ConsumerWidget {
             onNotifications: () => _openNotifications(context, ref),
           ),
           Expanded(
-            child: RefreshIndicator(
+            child: PullToRefresh(
               onRefresh: () =>
                   ref.read(discoverControllerProvider.notifier).refresh(),
               child: ListView(

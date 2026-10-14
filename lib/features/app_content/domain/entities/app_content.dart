@@ -24,8 +24,10 @@ class ManagedText {
 }
 
 /// The Guest App's branding + entry content, edited from the dashboard
-/// (`GET /guest/app-content`): the app name (splash wordmark), the logo
-/// (splash + onboarding avatar), and the onboarding photo and copy.
+/// (`GET /guest/app-content`): the app name (app title + splash wordmark),
+/// the logo (splash + onboarding avatar), the app icon (web favicon /
+/// home-screen icon), the brand colour, the onboarding photo and copy, the
+/// support contacts and the legal links.
 ///
 /// Every field is optional — `null` means "not configured", and the screen
 /// uses its bundled Figma default (asset / vector mark / ARB string).
@@ -35,6 +37,11 @@ class AppContent {
     this.appName = const ManagedText(),
     this.logoUrl,
     this.onboardingImageUrl,
+    this.appIconUrl,
+    this.primaryColor,
+    this.support = SupportContacts.none,
+    this.termsUrl,
+    this.privacyUrl,
     this.onboardingTitle = const ManagedText(),
     this.onboardingBody = const ManagedText(),
     this.onboardingCta = const ManagedText(),
@@ -49,6 +56,20 @@ class AppContent {
   final ManagedText appName;
   final String? logoUrl;
   final String? onboardingImageUrl;
+
+  /// Square app icon — applied as the web favicon / home-screen icon. Native
+  /// launcher icons are build-time assets and cannot follow it.
+  final String? appIconUrl;
+
+  /// The brand colour (buttons, accents). Null = the built-in palette.
+  final Color? primaryColor;
+
+  /// `PROFILE_Support` contact actions; an unset one is hidden.
+  final SupportContacts support;
+
+  /// Linked from sign-in ("by continuing you agree…") and Account → Privacy.
+  final String? termsUrl;
+  final String? privacyUrl;
   final ManagedText onboardingTitle;
   final ManagedText onboardingBody;
   final ManagedText onboardingCta;
@@ -62,6 +83,22 @@ class AppContent {
 
   /// Days the hotel keeps a stay's ID images after it ends (server config).
   final int? identityRetentionDays;
+}
+
+/// The dashboard-managed support contacts. Each is null when not configured.
+@immutable
+class SupportContacts {
+  const SupportContacts({this.phone, this.whatsapp, this.email, this.website});
+
+  static const SupportContacts none = SupportContacts();
+
+  final String? phone;
+  final String? whatsapp;
+  final String? email;
+  final String? website;
+
+  bool get isEmpty =>
+      phone == null && whatsapp == null && email == null && website == null;
 }
 
 /// One dashboard-managed FAQ entry (question + answer, both locales).

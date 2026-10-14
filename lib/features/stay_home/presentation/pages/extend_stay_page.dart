@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/localization/l10n.dart';
@@ -19,7 +20,6 @@ import '../../../reservation/domain/entities/extend_stay.dart';
 import '../../../reservation/domain/entities/reservation.dart';
 import '../../../reservation/presentation/state/reservation_detail_provider.dart';
 import '../../../reservation/presentation/state/reservation_providers.dart';
-import '../state/stay_home_providers.dart';
 
 /// The "تمديد الإقامة" flow from `STAY_Home`. Figma only designed the hub
 /// screen, not a dedicated extend-stay board, so this follows the app's
@@ -100,8 +100,7 @@ class _ExtendStayPageState extends ConsumerState<ExtendStayPage> {
               newCheckOut: newCheckOut,
             ),
           );
-      ref.invalidate(reservationDetailProvider(reservation.id));
-      ref.invalidate(currentStayProvider);
+      refreshGuestReservations(ref.invalidate, reservationId: reservation.id);
       if (mounted) setState(() => _result = result);
     } catch (error) {
       if (mounted) setState(() => _error = error);

@@ -20,12 +20,32 @@ abstract interface class AppPreferences {
   String? get localeCode;
 
   Future<void> setLocaleCode(String code);
+
+  /// An identity photo the system camera was taking when the app was last
+  /// sent to the background (serialized `PendingIdentityCapture`), so a guest
+  /// whose app Android killed meanwhile is brought back to that step on the
+  /// next launch. `null` when none.
+  String? get pendingIdentityCapture;
+
+  Future<void> setPendingIdentityCapture(String? value);
+
+  /// The last `GET /guest/app-content` response (raw JSON), so the next launch
+  /// shows the hotel's name, colour and logo at once — and offline — instead
+  /// of the bundled defaults. `null` when never fetched.
+  String? get appContentCache;
+
+  Future<void> setAppContentCache(String value);
 }
 
 /// Default (tests, and the fallback if platform storage is unavailable):
 /// nothing persists past the process.
 class InMemoryAppPreferences implements AppPreferences {
-  InMemoryAppPreferences({this.onboardingCompleted = false, this.localeCode});
+  InMemoryAppPreferences({
+    this.onboardingCompleted = false,
+    this.localeCode,
+    this.pendingIdentityCapture,
+    this.appContentCache,
+  });
 
   @override
   bool onboardingCompleted;
@@ -38,6 +58,19 @@ class InMemoryAppPreferences implements AppPreferences {
 
   @override
   Future<void> setLocaleCode(String code) async => localeCode = code;
+
+  @override
+  String? pendingIdentityCapture;
+
+  @override
+  Future<void> setPendingIdentityCapture(String? value) async =>
+      pendingIdentityCapture = value;
+
+  @override
+  String? appContentCache;
+
+  @override
+  Future<void> setAppContentCache(String value) async => appContentCache = value;
 }
 
 /// Platform-backed [AppPreferences] (NSUserDefaults / SharedPreferences /
@@ -47,6 +80,8 @@ class SharedAppPreferences implements AppPreferences {
 
   static const String _onboardingKey = 'onboarding_completed';
   static const String _localeKey = 'app_locale';
+  static const String _pendingIdentityKey = 'pending_identity_capture';
+  static const String _appContentKey = 'app_content_cache';
 
   final SharedPreferencesWithCache _prefs;
 
@@ -54,7 +89,12 @@ class SharedAppPreferences implements AppPreferences {
     final SharedPreferencesWithCache prefs =
         await SharedPreferencesWithCache.create(
           cacheOptions: const SharedPreferencesWithCacheOptions(
-            allowList: <String>{_onboardingKey, _localeKey},
+            allowList: <String>{
+              _onboardingKey,
+              _localeKey,
+              _pendingIdentityKey,
+              _appContentKey,
+            },
           ),
         );
     return SharedAppPreferences._(prefs);
@@ -71,6 +111,21 @@ class SharedAppPreferences implements AppPreferences {
 
   @override
   Future<void> setLocaleCode(String code) => _prefs.setString(_localeKey, code);
+
+  @override
+  String? get pendingIdentityCapture => _prefs.getString(_pendingIdentityKey);
+
+  @override
+  Future<void> setPendingIdentityCapture(String? value) => value == null
+      ? _prefs.remove(_pendingIdentityKey)
+      : _prefs.setString(_pendingIdentityKey, value);
+
+  @override
+  String? get appContentCache => _prefs.getString(_appContentKey);
+
+  @override
+  Future<void> setAppContentCache(String value) =>
+      _prefs.setString(_appContentKey, value);
 }
 
 /// In-memory by default; `bootstrap()` overrides it with the loaded

@@ -85,28 +85,31 @@ class RoomSelection {
       request.party == party;
 
   RoomSelection copyWith({String? roomId, GuestParty? party}) => RoomSelection(
-        hotelId: hotelId,
-        hotelName: hotelName,
-        roomType: roomType,
-        stay: stay,
-        party: party ?? this.party,
-        nightlyRate: nightlyRate,
-        roomId: roomId ?? this.roomId,
-      );
+    hotelId: hotelId,
+    hotelName: hotelName,
+    roomType: roomType,
+    stay: stay,
+    party: party ?? this.party,
+    nightlyRate: nightlyRate,
+    roomId: roomId ?? this.roomId,
+  );
 
   /// Whether [party] can be booked into this room type (occupancy check only —
   /// Laravel stays authoritative).
-  bool fits(GuestParty party) =>
-      party.adults + party.children <= roomType.maxOccupancy;
+  bool fits(GuestParty party) => party.fitsIn(roomType.maxOccupancy);
 
   /// The most adults this room type takes alongside [children] — the stepper
   /// ceiling on the booking summary, so the party can't outgrow the room.
-  int maxAdultsWith(int children) =>
-      (roomType.maxOccupancy - children).clamp(GuestParty.minAdults, GuestParty.maxAdults);
+  int maxAdultsWith(int children) => (roomType.maxOccupancy - children).clamp(
+    GuestParty.minAdults,
+    GuestParty.maxAdults,
+  );
 
   /// The most children this room type takes alongside [adults].
-  int maxChildrenWith(int adults) =>
-      (roomType.maxOccupancy - adults).clamp(GuestParty.minChildren, GuestParty.maxChildren);
+  int maxChildrenWith(int adults) => (roomType.maxOccupancy - adults).clamp(
+    GuestParty.minChildren,
+    GuestParty.maxChildren,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -121,14 +124,14 @@ class RoomSelection {
 
   @override
   int get hashCode => Object.hash(
-        hotelId,
-        hotelName,
-        roomType,
-        stay,
-        party,
-        nightlyRate,
-        roomId,
-      );
+    hotelId,
+    hotelName,
+    roomType,
+    stay,
+    party,
+    nightlyRate,
+    roomId,
+  );
 
   @override
   String toString() =>

@@ -19,6 +19,7 @@ import '../../domain/entities/hotel_service.dart';
 import '../state/stay_services_providers.dart';
 import '../widgets/service_card.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `11 · Services & requests` — the hotel service catalogue, grouped by
 /// category. Read-only: ordering happens on the service detail screen.
@@ -37,22 +38,31 @@ class StayServicesPage extends ConsumerWidget {
     return Scaffold(
       appBar: HotelAppBar(title: l10n.servicesTitle),
       body: SafeArea(
-        child: reservationAsync.when(
-          loading: () =>
-              Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-          error: (Object e, StackTrace _) => _error(context, ref, e),
-          data: (Reservation reservation) {
-            final AsyncValue<ServiceCatalogue> cat = ref.watch(
-              serviceCatalogueProvider(reservation.hotelId),
-            );
-            return cat.when(
-              loading: () =>
-                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-              error: (Object e, StackTrace _) => _error(context, ref, e),
-              data: (ServiceCatalogue catalogue) =>
-                  _Body(reservationId: reservationId, catalogue: catalogue),
-            );
+        child: PullToRefresh(
+          onRefresh: () {
+            ref.invalidate(serviceCatalogueProvider);
+            return ref.refresh(reservationDetailProvider(reservationId).future);
           },
+          child: reservationAsync.when(
+            // A failed refresh keeps the last good data on screen.
+            skipError: true,
+            loading: () =>
+                Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+            error: (Object e, StackTrace _) => _error(context, ref, e),
+            data: (Reservation reservation) {
+              final AsyncValue<ServiceCatalogue> cat = ref.watch(
+                serviceCatalogueProvider(reservation.hotelId),
+              );
+              return cat.when(
+                skipError: true,
+                loading: () =>
+                    Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+                error: (Object e, StackTrace _) => _error(context, ref, e),
+                data: (ServiceCatalogue catalogue) =>
+                    _Body(reservationId: reservationId, catalogue: catalogue),
+              );
+            },
+          ),
         ),
       ),
     );

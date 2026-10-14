@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/app/router/app_router.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
 import 'package:hotel_guest_app/core/errors/app_exception.dart';
+import 'package:hotel_guest_app/core/storage/app_preferences.dart';
 import 'package:hotel_guest_app/features/identity_verification/data/datasources/dummy_identity_verification_data_source.dart';
 import 'package:hotel_guest_app/features/identity_verification/data/datasources/identity_verification_data_source.dart';
 import 'package:hotel_guest_app/features/identity_verification/data/models/identity_verification_models.dart';
@@ -17,6 +18,7 @@ import 'package:hotel_guest_app/features/identity_verification/domain/entities/i
 import 'package:hotel_guest_app/features/identity_verification/domain/entities/identity_verification_session.dart';
 import 'package:hotel_guest_app/features/identity_verification/domain/entities/identity_verification_status.dart';
 import 'package:hotel_guest_app/features/identity_verification/presentation/state/identity_verification_providers.dart';
+import 'package:hotel_guest_app/features/identity_verification/presentation/state/pending_identity_capture.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/create_reservation_request.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/extend_stay.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/reservation.dart';
@@ -113,6 +115,10 @@ class _FakeViewfinder extends IdentityViewfinder {
 
   final IdentityCaptureTarget target;
   final IdentityCameraUnavailable? failWith;
+
+  /// Back to "opening" — as after the permission prompt or a trip to the
+  /// background — without a rebuild, so the preview is still on screen.
+  void reopenSilently() => _status = IdentityViewfinderStatus.initializing;
   IdentityViewfinderStatus _status = IdentityViewfinderStatus.initializing;
   int shots = 0;
   bool disposed = false;
@@ -806,5 +812,97 @@ void main() {
 
     expect(find.text(en.identityCameraDeniedTitle), findsOneWidget);
     expect(find.widgetWithText(FilledButton, en.identityOpenSettingsCta), findsOneWidget);
+  });
+
+  testWidgets('a shutter tap while the live camera is still opening never leaves for the system camera',
+      (tester) async {
+    final en = await _l10n('en');
+    final camera = _FakeLiveCamera();
+    await _open(tester, reservationIdForScenario(DummyVerificationScenario.autoApprove), camera: camera);
+    await _dismissIntro(tester, en);
+    camera.opened.single.reopenSilently();
+
+    await tester.tap(find.byKey(_shutterButton));
+    await tester.pump();
+    expect(camera.captures, isEmpty);
+    expect(camera.opened.single.shots, 0);
+    expect(find.text(en.identityCaptureDocumentTitle), findsOneWidget);
+  });
+
+  testWidgets('the system camera leaves no resume marker once it returns', (tester) async {
+    final en = await _l10n('en');
+    final prefs = InMemoryAppPreferences(onboardingCompleted: true);
+    final camera = FakeIdentityCamera();
+    final c = await pumpApp(
+      tester,
+      bootSession: completeSession(),
+      extraOverrides: <Override>[
+        reservationRepositoryProvider.overrideWithValue(_StubReservationRepository()),
+        identityCameraProvider.overrideWithValue(camera),
+        appPreferencesProvider.overrideWithValue(prefs),
+      ],
+    );
+    c.read(appRouterProvider).go(
+        '/reservation/${reservationIdForScenario(DummyVerificationScenario.autoApprove)}/identity');
+    await tester.pumpAndSettle();
+    await _dismissIntro(tester, en);
+    await tester.tap(find.byKey(_shutterButton));
+    await tester.pumpAndSettle();
+
+    expect(camera.captures, hasLength(1));
+    expect(prefs.pendingIdentityCapture, isNull);
+  });
+
+  testWidgets('a cold start after Android killed the app behind the system camera resumes the identity step with the photo',
+      (tester) async {
+    final en = await _l10n('en');
+    final String id = reservationIdForScenario(DummyVerificationScenario.autoApprove);
+    final prefs = InMemoryAppPreferences(onboardingCompleted: true);
+    await PendingIdentityCapture(
+      reservationId: id,
+      target: IdentityCaptureTarget.document,
+      back: false,
+      documentType: IdentityDocumentType.passport,
+    ).save(prefs);
+    final camera = FakeIdentityCamera()..lost = const IdentityCaptured(CapturedImage.dummy);
+
+    await pumpApp(
+      tester,
+      bootSession: completeSession(),
+      extraOverrides: <Override>[
+        reservationRepositoryProvider.overrideWithValue(_StubReservationRepository()),
+        identityCameraProvider.overrideWithValue(camera),
+        appPreferencesProvider.overrideWithValue(prefs),
+      ],
+    );
+
+    // Not the home screen: straight back to reviewing the recovered ID photo.
+    expect(find.text(en.identityReviewDocumentTitle), findsOneWidget);
+    expect(camera.captures, isEmpty, reason: 'no second shot needed');
+    expect(prefs.pendingIdentityCapture, isNull, reason: 'used once');
+  });
+
+  testWidgets('a cold start without a recoverable photo reopens the capture step', (tester) async {
+    final en = await _l10n('en');
+    final String id = reservationIdForScenario(DummyVerificationScenario.autoApprove);
+    final prefs = InMemoryAppPreferences(onboardingCompleted: true);
+    await PendingIdentityCapture(
+      reservationId: id,
+      target: IdentityCaptureTarget.document,
+      back: true,
+      documentType: IdentityDocumentType.passport,
+    ).save(prefs);
+
+    await pumpApp(
+      tester,
+      bootSession: completeSession(),
+      extraOverrides: <Override>[
+        reservationRepositoryProvider.overrideWithValue(_StubReservationRepository()),
+        identityCameraProvider.overrideWithValue(FakeIdentityCamera()),
+        appPreferencesProvider.overrideWithValue(prefs),
+      ],
+    );
+
+    expect(find.text(en.identityCaptureDocumentTitle), findsOneWidget);
   });
 }

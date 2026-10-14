@@ -410,6 +410,22 @@ printed (`toString()` is metadata only):
   permission shows `IDENTITY_CameraDenied`. The photo is the full sensor frame
   (not cropped to the guide). It stays in an on-device temp file; no bytes are
   held in domain/state, and the upload streams it with `MultipartFile.fromFile`.
+* **Staying in the booking flow (QA 2026-10-08).** The system camera is a
+  separate Android activity, and Android may kill the app's process behind
+  it. The app then cold-starts and used to land on home, so the guest left the
+  booking after payment. Two guards:
+  * While the live viewfinder is mounted but still (re)opening, for example
+    after the permission prompt or a trip to the background, the shutter
+    **waits**. It no longer hands off to the system camera; that fallback is
+    only for a live camera that failed to open.
+  * Around every system-camera capture, `PendingIdentityCapture`
+    (reservation, target, front/back, document type; no image or ID data) is
+    saved in `AppPreferences`. On a cold start the router sends an
+    authenticated guest from the splash to that reservation's identity step,
+    not home. The page clears the marker and recovers the photo with
+    `ImagePicker.retrieveLostData` (`IdentityCamera.recoverLostCapture`), then
+    continues to review (document) or submits it (selfie). A lost back-side
+    shot restarts at the front, because the front was only in memory.
 * **Web** — `bytes` only. Browsers have no reliable camera source (desktop
   Chrome opens a file chooser either way) and no file system, so the guest
   **picks an image file** (`ImageSource.gallery`), which is read with

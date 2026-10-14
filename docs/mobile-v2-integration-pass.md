@@ -55,6 +55,7 @@ guest, reservations, dependent rows and identity files.
 | Guest notification feed `GET /guest/notifications` (+ `meta.unread_count`), `PATCH …/{id}/read`, `POST …/read-all` | the app's bell + `NOTIFICATIONS_List`; recipient-scoped |
 | Guest service-order cancel `POST …/service-orders/{id}/cancel` | Figma cancel flow; state machine decides, voids the folio charge |
 | Favourites `GET/PUT/DELETE /guest/favorites/hotels/{hotel}` (`guest_favorite_hotels`) | persisted heart |
+| Favourite rooms `GET/PUT/DELETE /guest/favorites/rooms/{roomType}` (`guest_favorite_room_types`) | persisted Room Detail heart |
 | Room assignment `GET /reservations/{id}/assignable-rooms`, `POST /reservations/{id}/room` | app bookings are room-less; front desk assigns → key shows the room |
 | `hotels.reception_phone` (form + guest APIs) | "تواصل مع الاستقبال" dials the hotel |
 | Guest `preferences` + `data_deletion_requested_at`, `PATCH /guest/preferences`, `POST /guest/privacy/deletion-request` | `PROFILE_Preferences` / `PROFILE_Privacy`; opt-out stops email/SMS |

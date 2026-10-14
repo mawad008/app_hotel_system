@@ -82,6 +82,25 @@ Routes (`AppRoutes`, all auth-guarded, all under `/reservation/:reservationId`):
 
 Reusable widgets: `PaymentSummaryCard`, `PaymentStatusPill`.
 
+### Cost breakdown (QA 2026-10-08)
+
+`PaymentSummaryCard` (review + result screens) shows reference / hotel / room /
+dates / status, then a **cost breakdown**, each line separate:
+
+| Line | Source |
+|---|---|
+| Room rate / night | `room_type.base_price` (hidden if absent) |
+| Nights | `check_in` → `check_out` |
+| Stay subtotal | `price_snapshot` |
+| Taxes | `hotel.prices_include_taxes`: `true` → "Included", `false` → 0, absent → hidden |
+| Service fee | `service_fee_amount` (0 when none) |
+| Booking total | subtotal + service fee (= the resource's `total_amount`) |
+| Deposit (held now, refundable) | placed hold amount, else `hotel.deposit_amount` |
+
+The platform has **no tax amount** — only the per-hotel "rates include taxes"
+flag — so no tax figure is invented. The flag is the hotel's *current* value,
+not snapshotted on the booking. Only the deposit is requested on this screen.
+
 ## State management
 
 * `paymentControllerProvider` — a `Notifier<PaymentActionState>` (app-scoped so

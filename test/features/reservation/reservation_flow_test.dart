@@ -67,6 +67,53 @@ void main() {
     expect(find.text(en.paymentReviewTitle), findsOneWidget);
   });
 
+  group('back from payment', () {
+    Future<AppLocalizations> toPaymentAndBack(WidgetTester tester) async {
+      final AppLocalizations en = await _toSummary(tester);
+      await tester
+          .tap(find.widgetWithText(FilledButton, en.bookingProceedToPayment));
+      await tester.pumpAndSettle();
+      expect(find.byType(PaymentReviewPage), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(find.text(en.roomsTitle), findsWidgets);
+      return en;
+    }
+
+    testWidgets('changing the room still offers proceed to payment',
+        (WidgetTester tester) async {
+      final AppLocalizations en = await toPaymentAndBack(tester);
+
+      await tester
+          .tap(find.widgetWithText(OutlinedButton, en.roomViewDetails).at(1));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, en.roomSelectThisRoom));
+      await tester.pumpAndSettle();
+
+      final Finder pay =
+          find.widgetWithText(FilledButton, en.bookingProceedToPayment);
+      expect(pay, findsOneWidget);
+      await tester.tap(pay);
+      await tester.pumpAndSettle();
+      expect(find.byType(PaymentReviewPage), findsOneWidget);
+    });
+
+    testWidgets('the same room continues to its existing reservation',
+        (WidgetTester tester) async {
+      final AppLocalizations en = await toPaymentAndBack(tester);
+
+      await tester
+          .tap(find.widgetWithText(OutlinedButton, en.roomViewDetails).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, en.commonContinue));
+      await tester.pumpAndSettle();
+      await tester
+          .tap(find.widgetWithText(FilledButton, en.bookingProceedToPayment));
+      await tester.pumpAndSettle();
+      expect(find.byType(PaymentReviewPage), findsOneWidget);
+    });
+  });
+
   testWidgets('a failed create shows an error banner and allows retry',
       (WidgetTester tester) async {
     final DummyReservationDataSource ds = DummyReservationDataSource()

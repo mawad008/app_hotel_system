@@ -5,6 +5,7 @@ import 'package:hotel_guest_app/app/router/app_router.dart';
 import 'package:hotel_guest_app/app/router/app_routes.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
 import 'package:hotel_guest_app/core/time/clock.dart';
+import 'package:hotel_guest_app/features/payment/presentation/pages/payment_review_page.dart';
 
 import '../../support/calendar_test_support.dart';
 import '../../support/pump_app.dart';
@@ -109,5 +110,65 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_path(container), endsWith('/payment'));
+  });
+
+  testWidgets(
+      'after signing in mid-booking, back from payment reaches the rooms and '
+      'a changed room can still proceed to payment',
+      (WidgetTester tester) async {
+    final ProviderContainer container =
+        await pumpApp(tester, extraOverrides: _fixedClock);
+    final AppLocalizations en = await _guestToSummary(tester, () => container);
+
+    await tester.tap(find.text(en.reviewSignInToConfirm));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '0512345678');
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, en.authPhoneSubmit));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '123456');
+    await tester.pumpAndSettle();
+    final Finder fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'Mahmoud Nabil');
+    await tester.enterText(fields.at(1), 'mahmoud@example.com');
+    await tester.pump();
+    await tester.tap(find.text(en.authProfileSubmit));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.widgetWithText(FilledButton, en.bookingProceedToPayment));
+    await tester.pumpAndSettle();
+    expect(_path(container), endsWith('/payment'));
+
+    // The sign-in replaced the stack, so payment is the only page: its
+    // "Back" must still lead to the rooms list.
+    await tester.tap(find.widgetWithText(OutlinedButton, en.commonBack));
+    await tester.pumpAndSettle();
+    expect(_path(container), '/discover/hotel/oasis/rooms');
+
+    await tester
+        .tap(find.widgetWithText(OutlinedButton, en.roomViewDetails).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, en.roomSelectThisRoom));
+    await tester.pumpAndSettle();
+
+    final Finder pay =
+        find.widgetWithText(FilledButton, en.bookingProceedToPayment);
+    expect(pay, findsOneWidget);
+    await tester.tap(pay);
+    await tester.pumpAndSettle();
+    expect(find.byType(PaymentReviewPage), findsOneWidget);
+  });
+
+  testWidgets('the summary reached by sign-in has a back button to the rooms',
+      (WidgetTester tester) async {
+    final ProviderContainer container =
+        await pumpApp(tester, extraOverrides: _fixedClock);
+    await _guestToSummary(tester, () => container);
+    container.read(appRouterProvider).go('/discover/hotel/oasis/review');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(_path(container), '/discover/hotel/oasis/rooms');
   });
 }

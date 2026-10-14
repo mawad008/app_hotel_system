@@ -10,6 +10,7 @@ import '../../../../core/localization/numerals.dart';
 import '../../../../core/time/stay_date_format.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/back_fallback_scope.dart';
 import '../../../../core/widgets/bottom_action_bar.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_icons.dart';
@@ -32,6 +33,8 @@ import '../../../reservation/domain/entities/reservation.dart';
 import '../state/hotel_detail_provider.dart';
 import '../../../reservation/presentation/state/create_reservation_controller.dart';
 import '../../domain/entities/guest_party.dart';
+import '../../domain/entities/hotel_guest_details.dart';
+import '../../domain/entities/money.dart';
 import '../../domain/entities/room_selection.dart';
 import '../state/booking_price.dart';
 import '../state/guest_party_controller.dart';
@@ -51,12 +54,12 @@ class RoomSelectionReviewPage extends ConsumerWidget {
   final String hotelId;
 
   String? _guestReference(AuthState auth) => auth.map(
-        unknown: () => null,
-        unauthenticated: () => null,
-        awaitingProfile: (session) => session.profile.phone.e164,
-        authenticated: (session) => session.profile.phone.e164,
-        sessionExpired: () => null,
-      );
+    unknown: () => null,
+    unauthenticated: () => null,
+    awaitingProfile: (session) => session.profile.phone.e164,
+    authenticated: (session) => session.profile.phone.e164,
+    sessionExpired: () => null,
+  );
 
   void _signInToConfirm(BuildContext context, WidgetRef ref) {
     ref
@@ -81,14 +84,15 @@ class RoomSelectionReviewPage extends ConsumerWidget {
       final String failedText = context.l10n.bookingLoyaltyRedeemFailed;
       bool ok = false;
       try {
-        final RedeemPointsResult result =
-            await ref.read(loyaltyRepositoryProvider).redeem(
-                  RedeemPointsRequest(
-                    reservationId: reservation.id,
-                    points: points,
-                  ),
-                  LoyaltyContext.forReservation(reservation),
-                );
+        final RedeemPointsResult result = await ref
+            .read(loyaltyRepositoryProvider)
+            .redeem(
+              RedeemPointsRequest(
+                reservationId: reservation.id,
+                points: points,
+              ),
+              LoyaltyContext.forReservation(reservation),
+            );
         ok = result.outcome.isSuccess;
       } catch (_) {
         ok = false;
@@ -107,6 +111,12 @@ class RoomSelectionReviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    // After a mid-booking sign-in the guest lands here with `go`, so this is
+    // the only page — "back" must still reach the rooms list to change room.
+    final String roomsLocation = AppRoutes.availableRooms.replaceFirst(
+      ':hotelId',
+      hotelId,
+    );
     final RoomSelection? selection = ref.watch(roomSelectionControllerProvider);
     final String? guestReference = _guestReference(
       ref.watch(authControllerProvider),
@@ -114,13 +124,16 @@ class RoomSelectionReviewPage extends ConsumerWidget {
 
     if (selection == null || selection.hotelId != hotelId) {
       return Scaffold(
-        appBar: HotelAppBar(title: l10n.bookingDetailsTitle),
+        appBar: HotelAppBar(
+          title: l10n.bookingDetailsTitle,
+          fallbackLocation: roomsLocation,
+        ),
         body: MessageView(
           icon: AppIcons.room,
           title: l10n.reviewNoSelectionTitle,
           message: l10n.reviewNoSelectionBody,
           actionLabel: l10n.reviewBackToRooms,
-          onAction: () => context.pop(),
+          onAction: () => popOr(context, roomsLocation),
         ),
       );
     }
@@ -133,15 +146,19 @@ class RoomSelectionReviewPage extends ConsumerWidget {
     final LoyaltyProgram? program = signedIn
         ? ref.watch(loyaltyProgramProvider(hotelId)).valueOrNull
         : null;
+    final HotelGuestDetails? hotelDetails = ref
+        .watch(hotelDetailProvider(hotelId))
+        .valueOrNull
+        ?.details;
+    // The hotel's own service fee and tax (dashboard-managed); none when off.
+    final Money? serviceFee = hotelDetails?.serviceFee?.feeFor(
+      selection.stayTotal,
+    );
     final BookingPriceBreakdown breakdown = BookingPriceBreakdown.of(
       selection,
-      // The hotel's own service fee (dashboard-managed); none when it's off.
-      serviceFee: ref
-          .watch(hotelDetailProvider(hotelId))
-          .valueOrNull
-          ?.details
-          .serviceFee
-          ?.feeFor(selection.stayTotal),
+      serviceFee: serviceFee,
+      tax: hotelDetails?.taxFor(selection.stayTotal, serviceFee: serviceFee),
+      taxRate: hotelDetails?.taxRate,
       loyaltyDiscount: program == null || redeemPoints == 0
           ? 0
           : program.discountFor(
@@ -156,8 +173,9 @@ class RoomSelectionReviewPage extends ConsumerWidget {
             guestReference: guestReference,
           )
         : null;
-    final CreateReservationState reservationState =
-        ref.watch(createReservationControllerProvider);
+    final CreateReservationState reservationState = ref.watch(
+      createReservationControllerProvider,
+    );
 
     // Once this exact request succeeds, go straight to payment.
     ref.listen<CreateReservationState>(createReservationControllerProvider, (
@@ -169,84 +187,102 @@ class RoomSelectionReviewPage extends ConsumerWidget {
       }
     });
 
-    final bool submitting = reservationState is CreateReservationSubmitting &&
+    final bool submitting =
+        reservationState is CreateReservationSubmitting &&
         reservationState.request == request;
-    final Failure? failure = reservationState is CreateReservationFailed &&
+    final Failure? failure =
+        reservationState is CreateReservationFailed &&
             reservationState.request == request
         ? reservationState.failure
         : null;
+    // Back from payment with the same room: that reservation already exists,
+    // so continuing reopens its payment instead of a no-op re-submit.
+    final Reservation? created =
+        reservationState is CreateReservationDone &&
+            reservationState.request == request
+        ? reservationState.reservation
+        : null;
 
-    return Scaffold(
-      appBar: HotelAppBar(title: l10n.bookingDetailsTitle),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.pageGutter),
-          children: <Widget>[
-            _RoomCard(selection: selection),
-            const SizedBox(height: AppSpacing.md),
-            _DatesCard(
-              selection: selection,
-              onEdit: () => context.pushNamed(
-                AppRoutes.stayDatesName,
-                pathParameters: <String, String>{'hotelId': hotelId},
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _PartyCard(
-              party: party,
-              selection: selection,
-              onAdults: (int v) => ref
-                  .read(guestPartyControllerProvider.notifier)
-                  .setAdults(v),
-              onChildren: (int v) => ref
-                  .read(guestPartyControllerProvider.notifier)
-                  .setChildren(v),
-            ),
-            if (signedIn) ...<Widget>[
-              const SizedBox(height: AppSpacing.md),
-              LoyaltyRedemptionField(
-                hotelId: hotelId,
-                stayTotal: selection.stayTotal.amount,
-                currency: selection.stayTotal.currency,
-              ),
-            ],
-            const SizedBox(height: AppSpacing.md),
-            PriceBreakdownCard(breakdown: breakdown),
-            if (failure != null) ...<Widget>[
-              const SizedBox(height: AppSpacing.md),
-              InfoBanner(
-                tone: InfoBannerTone.error,
-                title: l10n.reservationCreateFailedTitle,
-                message: failure.localizedMessage(l10n),
-              ),
-            ],
-            if (!signedIn) ...<Widget>[
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                l10n.reviewSignInHint,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
+    return BackFallbackScope(
+      fallback: roomsLocation,
+      child: Scaffold(
+        appBar: HotelAppBar(
+          title: l10n.bookingDetailsTitle,
+          fallbackLocation: roomsLocation,
         ),
-      ),
-      bottomNavigationBar: BottomActionBar.actions(
-        primary: signedIn
-            ? PrimaryButton(
-                label: submitting
-                    ? l10n.reservationConfirming
-                    : l10n.bookingProceedToPayment,
-                isLoading: submitting,
-                onPressed: submitting
-                    ? null
-                    : () => ref
-                        .read(createReservationControllerProvider.notifier)
-                        .submit(request!),
-              )
-            : PrimaryButton(
-                label: l10n.reviewSignInToConfirm,
-                onPressed: () => _signInToConfirm(context, ref),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(AppSpacing.pageGutter),
+            children: <Widget>[
+              _RoomCard(selection: selection),
+              const SizedBox(height: AppSpacing.md),
+              _DatesCard(
+                selection: selection,
+                onEdit: () => context.pushNamed(
+                  AppRoutes.stayDatesName,
+                  pathParameters: <String, String>{'hotelId': hotelId},
+                ),
               ),
+              const SizedBox(height: AppSpacing.md),
+              _PartyCard(
+                party: party,
+                selection: selection,
+                onAdults: (int v) => ref
+                    .read(guestPartyControllerProvider.notifier)
+                    .setAdults(v),
+                onChildren: (int v) => ref
+                    .read(guestPartyControllerProvider.notifier)
+                    .setChildren(v),
+              ),
+              if (signedIn) ...<Widget>[
+                const SizedBox(height: AppSpacing.md),
+                LoyaltyRedemptionField(
+                  hotelId: hotelId,
+                  stayTotal: selection.stayTotal.amount,
+                  currency: selection.stayTotal.currency,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              PriceBreakdownCard(breakdown: breakdown),
+              if (failure != null) ...<Widget>[
+                const SizedBox(height: AppSpacing.md),
+                InfoBanner(
+                  tone: InfoBannerTone.error,
+                  title: l10n.reservationCreateFailedTitle,
+                  message: failure.localizedMessage(l10n),
+                ),
+              ],
+              if (!signedIn) ...<Widget>[
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.reviewSignInHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ],
+          ),
+        ),
+        bottomNavigationBar: BottomActionBar.actions(
+          primary: signedIn
+              ? PrimaryButton(
+                  label: submitting
+                      ? l10n.reservationConfirming
+                      : l10n.bookingProceedToPayment,
+                  isLoading: submitting,
+                  onPressed: submitting
+                      ? null
+                      : created != null
+                      ? () =>
+                            _redeemThenPay(context, ref, created, redeemPoints)
+                      : () => ref
+                            .read(createReservationControllerProvider.notifier)
+                            .submit(request!),
+                )
+              : PrimaryButton(
+                  label: l10n.reviewSignInToConfirm,
+                  onPressed: () => _signInToConfirm(context, ref),
+                ),
+        ),
       ),
     );
   }
@@ -301,7 +337,8 @@ class _RoomCard extends StatelessWidget {
                 Row(
                   children: <Widget>[
                     MoneyText(
-                      selection.nightlyRate.amount, currency: selection.nightlyRate.currency,
+                      selection.nightlyRate.amount,
+                      currency: selection.nightlyRate.currency,
                       suffix: l10n.priceNightSuffix,
                       markSize: 13,
                     ),
@@ -344,18 +381,23 @@ class _DatesCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   l10n.bookingDatesLabel,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: context.colors.textSecondary),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: context.colors.textSecondary,
+                  ),
                 ),
               ),
               InkWell(
                 onTap: onEdit,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 4,
+                  ),
                   child: Text(
                     l10n.commonEdit,
-                    style: theme.textTheme.labelMedium
-                        ?.copyWith(color: theme.colorScheme.primary),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
               ),
@@ -399,8 +441,9 @@ class _PartyCard extends StatelessWidget {
     // the room would otherwise drop the selection (RoomSelectionController).
     final int maxAdults = selection.maxAdultsWith(party.children);
     final int maxChildren = selection.maxChildrenWith(party.adults);
-    final String adultsLimit =
-        context.localDigits(l10n.roomMaxAdultsReached(maxAdults));
+    final String adultsLimit = context.localDigits(
+      l10n.roomMaxAdultsReached(maxAdults),
+    );
     final String occupancyLimit = context.localDigits(
       l10n.roomMaxGuestsReached(selection.roomType.maxOccupancy),
     );
@@ -431,9 +474,7 @@ class _PartyCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               party.children == 0 ? adultsLimit : occupancyLimit,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
+              style: Theme.of(context).textTheme.bodySmall
                   ?.copyWith(color: context.colors.textSecondary),
             ),
           ],

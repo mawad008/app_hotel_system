@@ -90,16 +90,17 @@ void main() {
     expect(find.text(en.stayHomeTitle), findsWidgets);
   });
 
-  testWidgets('the CTA is disabled until the reservation is verified',
+  testWidgets('not verified yet: no check-in CTA, a way back to the reservation instead',
       (tester) async {
     final en = await _l10n('en');
     final id = reservationIdForCheckIn(DummyCheckInScenario.issuesActive);
     await _open(tester, id, status: ReservationStatus.pending);
 
-    expect(find.text(en.checkInNotReadyTitle), findsWidgets);
+    expect(find.text(en.checkInNotReadyTitle), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, en.checkInCta), findsNothing);
     final btn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, en.checkInCta));
-    expect(btn.onPressed, isNull);
+        find.widgetWithText(FilledButton, en.identityBackToReservation));
+    expect(btn.onPressed, isNotNull);
   });
 
   testWidgets('issue failure shows a safe error + retry that recovers',

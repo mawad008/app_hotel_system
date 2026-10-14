@@ -14,8 +14,8 @@ How to build and ship the app to Google Play and the App Store.
 | | Android | iOS |
 |---|---|---|
 | Id | `com.hotelsystem.hotel_guest_app` | `com.hotelsystem.hotelGuestApp` |
-| Name (en / ar) | Hotel System / فندق سيستم | Hotel System / فندق سيستم |
-| Team | — | `549WCU26VB` |
+| Name | Stdy Hotel | Stdy Hotel |
+| Team | — | `2CA9YNXZDR` |
 
 Both ids are **permanent once the first build is uploaded**. Change them before
 that, or never.
@@ -103,7 +103,9 @@ Upload `build/ios/ipa/*.ipa` with Transporter, or open
 
 Already configured in the project:
 
-- Automatic signing, team `549WCU26VB`, iOS 15.0 minimum.
+- Team `2CA9YNXZDR`, iOS 15.0 minimum. Release builds sign manually with the
+  "Apple Distribution" certificate and the "Stdy Hotel App Store" profile
+  (matching `ios/ExportOptions.plist`).
 - **iPhone only** (`TARGETED_DEVICE_FAMILY = 1`). The UI is a phone design, and
   iPad support cannot be withdrawn once shipped; add it in a later version if
   wanted (it then needs iPad screenshots).
