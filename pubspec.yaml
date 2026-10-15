@@ -2,7 +2,7 @@ name: hotel_guest_app
 description: "Hotel Management System — Guest mobile application (Flutter client of the Laravel REST API)."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.13.2
