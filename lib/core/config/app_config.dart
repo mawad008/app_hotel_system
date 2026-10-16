@@ -1,13 +1,20 @@
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show
+        TargetPlatform,
+        defaultTargetPlatform,
+        kIsWeb,
+        kReleaseMode,
+        visibleForTesting;
 
 import 'app_environment.dart';
 
 /// Immutable runtime configuration.
 ///
-/// Values come from `--dart-define`s at build time so no environment detail or
-/// secret is baked into source (mobile/docs/coding_rules.md §10). Nothing here is
-/// secret: only the API host and feature flags. Tokens/credentials live in the
-/// storage layer at runtime, never in config.
+/// Values come from `--dart-define`s at build time (mobile/docs/coding_rules.md
+/// §10). Nothing here is secret: only the API host and feature flags.
+/// Tokens/credentials live in the storage layer at runtime, never in config.
+/// The one host in source is [productionBaseUrl], the fallback that keeps a
+/// release build built without its defines working.
 class AppConfig {
   const AppConfig({
     required this.environment,
@@ -17,7 +24,17 @@ class AppConfig {
     this.singleHotelGroup = false,
   });
 
-  /// Reads configuration from compile-time defines, with development defaults:
+  /// The production API host — the same value as `config/production.json`,
+  /// which a test keeps in step.
+  ///
+  /// A release build built without its defines falls back to it, so a store
+  /// build can never point at a developer's machine: an iOS archive made in
+  /// Xcode after `flutter pub get` (which resets the defines) once reached
+  /// App Review calling `127.0.0.1` and showing "you appear to be offline" on
+  /// launch.
+  static const String productionBaseUrl = 'https://admin.hotel.webstdy.com';
+
+  /// Reads configuration from compile-time defines:
   ///
   /// ```
   /// flutter run \
@@ -25,14 +42,16 @@ class AppConfig {
   ///   --dart-define=API_BASE_URL=https://staging.example.com \
   ///   --dart-define=USE_DUMMY_DATA=false
   /// ```
-  factory AppConfig.fromEnvironment() {
-    const String env = String.fromEnvironment('APP_ENV', defaultValue: 'development');
-    // No override → pick a per-platform dev default (see
-    // [_devDefaultBaseUrl]). A physical device on the same LAN still needs:
+  ///
+  /// Store builds pass `--dart-define-from-file=config/production.json`; see
+  /// [AppConfig.resolve] for what applies when a define is missing.
+  factory AppConfig.fromEnvironment() => AppConfig.resolve(
+    release: kReleaseMode,
+    appEnv: const String.fromEnvironment('APP_ENV'),
+    // Combined with `/api/v1` by [apiRoot]. A physical device on the
+    // developer's LAN needs:
     //   --dart-define=API_BASE_URL=http://<your-Mac-LAN-IP>:8000
-    // The value is combined with `/api/v1` by [apiRoot]; never hard-code a host.
-    const String overrideBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
-    final String baseUrl = overrideBaseUrl.isEmpty ? _devDefaultBaseUrl() : overrideBaseUrl;
+    apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
     // Real integration: --dart-define=USE_DUMMY_DATA=false. As of the final
     // mobile↔backend integration pass, every feature's `Api*DataSource` is a
     // real implementation against the guest API (auth, discovery,
@@ -45,19 +64,37 @@ class AppConfig {
     // stay-services has no guest cancel; discovery has no "featured hotels"
     // or "upcoming stay" concept server-side (see
     // md/integration-contract-matrix.md).
-    const bool useDummy = bool.fromEnvironment('USE_DUMMY_DATA', defaultValue: false);
-    // Demo/QA flag: render the single-hotel Home variant (`اكتشف {hotel}` +
-    // `استكشف الغرف`). The real group size comes from the backend catalogue;
-    // this just lets the variant be walked with dummy data.
-    const bool singleHotel =
-        bool.fromEnvironment('SINGLE_HOTEL', defaultValue: false);
+    useDummyData: const bool.fromEnvironment('USE_DUMMY_DATA'),
+    // Demo/QA flag: render the single-hotel Home variant (`اكتشف {hotel}`
+    // + `استكشف الغرف`). The real group size comes from the backend
+    // catalogue; this just lets the variant be walked with dummy data.
+    singleHotelGroup: const bool.fromEnvironment('SINGLE_HOTEL'),
+  );
 
+  /// [AppConfig.fromEnvironment]'s rules, with the defines passed in so tests
+  /// can run both build modes. A define that was passed always wins. Without
+  /// one, a **release** build is production ([productionBaseUrl]); debug and
+  /// profile builds use the local dev server ([_devDefaultBaseUrl]).
+  @visibleForTesting
+  factory AppConfig.resolve({
+    required bool release,
+    String appEnv = '',
+    String apiBaseUrl = '',
+    bool useDummyData = false,
+    bool singleHotelGroup = false,
+  }) {
+    final String env = appEnv.isNotEmpty
+        ? appEnv
+        : (release ? 'production' : 'development');
+    final String baseUrl = apiBaseUrl.isNotEmpty
+        ? apiBaseUrl
+        : (release ? productionBaseUrl : _devDefaultBaseUrl());
     return AppConfig(
       environment: AppEnvironment.fromName(env),
       apiBaseUrl: baseUrl,
       apiVersion: 'v1',
-      useDummyData: useDummy,
-      singleHotelGroup: singleHotel,
+      useDummyData: useDummyData,
+      singleHotelGroup: singleHotelGroup,
     );
   }
 
@@ -76,8 +113,8 @@ class AppConfig {
 
   bool get isProduction => environment == AppEnvironment.production;
 
-  /// Reachable Laravel dev host per platform, used only when
-  /// `API_BASE_URL` isn't overridden via `--dart-define`.
+  /// Reachable Laravel dev host per platform, used only by debug/profile
+  /// builds when `API_BASE_URL` isn't overridden via `--dart-define`.
   ///
   /// Android's emulator is its own sandboxed device: `localhost` there means
   /// the emulator, not the developer machine, so the emulator-to-host loopback

@@ -33,8 +33,13 @@ Release builds must be given the production defines:
 --dart-define-from-file=config/production.json
 ```
 
-Without it the app points at the local development backend
-(`http://10.0.2.2:8000`) and nothing loads.
+As a safety net, a **release** build without them still talks to the
+production API (`AppConfig.productionBaseUrl`, which a test keeps equal to
+`config/production.json`). Before that fallback existed, App Review rejected
+iOS 1.0 (2) with "no internet connection" on launch, which is what a build
+without the defines does: it calls a developer machine (`127.0.0.1`).
+Debug and profile builds without them still use the local development backend
+(`http://10.0.2.2:8000` on the Android emulator, `127.0.0.1:8000` elsewhere).
 
 ## Android
 
@@ -100,6 +105,10 @@ flutter build ipa --release \
 
 Upload `build/ios/ipa/*.ipa` with Transporter, or open
 `build/ios/archive/Runner.xcarchive` in Xcode → *Distribute App*.
+
+Always make the archive with this command, not Xcode's *Product → Archive*:
+`flutter pub get` and `pod install` rewrite `ios/Flutter/Generated.xcconfig`
+without the defines, so an archive made in Xcode afterwards doesn't get them.
 
 Already configured in the project:
 
