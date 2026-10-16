@@ -81,4 +81,17 @@ void main() {
     final AppLocalizations l10n = await _pump(tester, fakeReservation(depositAmount: 270));
     expect(find.text(l10n.roomTaxesLabel), findsNothing);
   });
+
+  testWidgets('the tax row follows the booking tax, so the rows always '
+      'add up to the total', (WidgetTester tester) async {
+    // The hotel flag is unknown (or was changed after booking), but the
+    // booking carries a server tax that the total includes.
+    final AppLocalizations l10n = await _pump(
+      tester,
+      fakeReservation(amount: 900, serviceFee: 45, tax: 141.75, taxRate: 15),
+    );
+    expect(_amountOn(tester, l10n.bookingTaxRow('15')), 141.75);
+    expect(_amountOn(tester, l10n.paymentBookingTotalLabel), 1086.75);
+    expect(find.text(l10n.roomPriceIncludedValue), findsNothing);
+  });
 }

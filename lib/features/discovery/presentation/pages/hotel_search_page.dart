@@ -138,36 +138,122 @@ class _Results extends ConsumerWidget {
     return UiStateView<HotelSearchResult>(
       state: state.results,
       onRetry: () => ref.read(hotelSearchControllerProvider.notifier).retry(),
-      onSuccess: (HotelSearchResult result) => ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.pageGutter,
-          0,
-          AppSpacing.pageGutter,
-          AppSpacing.xl,
-        ),
-        children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-            child: Text(
-              l10n.searchResultsCount(result.totalCount),
-              style: Theme.of(context).textTheme.bodySmall,
+      onSuccess: (HotelSearchResult result) {
+        final HotelSearchController controller =
+            ref.read(hotelSearchControllerProvider.notifier);
+        final bool showFooter =
+            result.hasMore || state.loadingMore || state.loadMoreFailure != null;
+        // Lazy: cards are built only as they scroll into view, and the next
+        // page is requested before the guest reaches the end.
+        return NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification n) {
+            if (n.metrics.axis == Axis.vertical &&
+                n.metrics.extentAfter < _loadMoreThreshold &&
+                state.loadMoreFailure == null) {
+              controller.loadMore();
+            }
+            return false;
+          },
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.pageGutter,
+              0,
+              AppSpacing.pageGutter,
+              AppSpacing.xl,
             ),
+            itemCount: 1 + result.hotels.length + (showFooter ? 1 : 0),
+            itemBuilder: (BuildContext context, int index) {
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  child: Text(
+                    l10n.searchResultsCount(result.totalCount),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                );
+              }
+              final int i = index - 1;
+              if (i == result.hotels.length) {
+                return _LoadMoreFooter(
+                  failed: state.loadMoreFailure != null,
+                  onShown: controller.loadMore,
+                  onRetry: controller.loadMore,
+                );
+              }
+              final hotel = result.hotels[i];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: HotelSummaryCard(
+                  key: ValueKey<String>('hotel-${hotel.id}'),
+                  hotel: hotel,
+                  onTap: () => context.pushNamed(
+                    AppRoutes.hotelDetailName,
+                    pathParameters: <String, String>{'hotelId': hotel.id},
+                  ),
+                ),
+              );
+            },
           ),
-          for (final hotel in result.hotels) ...<Widget>[
-            HotelSummaryCard(
-              hotel: hotel,
-              onTap: () => context.pushNamed(
-                AppRoutes.hotelDetailName,
-                pathParameters: <String, String>{'hotelId': hotel.id},
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ],
-      ),
+        );
+      },
       // Empty == the query / filters matched nothing.
       emptyTitle: l10n.searchNoResultsTitle,
       emptyMessage: l10n.searchNoResultsBody,
+    );
+  }
+}
+
+/// Start fetching the next page this far (logical px) before the list's end,
+/// so it is usually in before the guest gets there.
+const double _loadMoreThreshold = 600;
+
+/// The list's last row while more hotels exist: a spinner while the next
+/// page loads, or a retry button when that load failed.
+///
+/// Being built at all means the end of the list is near the viewport (lists
+/// build rows lazily), so it also asks for the next page — which covers a
+/// first page too short to scroll.
+class _LoadMoreFooter extends StatefulWidget {
+  const _LoadMoreFooter({
+    required this.failed,
+    required this.onShown,
+    required this.onRetry,
+  });
+
+  final bool failed;
+  final VoidCallback onShown;
+  final VoidCallback onRetry;
+
+  @override
+  State<_LoadMoreFooter> createState() => _LoadMoreFooterState();
+}
+
+class _LoadMoreFooterState extends State<_LoadMoreFooter> {
+  @override
+  void initState() {
+    super.initState();
+    if (!widget.failed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onShown();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Center(
+        child: widget.failed
+            ? TextButton(
+                onPressed: widget.onRetry,
+                child: Text(context.l10n.actionRetry),
+              )
+            : const SizedBox.square(
+                dimension: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+      ),
     );
   }
 }

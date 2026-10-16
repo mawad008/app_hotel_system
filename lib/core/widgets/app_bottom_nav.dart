@@ -21,6 +21,10 @@ import 'app_icons.dart';
 /// Below the bar sits the Figma `page footer`: white, 8px + the home-indicator
 /// inset (only on devices that have a bottom inset). It never routes itself;
 /// the host supplies [onSelected].
+///
+/// Android back on the Bookings, Services or Account tab returns to Home
+/// (through [onSelected]) instead of closing the app; back on Home exits as
+/// usual. Each tab is its own root route, so there is nothing to pop.
 enum AppNavTab { home, bookings, services, account }
 
 class AppBottomNav extends StatelessWidget {
@@ -62,43 +66,52 @@ class AppBottomNav extends StatelessWidget {
       );
     }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: c.bgSurface,
-        border: Border(top: BorderSide(color: c.borderDefault)),
-        boxShadow: const <BoxShadow>[_shadow],
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(bottom: _footer(context)),
+    // Only the `isFirst` aspect: depending on the whole route would rebuild
+    // the bar every time a page is pushed over (or popped off) the shell.
+    final bool isRootRoute = ModalRoute.isFirstOf(context) ?? true;
+    return PopScope(
+      canPop: current == AppNavTab.home || !isRootRoute,
+      onPopInvokedWithResult: (bool didPop, Object? _) {
+        if (!didPop) onSelected(AppNavTab.home);
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: c.bgSurface,
+          border: Border(top: BorderSide(color: c.borderDefault)),
+          boxShadow: const <BoxShadow>[_shadow],
+        ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
-          child: Row(
-            children: <Widget>[
-              tab(
-                AppNavTab.home,
-                AppIcons.tabHomeOutline,
-                AppIcons.tabHome,
-                l10n.navHome,
-              ),
-              tab(
-                AppNavTab.bookings,
-                AppIcons.tabBookingsOutline,
-                AppIcons.tabBookings,
-                l10n.navBookings,
-              ),
-              tab(
-                AppNavTab.services,
-                AppIcons.tabServicesOutline,
-                AppIcons.tabServices,
-                l10n.navServices,
-              ),
-              tab(
-                AppNavTab.account,
-                AppIcons.tabAccountOutline,
-                AppIcons.tabAccount,
-                l10n.navAccount,
-              ),
-            ],
+          padding: EdgeInsets.only(bottom: _footer(context)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+            child: Row(
+              children: <Widget>[
+                tab(
+                  AppNavTab.home,
+                  AppIcons.tabHomeOutline,
+                  AppIcons.tabHome,
+                  l10n.navHome,
+                ),
+                tab(
+                  AppNavTab.bookings,
+                  AppIcons.tabBookingsOutline,
+                  AppIcons.tabBookings,
+                  l10n.navBookings,
+                ),
+                tab(
+                  AppNavTab.services,
+                  AppIcons.tabServicesOutline,
+                  AppIcons.tabServices,
+                  l10n.navServices,
+                ),
+                tab(
+                  AppNavTab.account,
+                  AppIcons.tabAccountOutline,
+                  AppIcons.tabAccount,
+                  l10n.navAccount,
+                ),
+              ],
+            ),
           ),
         ),
       ),

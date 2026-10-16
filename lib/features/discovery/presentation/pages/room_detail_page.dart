@@ -21,6 +21,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/time/clock.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/loading_view.dart';
+import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -162,7 +164,29 @@ class RoomDetailPage extends ConsumerWidget {
       );
     }
 
-    if (room == null || hotelAsync.value == null) {
+    // `valueOrNull`: `value` rethrows when the hotel request failed with
+    // nothing loaded before, which would crash this build.
+    final Hotel? loadedHotel = hotelAsync.valueOrNull;
+    if (loadedHotel == null && hotelAsync.hasError) {
+      return Scaffold(
+        appBar: HotelAppBar(title: l10n.roomDetailsTitle),
+        body: PullToRefresh(
+          onRefresh: refresh,
+          child: PullToRefreshFill(
+            child: MessageView(
+              icon: AppIcons.warning,
+              title: l10n.stateErrorTitle,
+              message: ErrorMapper.toFailure(hotelAsync.error!)
+                  .localizedMessage(l10n),
+              actionLabel: l10n.actionRetry,
+              onAction: () => ref.invalidate(hotelDetailProvider(hotelId)),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (room == null || loadedHotel == null) {
       return Scaffold(
         appBar: HotelAppBar(title: l10n.roomDetailsTitle),
         body: PullToRefresh(
@@ -178,7 +202,7 @@ class RoomDetailPage extends ConsumerWidget {
       );
     }
 
-    final Hotel hotel = hotelAsync.value!;
+    final Hotel hotel = loadedHotel;
     final bool isSelected =
         selection != null &&
         selection.matches(request) &&
@@ -385,164 +409,158 @@ class _Body extends ConsumerWidget {
     // Figma `content`: cards 16px apart.
     const SizedBox gap = SizedBox(height: AppSpacing.space4);
 
-    // A short, bounded column of cards — built eagerly (not a lazy list) so
-    // every section is in the tree for screen readers and tests.
-    return SingleChildScrollView(
+    // A list, not a scroll view around a column: only the sections on screen
+    // are built and painted (each in its own repaint boundary), which keeps
+    // scrolling and the page's opening frame light. Screen readers and tests
+    // reach the rest by scrolling.
+    return ListView(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.space4,
         AppSpacing.space2,
         AppSpacing.space4,
         AppSpacing.space6,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          DetailHeroCard(
-            entityId: type.id,
-            photos: photos,
-            aspectRatio: 361 / 358,
-            centerCounter: true,
-            backFallbackLocation: AppRoutes.hotelDetail.replaceFirst(
-              ':hotelId',
-              hotel.id,
-            ),
-            actions: <Widget>[
-              DetailHeroButton(
-                icon: AppIcons.share,
-                tooltip: l10n.hotelShare,
-                onPressed: () => shareHotel(
-                  context,
-                  name: hotel.name.resolve(locale),
-                  location: hotel.country?.resolve(locale) ?? '',
-                  latitude: hotel.details.location?.latitude,
-                  longitude: hotel.details.location?.longitude,
-                ),
-              ),
-              _RoomFavoriteButton(
-                room: FavoriteRoom(
-                  roomTypeId: type.id,
-                  hotelId: hotel.id,
-                  name: type.name,
-                  coverUrl: type.galleryUrls.firstOrNull,
-                ),
-              ),
-            ],
+      children: <Widget>[
+        DetailHeroCard(
+          entityId: type.id,
+          photos: photos,
+          aspectRatio: 361 / 358,
+          centerCounter: true,
+          backFallbackLocation: AppRoutes.hotelDetail.replaceFirst(
+            ':hotelId',
+            hotel.id,
           ),
-          gap,
-          _RoomInfoCard(room: room),
-          gap,
-          _BookingDetailsCard(
-            room: room,
-            stay: stay,
-            party: party,
-            taxesIncluded: details.pricesIncludeTaxes,
+          actions: <Widget>[
+            DetailHeroButton(
+              icon: AppIcons.share,
+              tooltip: l10n.hotelShare,
+              onPressed: () => shareHotel(
+                context,
+                name: hotel.name.resolve(locale),
+                location: hotel.country?.resolve(locale) ?? '',
+                latitude: hotel.details.location?.latitude,
+                longitude: hotel.details.location?.longitude,
+              ),
+            ),
+            _RoomFavoriteButton(
+              room: FavoriteRoom(
+                roomTypeId: type.id,
+                hotelId: hotel.id,
+                name: type.name,
+                coverUrl: type.galleryUrls.firstOrNull,
+              ),
+            ),
+          ],
+        ),
+        gap,
+        _RoomInfoCard(room: room),
+        gap,
+        _BookingDetailsCard(
+          room: room,
+          stay: stay,
+          party: party,
+          taxesIncluded: details.pricesIncludeTaxes,
+          serviceFee: details.serviceFee?.feeFor(room.stayTotal(stay.nights)),
+          taxRate: details.taxRate,
+          tax: details.taxFor(
+            room.stayTotal(stay.nights),
             serviceFee: details.serviceFee?.feeFor(room.stayTotal(stay.nights)),
-            taxRate: details.taxRate,
-            tax: details.taxFor(
-              room.stayTotal(stay.nights),
-              serviceFee: details.serviceFee?.feeFor(
-                room.stayTotal(stay.nights),
-              ),
-            ),
           ),
-          if (included.isNotEmpty) ...<Widget>[
-            gap,
-            DetailCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.roomIncludedHeading,
-                    style: detailTitleStyle(context),
-                  ),
-                  const SizedBox(height: AppSpacing.space4),
-                  for (int i = 0; i < included.length; i++) ...<Widget>[
-                    if (i > 0) const SizedBox(height: AppSpacing.space3),
-                    _IncludedRow(
-                      icon: AppIcons.successOutline,
-                      label: included[i],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-          if (facilities.isNotEmpty) ...<Widget>[
-            gap,
-            DetailCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.roomDetailAmenitiesHeading,
-                    style: detailTitleStyle(context),
-                  ),
-                  const SizedBox(height: AppSpacing.space4),
-                  DetailTileGrid(
-                    columns: 3,
-                    gap: AppSpacing.space2,
-                    children: <Widget>[
-                      for (final (IconData icon, String label) in facilities)
-                        _FacilityTile(icon: icon, label: label),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-          if (description.isNotEmpty) ...<Widget>[
-            gap,
-            _AboutCard(text: description),
-          ],
+        ),
+        if (included.isNotEmpty) ...<Widget>[
           gap,
           DetailCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 Text(
-                  l10n.roomPoliciesHeading,
+                  l10n.roomIncludedHeading,
                   style: detailTitleStyle(context),
                 ),
                 const SizedBox(height: AppSpacing.space4),
-                _PolicyTile(
-                  title: l10n.roomDetailCancellationHeading,
-                  body: switch ((
-                    type.refundable,
-                    ref
-                        .watch(appContentProvider)
-                        .valueOrNull
-                        ?.freeCancellationHours,
-                  )) {
-                    (false, _) => l10n.roomPolicyNonRefundable,
-                    (true, final int hours) => l10n.roomPolicyRefundable(hours),
-                    (true, null) => l10n.roomPolicyRefundableShort,
-                  },
-                ),
-                if (checkIn != null) ...<Widget>[
-                  const SizedBox(height: 10),
-                  _PolicyTile(
-                    icon: AppIcons.time,
-                    title: l10n.roomPolicyCheckInTitle,
-                    body: context.localDigits(
-                      l10n.roomPolicyCheckInBody(checkIn),
-                    ),
-                  ),
-                ],
-                if (checkOut != null) ...<Widget>[
-                  const SizedBox(height: 10),
-                  _PolicyTile(
-                    icon: AppIcons.time,
-                    title: l10n.roomPolicyCheckOutTitle,
-                    body: context.localDigits(
-                      l10n.roomPolicyCheckOutBody(checkOut),
-                    ),
+                for (int i = 0; i < included.length; i++) ...<Widget>[
+                  if (i > 0) const SizedBox(height: AppSpacing.space3),
+                  _IncludedRow(
+                    icon: AppIcons.successOutline,
+                    label: included[i],
                   ),
                 ],
               ],
             ),
           ),
         ],
-      ),
+        if (facilities.isNotEmpty) ...<Widget>[
+          gap,
+          DetailCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  l10n.roomDetailAmenitiesHeading,
+                  style: detailTitleStyle(context),
+                ),
+                const SizedBox(height: AppSpacing.space4),
+                DetailTileGrid(
+                  columns: 3,
+                  gap: AppSpacing.space2,
+                  children: <Widget>[
+                    for (final (IconData icon, String label) in facilities)
+                      _FacilityTile(icon: icon, label: label),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+        if (description.isNotEmpty) ...<Widget>[
+          gap,
+          _AboutCard(text: description),
+        ],
+        gap,
+        DetailCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(l10n.roomPoliciesHeading, style: detailTitleStyle(context)),
+              const SizedBox(height: AppSpacing.space4),
+              _PolicyTile(
+                title: l10n.roomDetailCancellationHeading,
+                body: switch ((
+                  type.refundable,
+                  ref
+                      .watch(appContentProvider)
+                      .valueOrNull
+                      ?.freeCancellationHours,
+                )) {
+                  (false, _) => l10n.roomPolicyNonRefundable,
+                  (true, final int hours) => l10n.roomPolicyRefundable(hours),
+                  (true, null) => l10n.roomPolicyRefundableShort,
+                },
+              ),
+              if (checkIn != null) ...<Widget>[
+                const SizedBox(height: 10),
+                _PolicyTile(
+                  icon: AppIcons.time,
+                  title: l10n.roomPolicyCheckInTitle,
+                  body: context.localDigits(
+                    l10n.roomPolicyCheckInBody(checkIn),
+                  ),
+                ),
+              ],
+              if (checkOut != null) ...<Widget>[
+                const SizedBox(height: 10),
+                _PolicyTile(
+                  icon: AppIcons.time,
+                  title: l10n.roomPolicyCheckOutTitle,
+                  body: context.localDigits(
+                    l10n.roomPolicyCheckOutBody(checkOut),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

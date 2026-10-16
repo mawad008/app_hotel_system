@@ -11,6 +11,7 @@ import 'package:hotel_guest_app/features/discovery/presentation/widgets/stay_ran
 import '../../support/auth_test_support.dart';
 import '../../support/calendar_test_support.dart';
 import '../../support/pump_app.dart';
+import '../../support/scroll_helpers.dart';
 
 final List<Override> _fixedClock = <Override>[
   clockProvider.overrideWithValue(() => DateTime(2026, 9, 1)),
@@ -165,13 +166,14 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text(en.roomSelectThisRoom), findsOneWidget);
-    expect(find.text(en.roomDetailAmenitiesHeading), findsOneWidget);
-    expect(find.text(en.roomDetailCancellationHeading), findsOneWidget);
+    final Set<String> page = await textsOnWholePage(tester);
+    expect(page, contains(en.roomDetailAmenitiesHeading));
+    expect(page, contains(en.roomDetailCancellationHeading));
     // The room type's full description now renders on its own detail page
     // (not just the one-line truncated copy on the list card).
     expect(
-      find.textContaining('A practical room with a calm city outlook.'),
-      findsOneWidget,
+      page.any((String t) => t.contains('A practical room with a calm city outlook.')),
+      isTrue,
     );
   });
 

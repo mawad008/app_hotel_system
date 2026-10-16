@@ -1,3 +1,4 @@
+import '../../../../core/localization/latin_digits.dart';
 import '../entities/guest_phone.dart';
 
 /// Local, user-experience validation for the authentication forms.
@@ -14,11 +15,14 @@ abstract final class AuthValidators {
     return phone.isValid ? null : PhoneInputError.invalid;
   }
 
-  /// Requires the Saudi domestic format exactly as entered: `05` + 8 digits.
+  /// A Saudi mobile number: `5` + 8 digits once the trunk zero and any
+  /// country code are removed, so `05 1234 5678`, `5 1234 5678`,
+  /// `+966 5 1234 5678` and the same in Arabic-Indic digits are all accepted.
   static PhoneInputError? saudiPhone(String rawNationalNumber) {
-    final String digits = rawNationalNumber.replaceAll(RegExp(r'\D'), '');
-    if (digits.isEmpty) return PhoneInputError.empty;
-    return RegExp(r'^05\d{8}$').hasMatch(digits)
+    if (toLatinDigits(rawNationalNumber).replaceAll(RegExp(r'[^0-9]'), '').isEmpty) {
+      return PhoneInputError.empty;
+    }
+    return RegExp(r'^5\d{8}$').hasMatch(GuestPhone.nationalDigits(rawNationalNumber))
         ? null
         : PhoneInputError.invalid;
   }

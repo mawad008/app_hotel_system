@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/localization/l10n.dart';
+import '../../../../core/presentation/latin_digits_formatter.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icons.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -202,6 +204,8 @@ class _IdentityDetailsFormState extends State<IdentityDetailsForm> {
                 controller: _number,
                 errorText: _numberError(l10n),
                 keyboardType: _type == IdentityDocumentType.passport ? TextInputType.visiblePassword : TextInputType.number,
+                // ID numbers typed on an Arabic keyboard arrive as ٠–٩.
+                inputFormatters: const <TextInputFormatter>[LatinDigitsFormatter()],
                 textInputAction: TextInputAction.done,
                 onChanged: (_) => setState(() {}),
               ),

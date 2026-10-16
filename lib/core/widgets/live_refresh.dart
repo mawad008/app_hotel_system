@@ -57,7 +57,15 @@ class _LiveRefreshState extends State<LiveRefresh> {
     final Duration? interval = widget.interval;
     _timer = interval == null
         ? null
-        : Timer.periodic(interval, (_) => _refreshIfVisible());
+        : Timer.periodic(interval, (_) => _onTick());
+  }
+
+  void _onTick() {
+    // In the background nothing is on screen: skip the poll rather than spend
+    // battery, data and the API's rate limit — the resume refresh catches up.
+    final AppLifecycleState? state = WidgetsBinding.instance.lifecycleState;
+    if (state != null && state != AppLifecycleState.resumed) return;
+    _refreshIfVisible();
   }
 
   void _refreshIfVisible() {
@@ -65,7 +73,7 @@ class _LiveRefreshState extends State<LiveRefresh> {
     // Inactive shell tabs run with tickers disabled; covered routes aren't
     // current. Neither is on screen, so neither needs fresh data yet.
     if (!TickerMode.valuesOf(context).enabled) return;
-    if (ModalRoute.of(context)?.isCurrent == false) return;
+    if (ModalRoute.isCurrentOf(context) == false) return;
     widget.onRefresh();
   }
 

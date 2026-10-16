@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/core/di/core_providers.dart';
 import 'package:hotel_guest_app/core/errors/app_exception.dart';
 import 'package:hotel_guest_app/core/time/clock.dart';
+import 'package:hotel_guest_app/features/authentication/presentation/state/auth_controller.dart';
+import 'package:hotel_guest_app/features/authentication/presentation/state/auth_state.dart';
 import 'package:hotel_guest_app/features/reservation/data/datasources/dummy_reservation_data_source.dart';
 import 'package:hotel_guest_app/features/reservation/data/models/reservation_models.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/create_reservation_request.dart';
@@ -10,6 +12,7 @@ import 'package:hotel_guest_app/features/reservation/data/repositories/reservati
 import 'package:hotel_guest_app/features/reservation/presentation/state/create_reservation_controller.dart';
 import 'package:hotel_guest_app/features/reservation/presentation/state/reservation_providers.dart';
 
+import '../../support/auth_test_support.dart';
 import '../../support/test_config.dart';
 import 'reservation_test_support.dart';
 
@@ -173,5 +176,66 @@ void main() {
     await notifier.submit(fakeRequest(guestReference: '+966500000000'));
 
     expect(ds.keys[0], isNot(ds.keys[1]));
+  });
+
+  test('signing out forgets a created booking, so the next guest on this '
+      'phone can never reopen it', () async {
+    final ProviderContainer c = ProviderContainer(
+      overrides: <Override>[
+        appConfigProvider.overrideWithValue(testConfig),
+        clockProvider.overrideWithValue(() => _now),
+        reservationRepositoryProvider.overrideWithValue(
+          ReservationRepositoryImpl(
+            DummyReservationDataSource(clock: () => _now),
+          ),
+        ),
+        authRepositoryProvider.overrideWithValue(
+          TestAuthRepository(bootSession: completeSession()),
+        ),
+        splashMinDurationProvider.overrideWithValue(Duration.zero),
+      ],
+    );
+    addTearDown(c.dispose);
+    c.listen(createReservationControllerProvider, (_, _) {});
+    c.listen(authControllerProvider, (_, _) {});
+    for (int i = 0; i < 50 && c.read(authControllerProvider) is! Authenticated; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
+    expect(c.read(authControllerProvider), isA<Authenticated>());
+
+    await c
+        .read(createReservationControllerProvider.notifier)
+        .submit(fakeRequest());
+    expect(
+      c.read(createReservationControllerProvider),
+      isA<CreateReservationDone>(),
+    );
+
+    await c.read(authControllerProvider.notifier).signOut();
+    expect(
+      c.read(createReservationControllerProvider),
+      isA<CreateReservationIdle>(),
+    );
+  });
+
+  test('forget() drops the remembered booking only when it is the one '
+      'cancelled', () async {
+    final ProviderContainer c = _container();
+    final notifier = c.read(createReservationControllerProvider.notifier);
+    await notifier.submit(fakeRequest());
+    final String id =
+        c.read(createReservationControllerProvider).reservationOrNull!.id;
+
+    notifier.forget('some-other-booking');
+    expect(
+      c.read(createReservationControllerProvider),
+      isA<CreateReservationDone>(),
+    );
+
+    notifier.forget(id);
+    expect(
+      c.read(createReservationControllerProvider),
+      isA<CreateReservationIdle>(),
+    );
   });
 }

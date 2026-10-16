@@ -1,13 +1,16 @@
-import '../../../../core/localization/content_language_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/localization/content_language_provider.dart';
+import '../../../../core/presentation/cache_for.dart';
 import '../../domain/entities/hotel.dart';
 import 'discovery_providers.dart';
 
 /// The full hotel for the detail screen (`02 · Discover & Book`, screen 3),
-/// keyed by hotel id. `autoDispose` so leaving the screen drops the fetch.
+/// keyed by hotel id. Kept for a few minutes after the last screen using it
+/// closes, so hotel → rooms → back → hotel doesn't refetch the same hotel.
 final hotelDetailProvider = FutureProvider.autoDispose.family<Hotel, String>(
   (Ref ref, String hotelId) {
+  ref.cacheFor(CacheDurations.catalogue);
   // Refetch in the new language after a language switch.
   ref.watch(contentLanguageProvider);
     return ref.watch(discoveryRepositoryProvider).hotel(hotelId);

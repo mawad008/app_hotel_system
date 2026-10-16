@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Hotel System';
+  String get appName => 'Stdy Hotel';
 
   @override
   String get appTagline => 'Book, verify and enter — from your phone.';
@@ -171,7 +171,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textFieldExampleHint => 'Enter your name';
 
   @override
-  String get brandWordmark => 'Hotel System';
+  String get brandWordmark => 'Stdy Hotel';
 
   @override
   String get entryHeadline =>
@@ -222,7 +222,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authPhoneInvalid =>
-      'Enter a Saudi mobile number starting with 05 (10 digits)';
+      'Enter a valid Saudi mobile number, like 05 1234 5678';
 
   @override
   String get authOtpTitle => 'Verification code';

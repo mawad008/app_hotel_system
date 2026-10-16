@@ -5,6 +5,7 @@ import 'app_radius.dart';
 import 'app_sizes.dart';
 import 'app_spacing.dart';
 import 'app_typography.dart';
+import 'fade_page_transitions.dart';
 
 /// Builds the light and dark [ThemeData] for the Guest App from the design
 /// tokens (`mobile/docs/design-system-tokens.md`). Single source of truth for
@@ -66,6 +67,20 @@ abstract final class AppTheme {
         c,
         isDark ? AppSemanticColors.dark : AppSemanticColors.light,
       ],
+
+      // ── Page transitions ────────────────────────────────────────────────
+      // One default for every route on every platform: a short fade (iOS
+      // keeps its swipe-back gesture). See [FadePageTransitionsBuilder].
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: FadePageTransitionsBuilder(),
+          TargetPlatform.iOS: FadePageTransitionsBuilder(),
+          TargetPlatform.macOS: FadePageTransitionsBuilder(),
+          TargetPlatform.windows: FadePageTransitionsBuilder(),
+          TargetPlatform.linux: FadePageTransitionsBuilder(),
+          TargetPlatform.fuchsia: FadePageTransitionsBuilder(),
+        },
+      ),
 
       // ── App bar ──────────────────────────────────────────────────────────
       // Flat, background-aware, centred title, no Material tint/elevation.

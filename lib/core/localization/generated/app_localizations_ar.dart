@@ -10,7 +10,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appName => 'فندق سيستم';
+  String get appName => 'Stdy Hotel';
 
   @override
   String get appTagline => 'احجز، تحقّق، وادخل غرفتك من هاتفك.';
@@ -170,7 +170,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get textFieldExampleHint => 'أدخل اسمك';
 
   @override
-  String get brandWordmark => 'Hotel System';
+  String get brandWordmark => 'Stdy Hotel';
 
   @override
   String get entryHeadline => 'استكشف فنادقنا واحجز إقامتك من مكانك';
@@ -217,8 +217,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authPhoneEmpty => 'رقم الجوال مطلوب';
 
   @override
-  String get authPhoneInvalid =>
-      'أدخل رقم جوال سعودي يبدأ بـ 05 ويتكون من 10 أرقام';
+  String get authPhoneInvalid => 'أدخل رقم جوال سعودي صحيحًا، مثل 05 1234 5678';
 
   @override
   String get authOtpTitle => 'رمز التحقق';
@@ -274,7 +273,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authProfileBannerBody =>
-      'يقارن النظام اسمك بصورة بطاقتك عند التحقق. أي اختلاف قد يؤخر تسجيل دخولك.';
+      'يقارن النظام اسمك بصورة بطاقتك عند التحقق. أي اختلاف قد يؤخر تسجيل وصولك.';
 
   @override
   String get authProfileNameLabel => 'الاسم الكامل';
@@ -405,7 +404,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count فندقاً متاحاً',
+      other: '$count فندق متاح',
+      many: '$count فندقاً متاحاً',
+      few: '$count فنادق متاحة',
+      two: 'فندقان متاحان',
       one: 'فندق واحد متاح',
       zero: 'لا فنادق متاحة',
     );
@@ -450,7 +452,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count فندقاً مطابقاً',
+      other: '$count فندق مطابق',
+      many: '$count فندقاً مطابقاً',
+      few: '$count فنادق مطابقة',
+      two: 'فندقان مطابقان',
       one: 'فندق واحد مطابق',
       zero: 'لا فنادق مطابقة',
     );
@@ -498,7 +503,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count فنادق',
+      other: '$count فندق',
+      many: '$count فندقاً',
+      few: '$count فنادق',
+      two: 'فندقان',
       one: 'فندق واحد',
     );
     return '$_temp0';
@@ -548,6 +556,9 @@ class AppLocalizationsAr extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count مراجعة',
+      many: '$count مراجعة',
+      few: '$count مراجعات',
+      two: 'مراجعتان',
       one: 'مراجعة واحدة',
     );
     return '$_temp0';
@@ -567,7 +578,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count أنواع غرف',
+      other: '$count نوع غرفة',
+      many: '$count نوعاً من الغرف',
+      few: '$count أنواع غرف',
+      two: 'نوعان من الغرف',
       one: 'نوع غرفة واحد',
     );
     return '$_temp0';
@@ -594,7 +608,9 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count نزلاء',
+      other: '$count نزيل',
+      many: '$count نزيلاً',
+      few: '$count نزلاء',
       two: 'نزيلان',
       one: 'نزيل واحد',
     );
@@ -665,7 +681,9 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ليالٍ',
+      other: '$count ليلة',
+      many: '$count ليلة',
+      few: '$count ليالٍ',
       two: 'ليلتان',
       one: 'ليلة واحدة',
     );
@@ -705,7 +723,9 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count بالغين',
+      other: '$count بالغ',
+      many: '$count بالغاً',
+      few: '$count بالغين',
       two: 'بالغان',
       one: 'بالغ واحد',
     );
@@ -717,7 +737,9 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count أطفال',
+      other: '$count طفل',
+      many: '$count طفلاً',
+      few: '$count أطفال',
       two: 'طفلان',
       one: 'طفل واحد',
       zero: 'بدون أطفال',
@@ -756,7 +778,9 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count أشخاص',
+      other: '$count شخص',
+      many: '$count شخصاً',
+      few: '$count أشخاص',
       two: 'ضيفان',
       one: 'ضيف واحد',
     );
@@ -845,7 +869,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String roomPolicyRefundable(int hours) {
-    return 'إلغاء مجاني مع استرداد كامل خلال $hours ساعة من الحجز أو حتى موعد تسجيل الدخول إن كان أقرب.';
+    return 'إلغاء مجاني مع استرداد كامل خلال $hours ساعة من الحجز أو حتى موعد تسجيل الوصول إن كان أقرب.';
   }
 
   @override
@@ -884,7 +908,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count ضيوف',
+      other: '$count ضيف',
+      many: '$count ضيفاً',
+      few: '$count ضيوف',
+      two: 'ضيفان',
       one: 'ضيف واحد',
     );
     return '$_temp0';
@@ -989,7 +1016,9 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       nights,
       locale: localeName,
-      other: '$nights ليالٍ',
+      other: '$nights ليلة',
+      many: '$nights ليلة',
+      few: '$nights ليالٍ',
       two: 'ليلتين',
       one: 'ليلة واحدة',
     );
@@ -1070,7 +1099,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reservationStatusVerified => 'تم التحقق';
 
   @override
-  String get reservationStatusCheckedIn => 'تم تسجيل الدخول';
+  String get reservationStatusCheckedIn => 'تم تسجيل الوصول';
 
   @override
   String get reservationStatusInStay => 'أثناء الإقامة';
@@ -1137,7 +1166,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get paymentNotRequiredBody =>
-      'لا يتطلب هذا الفندق مبلغ تأمين. تبدأ إقامتك عند تسجيل الدخول.';
+      'لا يتطلب هذا الفندق مبلغ تأمين. تبدأ إقامتك عند تسجيل الوصول.';
 
   @override
   String get paymentSuccessBody =>
@@ -1237,7 +1266,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get paymentHoldNotice =>
-      'يُحجز مبلغ التأمين دون خصمه حتى تسجيل الدخول';
+      'يُحجز مبلغ التأمين دون خصمه حتى تسجيل الوصول';
 
   @override
   String get paymentCardDetailsTitle => 'الدفع';
@@ -1345,7 +1374,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get identityApprovedTitle => 'تم التحقق من الهوية';
 
   @override
-  String get identityApprovedBody => 'تم تأكيد هويتك. أنت جاهز لتسجيل الدخول.';
+  String get identityApprovedBody => 'تم تأكيد هويتك. أنت جاهز لتسجيل الوصول.';
 
   @override
   String get identityManualReviewTitle => 'المراجعة اليدوية قيد التنفيذ';
@@ -1515,7 +1544,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'لن يُطلب رفع هويتك مرة أخرى في أي فندق بالمجموعة.';
 
   @override
-  String get identityGoToCheckInCta => 'تسجيل الدخول الرقمي';
+  String get identityGoToCheckInCta => 'تسجيل الوصول الرقمي';
 
   @override
   String get identityRejectedNoRetryBannerBody =>
@@ -1755,34 +1784,34 @@ class AppLocalizationsAr extends AppLocalizations {
   String get identitySubmitFailedTitle => 'تعذّر إرسال وثيقتك';
 
   @override
-  String get reservationCheckInCta => 'تسجيل الدخول';
+  String get reservationCheckInCta => 'تسجيل الوصول';
 
   @override
-  String get checkInTitle => 'تسجيل الدخول';
+  String get checkInTitle => 'تسجيل الوصول';
 
   @override
-  String get checkInProcessingTitle => 'جارٍ تسجيل دخولك';
+  String get checkInProcessingTitle => 'جارٍ تسجيل وصولك';
 
   @override
   String get accessTitle => 'الدخول إلى الغرفة';
 
   @override
-  String get checkInReadyTitle => 'جاهز لتسجيل الدخول';
+  String get checkInReadyTitle => 'جاهز لتسجيل الوصول';
 
   @override
   String get checkInReadyBody =>
-      'تم التحقق من حجزك. سجّل الدخول للحصول على رقم غرفتك ورمز الدخول.';
+      'تم التحقق من حجزك. سجّل وصولك للحصول على رقم غرفتك ورمز الدخول.';
 
   @override
-  String get checkInNotReadyTitle => 'لست جاهزًا لتسجيل الدخول بعد';
+  String get checkInNotReadyTitle => 'لست جاهزًا لتسجيل الوصول بعد';
 
   @override
   String get checkInRoomNotAssigned =>
-      'غرفتك قيد التجهيز — يُفتح تسجيل الدخول بعد أن يخصّصها الاستقبال.';
+      'غرفتك قيد التجهيز — يُفتح تسجيل الوصول بعد أن يخصّصها الاستقبال.';
 
   @override
   String get checkInAtReception =>
-      'تسجيل الدخول في هذا الفندق يتم لدى الاستقبال عند وصولك.';
+      'تسجيل الوصول في هذا الفندق يتم لدى الاستقبال عند وصولك.';
 
   @override
   String get checkInIdentityPending => 'أكمل التحقق من هويتك أولاً.';
@@ -1791,13 +1820,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get checkInNotReadyBody => 'أكمل الدفع والتحقق من الهوية أولاً.';
 
   @override
-  String get checkInUnavailableTitle => 'تسجيل الدخول غير متاح';
+  String get checkInUnavailableTitle => 'تسجيل الوصول غير متاح';
 
   @override
-  String get checkInAlreadyDoneTitle => 'لقد سجّلت دخولك بالفعل';
+  String get checkInAlreadyDoneTitle => 'لقد سجّلت وصولك بالفعل';
 
   @override
-  String get checkInCta => 'سجّل الدخول الآن';
+  String get checkInCta => 'سجّل وصولك الآن';
 
   @override
   String get checkInProcessingBody => 'جارٍ إصدار مفتاح غرفتك الرقمي…';
@@ -1806,7 +1835,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get checkInDoNotClose => 'يرجى إبقاء هذه الشاشة مفتوحة.';
 
   @override
-  String get checkInFailedTitle => 'لم يكتمل تسجيل الدخول';
+  String get checkInFailedTitle => 'لم يكتمل تسجيل الوصول';
 
   @override
   String get checkInFailedBody =>
@@ -1817,13 +1846,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get checkInPendingBody =>
-      'يقوم مكتب الاستقبال بإنهاء تسجيل دخولك. تحقق مرة أخرى بعد قليل.';
+      'يقوم مكتب الاستقبال بإنهاء تسجيل وصولك. تحقق مرة أخرى بعد قليل.';
 
   @override
   String get checkInRetryCta => 'حاول مرة أخرى';
 
   @override
-  String get accessCheckedInTitle => 'تم تسجيل دخولك';
+  String get accessCheckedInTitle => 'تم تسجيل وصولك';
 
   @override
   String get accessRoomNumberLabel => 'رقم الغرفة';
@@ -1854,8 +1883,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get accessNotIssuedTitle => 'لا يوجد مفتاح غرفة بعد';
 
   @override
-  String get accessNotIssuedBody =>
-      'سجّل الدخول للحصول على مفتاح غرفتك الرقمي.';
+  String get accessNotIssuedBody => 'سجّل وصولك للحصول على مفتاح غرفتك الرقمي.';
 
   @override
   String get accessRevokedTitle => 'تم إلغاء مفتاح الغرفة';
@@ -2195,6 +2223,9 @@ class AppLocalizationsAr extends AppLocalizations {
       points,
       locale: localeName,
       other: '$points نقطة',
+      many: '$points نقطة',
+      few: '$points نقاط',
+      two: 'نقطتان',
       one: 'نقطة واحدة',
     );
     return '$_temp0';
@@ -2237,6 +2268,9 @@ class AppLocalizationsAr extends AppLocalizations {
       points,
       locale: localeName,
       other: '+$points نقطة',
+      many: '+$points نقطة',
+      few: '+$points نقاط',
+      two: '+نقطتان',
       one: '+نقطة واحدة',
     );
     return '$_temp0';
@@ -2248,6 +2282,9 @@ class AppLocalizationsAr extends AppLocalizations {
       points,
       locale: localeName,
       other: '-$points نقطة',
+      many: '-$points نقطة',
+      few: '-$points نقاط',
+      two: '-نقطتان',
       one: '-نقطة واحدة',
     );
     return '$_temp0';
@@ -2304,6 +2341,9 @@ class AppLocalizationsAr extends AppLocalizations {
       points,
       locale: localeName,
       other: 'تم استبدال $points نقطة مقابل هذا الحجز.',
+      many: 'تم استبدال $points نقطة مقابل هذا الحجز.',
+      few: 'تم استبدال $points نقاط مقابل هذا الحجز.',
+      two: 'تم استبدال نقطتين مقابل هذا الحجز.',
       one: 'تم استبدال نقطة واحدة مقابل هذا الحجز.',
     );
     return '$_temp0';
@@ -2367,7 +2407,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count نجوم',
+      other: '$count نجمة',
+      many: '$count نجمة',
+      few: '$count نجوم',
+      two: 'نجمتان',
       one: 'نجمة واحدة',
     );
     return '$_temp0';
@@ -2487,10 +2530,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get hotelInfoClassificationLabel => 'التصنيف';
 
   @override
-  String get hotelInfoCheckInLabel => 'تسجيل دخول';
+  String get hotelInfoCheckInLabel => 'تسجيل الوصول';
 
   @override
-  String get hotelInfoCheckOutLabel => 'تسجيل خروج';
+  String get hotelInfoCheckOutLabel => 'تسجيل المغادرة';
 
   @override
   String hotelTimeOfDay(String time, String period) {
@@ -2737,7 +2780,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get bookingStatusConfirmed => 'مؤكد';
 
   @override
-  String get bookingStatusCheckedIn => 'تم تسجيل الدخول';
+  String get bookingStatusCheckedIn => 'تم تسجيل الوصول';
 
   @override
   String get bookingStatusCompleted => 'مكتملة';
@@ -2780,7 +2823,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get bookingDepositHeldRowSubtitle => 'دون خصم فعلي';
 
   @override
-  String get bookingDeductedAtCheckinRowTitle => 'يُخصم عند تسجيل الدخول';
+  String get bookingDeductedAtCheckinRowTitle => 'يُخصم عند تسجيل الوصول';
 
   @override
   String get bookingExtrasChargedOnceRowTitle =>
@@ -2796,7 +2839,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get bookingIdentityVerifiedRowSubtitle => 'مكتمل';
 
   @override
-  String get bookingCheckInAvailableRowTitle => 'تسجيل الدخول متاح من';
+  String get bookingCheckInAvailableRowTitle => 'تسجيل الوصول متاح من';
 
   @override
   String get bookingDepositAmountHeldRowTitle => 'مبلغ التأمين محجوز';
@@ -2856,7 +2899,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get bookingCtaVerifyIdentity => 'التحقق من الهوية';
 
   @override
-  String get bookingCtaDigitalCheckIn => 'تسجيل الدخول الرقمي';
+  String get bookingCtaDigitalCheckIn => 'تسجيل الوصول الرقمي';
 
   @override
   String get bookingCtaMyCurrentStay => 'إقامتي الحالية';
@@ -2899,7 +2942,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String policyGeneral(int hours) {
-    return 'الأسعار القابلة للاسترداد يمكن إلغاؤها مجاناً مع استرداد كامل خلال $hours ساعة من الحجز، أو حتى موعد تسجيل الدخول إن كان أقرب. بعدها لا يمكن الإلغاء. الأسعار غير القابلة للاسترداد لا يمكن إلغاؤها.';
+    return 'الأسعار القابلة للاسترداد يمكن إلغاؤها مجاناً مع استرداد كامل خلال $hours ساعة من الحجز، أو حتى موعد تسجيل الوصول إن كان أقرب. بعدها لا يمكن الإلغاء. الأسعار غير القابلة للاسترداد لا يمكن إلغاؤها.';
   }
 
   @override
@@ -3180,7 +3223,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get stayHomeNoActiveStayBody =>
-      'بمجرد تسجيل دخولك، ستظهر هنا غرفتك ورمز الدخول والخدمات.';
+      'بمجرد تسجيل وصولك، ستظهر هنا غرفتك ورمز الدخول والخدمات.';
 
   @override
   String get guestSignInRequiredTitle => 'سجّل الدخول للمتابعة';
@@ -3415,18 +3458,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get roomFinalPriceNote => 'السعر النهائي لا توجد رسوم إضافية';
 
   @override
-  String get roomPolicyCheckInTitle => 'تسجيل الدخول';
+  String get roomPolicyCheckInTitle => 'تسجيل الوصول';
 
   @override
-  String get roomPolicyCheckOutTitle => 'تسجيل الخروج';
+  String get roomPolicyCheckOutTitle => 'تسجيل المغادرة';
 
   @override
   String roomMaxAdultsReached(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'الحد الأقصى لهذه الغرفة هو $count بالغين',
-      two: 'الحد الأقصى لهذه الغرفة هو 2 بالغين',
+      other: 'الحد الأقصى لهذه الغرفة هو $count بالغ',
+      many: 'الحد الأقصى لهذه الغرفة هو $count بالغاً',
+      few: 'الحد الأقصى لهذه الغرفة هو $count بالغين',
+      two: 'الحد الأقصى لهذه الغرفة هو بالغان',
       one: 'الحد الأقصى لهذه الغرفة هو بالغ واحد',
     );
     return '$_temp0';
@@ -3437,7 +3482,10 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'الحد الأقصى لهذه الغرفة هو $count ضيوف',
+      other: 'الحد الأقصى لهذه الغرفة هو $count ضيف',
+      many: 'الحد الأقصى لهذه الغرفة هو $count ضيفاً',
+      few: 'الحد الأقصى لهذه الغرفة هو $count ضيوف',
+      two: 'الحد الأقصى لهذه الغرفة هو ضيفان',
       one: 'الحد الأقصى لهذه الغرفة هو ضيف واحد',
     );
     return '$_temp0';

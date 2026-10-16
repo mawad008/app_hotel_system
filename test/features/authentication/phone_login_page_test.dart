@@ -41,6 +41,19 @@ void main() {
     expect(find.text(en.authOtpHeading), findsNothing);
   });
 
+  testWidgets('digits typed on an Arabic keyboard are kept and accepted',
+      (WidgetTester tester) async {
+    final AppLocalizations en = await _openPhone(tester);
+
+    await tester.enterText(find.byType(TextField), '٠٥١٢٣٤٥٦٧٨');
+    await tester.pump();
+    expect(find.text('0512345678'), findsOneWidget);
+
+    await tester.tap(find.text(en.authPhoneSubmit));
+    await tester.pumpAndSettle();
+    expect(find.text(en.authOtpHeading), findsOneWidget);
+  });
+
   testWidgets('a valid number advances to the OTP screen',
       (WidgetTester tester) async {
     final AppLocalizations en = await _openPhone(tester);

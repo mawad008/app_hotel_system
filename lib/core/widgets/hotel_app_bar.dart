@@ -43,8 +43,9 @@ class HotelAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ModalRoute<dynamic>? route = ModalRoute.of(context);
-    final bool canPop = route?.canPop ?? false;
+    // Only the `canPop` aspect, so pushing a page on top (or popping back to
+    // this one) doesn't rebuild the bar.
+    final bool canPop = ModalRoute.canPopOf(context) ?? false;
     final Widget? resolvedLeading =
         leading ??
         (automaticallyImplyLeading &&

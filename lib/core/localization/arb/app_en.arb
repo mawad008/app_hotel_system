@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appName": "Hotel System",
+  "appName": "Stdy Hotel",
   "@appName": { "description": "Product name shown in the app bar and app metadata." },
 
   "appTagline": "Book, verify and enter — from your phone.",
@@ -79,7 +79,7 @@
   "textFieldExampleLabel": "Full name",
   "textFieldExampleHint": "Enter your name",
 
-  "brandWordmark": "Hotel System",
+  "brandWordmark": "Stdy Hotel",
   "@brandWordmark": { "description": "Latin brand wordmark under the logo on the splash — the v2 Figma shows it untranslated in both languages." },
   "entryHeadline": "Explore our hotels and book your stay from wherever you are",
   "@entryHeadline": {"description": "Onboarding headline (v2 ENTRY_Onboarding). Platform-wide wording — the app lists many hotels, so it must never name a single one (QA 2026-10-08)."},
@@ -98,7 +98,7 @@
   "authPhoneTerms": "By continuing you agree to the Terms and the Privacy Policy.",
   "authPhoneSubmit": "Send verification code",
   "authPhoneEmpty": "Mobile number is required",
-  "authPhoneInvalid": "Enter a Saudi mobile number starting with 05 (10 digits)",
+  "authPhoneInvalid": "Enter a valid Saudi mobile number, like 05 1234 5678",
 
   "authOtpTitle": "Verification code",
   "authOtpHeading": "Enter the code we sent",

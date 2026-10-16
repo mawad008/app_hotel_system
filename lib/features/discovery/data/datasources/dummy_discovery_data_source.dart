@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../../../../core/data/data_source.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../domain/entities/hotel_filters.dart';
@@ -92,11 +94,15 @@ class DummyDiscoveryDataSource implements DiscoveryDataSource, DummyDataSource {
     'is_available': true,
   };
 
+  /// Hotels per page — the same size as the API's.
+  static const int searchPageSize = 20;
+
   @override
   Future<HotelSearchResultModel> searchHotels({
     required String query,
     required HotelFilters filters,
     required HotelSort sort,
+    int page = 1,
   }) async {
     final String needle = query.trim().toLowerCase();
 
@@ -115,11 +121,17 @@ class DummyDiscoveryDataSource implements DiscoveryDataSource, DummyDataSource {
 
     matched.sort(_comparatorFor(sort));
 
+    // Paged like the API, so lazy loading behaves the same with dummy data.
+    final int start = math.min((page - 1) * searchPageSize, matched.length);
+    final int end = math.min(start + searchPageSize, matched.length);
     return HotelSearchResultModel(
       hotels: <HotelSummaryModel>[
-        for (final Json hotel in matched) HotelSummaryModel.fromJson(hotel),
+        for (final Json hotel in matched.sublist(start, end))
+          HotelSummaryModel.fromJson(hotel),
       ],
       totalCount: matched.length,
+      page: page,
+      hasMore: end < matched.length,
     );
   }
 

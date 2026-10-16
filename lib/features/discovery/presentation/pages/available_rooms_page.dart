@@ -115,8 +115,15 @@ class _AvailableRoomsPageState extends ConsumerState<AvailableRoomsPage> {
     final RoomAvailabilityState availability = ref.watch(
       roomAvailabilityControllerProvider,
     );
+    // A failure for these exact criteria is not retried automatically: each
+    // failed load rebuilds this page, so retrying here would hammer the API in
+    // a loop while offline or rate-limited. The error view offers a retry.
+    final bool failedForRequest =
+        availability.request == request &&
+        availability.result is UiFailure<AvailabilityResult>;
     if (request != null &&
         !availability.isFreshFor(request) &&
+        !failedForRequest &&
         availability.result is! UiLoading<AvailabilityResult>) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _sync();

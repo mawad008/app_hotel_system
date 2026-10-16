@@ -12,6 +12,7 @@ import '../../../authentication/domain/entities/guest_profile.dart';
 import '../../../authentication/domain/validators/auth_validators.dart';
 import '../../../authentication/presentation/state/auth_controller.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../state/account_providers.dart';
 import '../widgets/profile_subpage.dart';
 
@@ -78,7 +79,11 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
     final bool dirty = _draftEmail != null && _draftEmail != profile?.email;
 
     return ProfileSubpage(
-      onRefresh: () => ref.refresh(accountSummaryProvider.future),
+      onRefresh: () {
+        // Derived from the bookings list: refetch that, not just the summary.
+        ref.invalidate(bookingsListProvider);
+        return ref.refresh(accountSummaryProvider.future);
+      },
       title: l10n.profilePersonalInfoTitle,
       bannerTitle: l10n.profilePersonalInfoBannerTitle,
       bannerMessage: l10n.profilePersonalInfoBannerBody,

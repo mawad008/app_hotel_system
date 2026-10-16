@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// Product name shown in the app bar and app metadata.
   ///
   /// In en, this message translates to:
-  /// **'Hotel System'**
+  /// **'Stdy Hotel'**
   String get appName;
 
   /// One-line promise shown on the foundation screen.
@@ -377,7 +377,7 @@ abstract class AppLocalizations {
   /// Latin brand wordmark under the logo on the splash — the v2 Figma shows it untranslated in both languages.
   ///
   /// In en, this message translates to:
-  /// **'Hotel System'**
+  /// **'Stdy Hotel'**
   String get brandWordmark;
 
   /// Onboarding headline (v2 ENTRY_Onboarding). Platform-wide wording — the app lists many hotels, so it must never name a single one (QA 2026-10-08).
@@ -467,7 +467,7 @@ abstract class AppLocalizations {
   /// No description provided for @authPhoneInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter a Saudi mobile number starting with 05 (10 digits)'**
+  /// **'Enter a valid Saudi mobile number, like 05 1234 5678'**
   String get authPhoneInvalid;
 
   /// No description provided for @authOtpTitle.

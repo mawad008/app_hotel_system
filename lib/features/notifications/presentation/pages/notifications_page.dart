@@ -72,22 +72,35 @@ class NotificationsPage extends ConsumerWidget {
   }
 }
 
-class _Feed extends ConsumerWidget {
+class _Feed extends ConsumerStatefulWidget {
   const _Feed({required this.feed});
 
   final NotificationFeed feed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Feed> createState() => _FeedState();
+}
+
+class _FeedState extends ConsumerState<_Feed> {
+  /// Notifications rendered per step: the history only grows, so it is
+  /// revealed a batch at a time ("Show more") instead of building every
+  /// row up front.
+  static const int _batch = 30;
+  int _visible = _batch;
+
+  @override
+  Widget build(BuildContext context) {
+    final NotificationFeed feed = widget.feed;
     final AppLocalizations l10n = context.l10n;
     final DateTime now = ref.read(clockProvider)();
     final DateTime today = DateTime(now.year, now.month, now.day);
-    final DateTime yesterday = today.subtract(const Duration(days: 1));
+    // Calendar arithmetic, not 24 hours: safe across daylight-saving changes.
+    final DateTime yesterday = DateTime(today.year, today.month, today.day - 1);
 
     final List<GuestNotification> todayItems = <GuestNotification>[];
     final List<GuestNotification> yesterdayItems = <GuestNotification>[];
     final List<GuestNotification> earlier = <GuestNotification>[];
-    for (final GuestNotification n in feed.items) {
+    for (final GuestNotification n in feed.items.take(_visible)) {
       final DateTime day = DateTime(
         n.createdAt.year,
         n.createdAt.month,
@@ -131,6 +144,16 @@ class _Feed extends ConsumerWidget {
               ],
             ),
           ],
+        if (feed.items.length > _visible)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Center(
+              child: TextButton(
+                onPressed: () => setState(() => _visible += _batch),
+                child: Text(l10n.commonShowMore),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -149,8 +172,9 @@ class _NotificationRow extends ConsumerWidget {
 
   String _when(BuildContext context, AppLocalizations l10n) {
     final DateTime at = notification.createdAt;
-    if (now.difference(at) < const Duration(minutes: 1))
+    if (now.difference(at) < const Duration(minutes: 1)) {
       return l10n.notificationsNow;
+    }
     final DateTime day = DateTime(at.year, at.month, at.day);
     final MaterialLocalizations ml = MaterialLocalizations.of(context);
     if (day == DateTime(now.year, now.month, now.day)) {

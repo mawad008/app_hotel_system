@@ -26,6 +26,7 @@ import '../../../checkout/presentation/state/checkout_providers.dart';
 import '../../../reservation/domain/entities/reservation.dart';
 import '../../../stay_services/domain/entities/hotel_service.dart';
 import '../../../stay_services/presentation/state/stay_services_providers.dart';
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../state/stay_home_providers.dart';
 
 /// `STAY_Home.png` — the "الخدمات" bottom-nav root: the guest's real
@@ -56,8 +57,12 @@ class StayHomePage extends ConsumerWidget {
     }
     final AsyncValue<Reservation?> async = ref.watch(currentStayProvider);
 
+    // The current stay is derived from the cached bookings list, so a refresh
+    // must refetch that list — invalidating only the derived provider would
+    // re-read the same snapshot and never show a check-in or room assignment
+    // made at reception meanwhile.
     return LiveRefresh(
-      onRefresh: () => ref.invalidate(currentStayProvider),
+      onRefresh: () => ref.invalidate(bookingsListProvider),
       child: Scaffold(
         appBar: AppBar(centerTitle: true, title: Text(l10n.stayHomeTitle)),
         body: SafeArea(
@@ -65,6 +70,7 @@ class StayHomePage extends ConsumerWidget {
             onRefresh: () {
               // The stay plus the cards it feeds (services, charges).
               ref
+                ..invalidate(bookingsListProvider)
                 ..invalidate(serviceCatalogueProvider)
                 ..invalidate(folioProvider);
               return ref.refresh(currentStayProvider.future);
@@ -81,7 +87,7 @@ class StayHomePage extends ConsumerWidget {
                   title: l10n.stateErrorTitle,
                   message: failure.localizedMessage(l10n),
                   actionLabel: l10n.actionRetry,
-                  onAction: () => ref.invalidate(currentStayProvider),
+                  onAction: () => ref.invalidate(bookingsListProvider),
                 );
               },
               data: (Reservation? stay) => stay == null

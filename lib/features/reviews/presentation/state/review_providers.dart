@@ -1,8 +1,9 @@
-import '../../../../core/localization/content_language_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/di/core_providers.dart';
+import '../../../../core/localization/content_language_provider.dart';
+import '../../../../core/presentation/cache_for.dart';
 import '../../../../core/time/clock.dart';
 import '../../../reservation/domain/entities/reservation.dart';
 import '../../../reservation/presentation/state/reservation_detail_provider.dart';
@@ -11,8 +12,8 @@ import '../../data/datasources/dummy_review_data_source.dart';
 import '../../data/datasources/review_data_source.dart';
 import '../../data/repositories/review_repository_impl.dart';
 import '../../domain/entities/review.dart';
-import '../../domain/entities/review_draft.dart';
 import '../../domain/entities/review_category.dart';
+import '../../domain/entities/review_draft.dart';
 import '../../domain/repositories/review_repository.dart';
 
 /// One dummy instance holds any review submitted this session so a later fetch
@@ -59,6 +60,7 @@ final reviewCategoriesProvider = FutureProvider.autoDispose
       Ref ref,
       String reservationId,
     ) async {
+      ref.cacheFor(CacheDurations.reference);
       final ReviewContext ctx = await ref.watch(
         reviewContextProvider(reservationId).future,
       );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/presentation/latin_digits_formatter.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icons.dart';
@@ -72,8 +73,12 @@ class PhoneNumberField extends StatelessWidget {
                     textInputAction: TextInputAction.done,
                     onSubmitted: (_) => onSubmitted?.call(),
                     inputFormatters: <TextInputFormatter>[
+                      // Arabic keyboards type ٠–٩; keep them as 0–9.
+                      const LatinDigitsFormatter(),
                       FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(10),
+                      // Room for a pasted `00966 5…`; the validator and
+                      // GuestPhone strip the country code.
+                      LengthLimitingTextInputFormatter(14),
                     ],
                     // The message is rendered below the whole row (in the
                     // reading direction, wrapping freely); the field only

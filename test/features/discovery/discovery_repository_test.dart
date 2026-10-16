@@ -39,6 +39,7 @@ class _ThrowingDataSource implements DiscoveryDataSource {
     required String query,
     required HotelFilters filters,
     required HotelSort sort,
+    int page = 1,
   }) async =>
       throw error;
 

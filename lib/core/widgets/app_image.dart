@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
@@ -79,6 +83,35 @@ abstract final class AppImages {
   }
 }
 
+/// Where every network image (hotel/room photos, the dashboard logo and
+/// onboarding image) comes from, so they all share one cache.
+///
+/// In the app images are kept in a disk cache (`cached_network_image`): a
+/// photo seen once loads instantly — and offline — on later screens and
+/// launches instead of being downloaded again. Tests turn [diskCache] off
+/// (no platform storage there) and get plain network images.
+abstract final class AppNetworkImages {
+  static bool diskCache = true;
+
+  /// The longest edge an image is decoded at, in physical pixels: enough for
+  /// a full-width hero on a 3x phone, without decoding 4K uploads.
+  static const int maxDecodePx = 2048;
+
+  /// [url] as an image provider, decoded at most [decodeWidth] physical
+  /// pixels wide (height follows the aspect ratio) when given — decoding a
+  /// large upload at thumbnail size saves memory and raster time.
+  static ImageProvider provider(String url, {int? decodeWidth}) {
+    final ImageProvider source =
+        diskCache ? CachedNetworkImageProvider(url) : NetworkImage(url);
+    if (decodeWidth == null) return source;
+    return ResizeImage(
+      source,
+      width: math.min(decodeWidth, maxDecodePx),
+      allowUpscaling: false,
+    );
+  }
+}
+
 /// Renders a Figma image asset with rounded clipping, a sensible [BoxFit], and a
 /// graceful branded fallback if the asset is missing / fails to decode.
 ///
@@ -146,50 +179,195 @@ class AppImage extends StatelessWidget {
       }
       return ClipRRect(
         borderRadius: borderRadius,
-        child: Image.network(
-          networkUrl,
+        child: _NetworkImage(
+          url: networkUrl,
           width: width,
           height: height,
           fit: fit,
-          loadingBuilder: (
-            BuildContext context,
-            Widget child,
-            ImageChunkEvent? progress,
-          ) {
-            if (progress == null) return child;
-            return _Skeleton(width: width, height: height);
-          },
-          errorBuilder: (BuildContext context, Object error, StackTrace? stack) {
-            // Debug-only diagnostics: a failed real image load must stay
-            // visible to the developer instead of looking identical to "no
-            // image field" — release builds never see this (kDebugMode is
-            // compiled out of release binaries), so nothing leaks there.
-            if (kDebugMode) {
-              debugPrint('AppImage.network: failed to load "$networkUrl" — $error');
-            }
-            return _Fallback(
-              width: width,
-              height: height,
-              icon: fallbackIcon,
-              debugFailedUrl: kDebugMode ? networkUrl : null,
-              debugError: kDebugMode ? error : null,
-            );
-          },
+          fallbackIcon: fallbackIcon,
         ),
       );
     }
     return ClipRRect(
       borderRadius: borderRadius,
-      child: Image.asset(
-        asset!,
-        width: width,
-        height: height,
-        fit: fit,
-        errorBuilder: (BuildContext context, Object error, StackTrace? stack) =>
-            _Fallback(width: width, height: height, icon: fallbackIcon),
+      // Bundled photos are large (up to a 1.4 MB PNG): decode them at the
+      // size they are shown, like network images.
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final int? decode = _decodeWidth(context, constraints, width, height);
+          final ImageProvider image = decode == null
+              ? AssetImage(asset!)
+              : ResizeImage(
+                  AssetImage(asset!),
+                  width: math.min(decode, AppNetworkImages.maxDecodePx),
+                  allowUpscaling: false,
+                );
+          return Image(
+            image: image,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder:
+                (BuildContext context, Object error, StackTrace? stack) =>
+                    _Fallback(width: width, height: height, icon: fallbackIcon),
+          );
+        },
       ),
     );
   }
+}
+
+/// A backend photo: decoded at the size it is shown, faded in over a
+/// placeholder, and retried when a load fails (a dropped connection, a
+/// timeout) — after 2 s, then 6 s — rather than leaving the slot empty until
+/// the screen happens to rebuild. After the last attempt the placeholder
+/// stays.
+class _NetworkImage extends StatefulWidget {
+  const _NetworkImage({
+    required this.url,
+    required this.width,
+    required this.height,
+    required this.fit,
+    required this.fallbackIcon,
+  });
+
+  final String url;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final IconData fallbackIcon;
+
+  /// The wait before each retry of a failed load.
+  static const List<Duration> retryDelays = <Duration>[
+    Duration(seconds: 2),
+    Duration(seconds: 6),
+  ];
+
+  @override
+  State<_NetworkImage> createState() => _NetworkImageState();
+}
+
+class _NetworkImageState extends State<_NetworkImage> {
+  int _attempt = 0;
+  Timer? _retry;
+
+  @override
+  void didUpdateWidget(_NetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _retry?.cancel();
+      _retry = null;
+      _attempt = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _retry?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleRetry(ImageProvider failed) {
+    if (_retry != null || _attempt >= _NetworkImage.retryDelays.length) {
+      return;
+    }
+    _retry = Timer(_NetworkImage.retryDelays[_attempt], () async {
+      // The failed load stays in the image cache while the widget listens
+      // to it: drop it so the next attempt goes back to the network.
+      await failed.evict();
+      if (!mounted) return;
+      setState(() {
+        _retry = null;
+        _attempt++;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final String url = widget.url;
+    final double? width = widget.width;
+    final double? height = widget.height;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final ImageProvider image = AppNetworkImages.provider(
+          url,
+          decodeWidth: _decodeWidth(context, constraints, width, height),
+        );
+        return Image(
+          // A fresh image state per attempt, so a retry resolves again.
+          key: ValueKey<int>(_attempt),
+          image: image,
+          width: width,
+          height: height,
+          fit: widget.fit,
+          // From memory: shown at once. Otherwise the placeholder until the
+          // first frame, then a short fade-in instead of a pop.
+          frameBuilder: (
+            BuildContext context,
+            Widget child,
+            int? frame,
+            bool wasSynchronouslyLoaded,
+          ) {
+            if (wasSynchronouslyLoaded) return child;
+            return Stack(
+              fit: StackFit.passthrough,
+              children: <Widget>[
+                Positioned.fill(
+                  child: _Skeleton(width: width, height: height),
+                ),
+                AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: child,
+                ),
+              ],
+            );
+          },
+          errorBuilder: (
+            BuildContext context,
+            Object error,
+            StackTrace? stack,
+          ) {
+            _scheduleRetry(image);
+            // Debug-only diagnostics: a failed real image load must stay
+            // visible to the developer instead of looking identical to "no
+            // image field" — release builds never see this (kDebugMode is
+            // compiled out of release binaries), so nothing leaks there.
+            if (kDebugMode) {
+              debugPrint('AppImage.network: failed to load "$url" — $error');
+            }
+            return _Fallback(
+              width: width,
+              height: height,
+              icon: widget.fallbackIcon,
+              debugFailedUrl: kDebugMode ? url : null,
+              debugError: kDebugMode ? error : null,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Physical pixels to decode a network image at for the box it is shown in:
+/// the longer edge, so `BoxFit.cover` stays sharp whichever way the photo
+/// is cropped. `null` when the box is unbounded (decode as uploaded).
+int? _decodeWidth(
+  BuildContext context,
+  BoxConstraints constraints,
+  double? width,
+  double? height,
+) {
+  final double w =
+      width ?? (constraints.hasBoundedWidth ? constraints.maxWidth : 0);
+  final double h =
+      height ?? (constraints.hasBoundedHeight ? constraints.maxHeight : 0);
+  final double edge = math.max(w, h);
+  if (edge <= 0 || !edge.isFinite) return null;
+  return (edge * MediaQuery.devicePixelRatioOf(context)).ceil();
 }
 
 /// A neutral shimmer-less loading box shown while a network image decodes —

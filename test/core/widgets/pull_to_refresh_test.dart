@@ -5,6 +5,7 @@ import 'package:hotel_guest_app/app/router/app_router.dart';
 import 'package:hotel_guest_app/app/router/app_routes.dart';
 import 'package:hotel_guest_app/core/errors/failure.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
+import 'package:hotel_guest_app/core/theme/app_theme.dart';
 import 'package:hotel_guest_app/core/widgets/message_view.dart';
 import 'package:hotel_guest_app/core/widgets/pull_to_refresh.dart';
 import 'package:hotel_guest_app/features/reservation/domain/entities/create_reservation_request.dart';
@@ -47,6 +48,8 @@ class _LiveRepo implements ReservationRepository {
 }
 
 Widget _host(Widget child) => MaterialApp(
+  // The app theme carries the colour tokens the widget reads.
+  theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   locale: const Locale('en'),
@@ -142,6 +145,35 @@ void main() {
       await _pull(tester, find.byType(ListView).first);
       expect(find.text(assigned), findsOneWidget);
       expect(find.byType(SnackBar), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the services tab refetches the stay, so a room assigned at reception '
+    'appears on pull — and on the live refresh',
+    (WidgetTester tester) async {
+      final _LiveRepo repo = _LiveRepo(
+        fakeReservation(id: 'r1', status: ReservationStatus.checkedIn),
+      );
+      final ProviderContainer c = await pumpApp(
+        tester,
+        bootSession: completeSession(),
+        locale: const Locale('en'),
+        extraOverrides: <Override>[
+          reservationRepositoryProvider.overrideWithValue(repo),
+        ],
+      );
+      c.read(appRouterProvider).goNamed(AppRoutes.stayHomeName);
+      await tester.pumpAndSettle();
+      expect(find.text('412'), findsNothing);
+
+      repo.current = fakeReservation(
+        id: 'r1',
+        status: ReservationStatus.checkedIn,
+        roomNumber: '412',
+      );
+      await _pull(tester, find.byType(Scrollable).first);
+      expect(find.text('412'), findsOneWidget);
     },
   );
 }

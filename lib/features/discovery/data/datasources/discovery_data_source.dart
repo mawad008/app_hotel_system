@@ -13,10 +13,12 @@ abstract interface class DiscoveryDataSource {
 
   Future<List<HotelSummaryModel>> fetchFeaturedHotels();
 
+  /// One page (1-based [page]) of matching hotels.
   Future<HotelSearchResultModel> searchHotels({
     required String query,
     required HotelFilters filters,
     required HotelSort sort,
+    int page = 1,
   });
 
   Future<HotelModel> fetchHotel(String hotelId);

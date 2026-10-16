@@ -48,6 +48,18 @@ class HotelGuestApp extends ConsumerWidget {
         );
       },
       routerConfig: ref.watch(appRouterProvider),
+      // Side notches / rounded corners in landscape: one horizontal safe
+      // area around the whole navigator covers every screen, sheet and
+      // dialog. Top and bottom are left to each screen (full-bleed heroes,
+      // app bars and bottom bars handle those insets themselves).
+      builder: (BuildContext context, Widget? child) => ColoredBox(
+        color: Theme.of(context).scaffoldBackgroundColor,
+        child: SafeArea(
+          top: false,
+          bottom: false,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
     );
   }
 }

@@ -22,7 +22,7 @@ class ManagedBrandLogo extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppContent? content = ref.watch(appContentProvider).value;
+    final AppContent? content = ref.watch(appContentProvider).valueOrNull;
     return BrandLogo(
       variant: variant,
       markSize: markSize,

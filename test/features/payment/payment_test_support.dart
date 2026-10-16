@@ -17,6 +17,8 @@ Reservation fakeReservation({
   num? nightlyRate,
   num? serviceFee,
   bool? pricesIncludeTaxes,
+  num? tax,
+  num? taxRate,
   StayRange? stay,
 }) {
   return Reservation(
@@ -40,6 +42,8 @@ Reservation fakeReservation({
     serviceFee:
         serviceFee == null ? null : Money(amount: serviceFee, currency: currency),
     pricesIncludeTaxes: pricesIncludeTaxes,
+    tax: tax == null ? null : Money(amount: tax, currency: currency),
+    taxRate: taxRate,
   );
 }
 

@@ -8,6 +8,7 @@ import 'package:hotel_guest_app/core/errors/app_exception.dart';
 import 'package:hotel_guest_app/core/network/api_client.dart';
 import 'package:hotel_guest_app/core/network/api_image_url_resolver.dart';
 import 'package:hotel_guest_app/core/network/interceptors/error_interceptor.dart';
+import 'package:hotel_guest_app/core/network/response_cache.dart';
 import 'package:hotel_guest_app/features/discovery/data/datasources/api_discovery_data_source.dart';
 import 'package:hotel_guest_app/features/discovery/domain/entities/hotel_facility.dart';
 import 'package:hotel_guest_app/features/discovery/domain/entities/hotel_filters.dart';
@@ -19,12 +20,18 @@ class _FakeAdapter implements HttpClientAdapter {
   final Map<String, (int, Map<String, dynamic>)> routes;
   final List<RequestOptions> received = <RequestOptions>[];
 
+  /// No connection: every request fails before reaching the server.
+  bool offline = false;
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    if (offline) {
+      throw DioException.connectionError(requestOptions: options, reason: 'offline');
+    }
     received.add(options);
     final String key = '${options.method} ${options.path}';
     final (int, Map<String, dynamic>) entry =
@@ -42,14 +49,22 @@ class _FakeAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-ApiDiscoveryDataSource _source(_FakeAdapter adapter, {ApiImageUrlResolver? imageUrlResolver}) {
+ApiDiscoveryDataSource _source(
+  _FakeAdapter adapter, {
+  ApiImageUrlResolver? imageUrlResolver,
+  ResponseCache? responseCache,
+}) {
   final Dio dio = Dio(BaseOptions(baseUrl: 'http://localhost/api/v1'))
     ..httpClientAdapter = adapter
     ..interceptors.add(ErrorInterceptor());
   return ApiDiscoveryDataSource(
     imageUrlResolver == null
-        ? ApiClient.withDio(dio)
-        : ApiClient.withDio(dio, imageUrlResolver: imageUrlResolver),
+        ? ApiClient.withDio(dio, responseCache: responseCache)
+        : ApiClient.withDio(
+            dio,
+            imageUrlResolver: imageUrlResolver,
+            responseCache: responseCache,
+          ),
   );
 }
 
@@ -99,6 +114,34 @@ void main() {
     expect(result.hotels.single.cityId, 'Riyadh');
     expect(result.hotels.single.nightlyRateFrom.amount, 250);
     expect(result.totalCount, 12);
+  });
+
+  test('searchHotels asks for one page at a time and reports whether more '
+      'pages exist', () async {
+    final adapter = _FakeAdapter(<String, (int, Map<String, dynamic>)>{
+      'GET /guest/hotels': (200, <String, dynamic>{
+        'success': true,
+        'message': 'OK',
+        'data': <Map<String, dynamic>>[],
+        'meta': <String, dynamic>{'current_page': 2, 'last_page': 3, 'total': 45},
+      }),
+    });
+
+    final result = await _source(adapter).searchHotels(
+      query: '',
+      filters: HotelFilters.none,
+      sort: HotelSort.recommended,
+      page: 2,
+    );
+
+    expect(adapter.received.single.queryParameters['page'], 2);
+    expect(
+      adapter.received.single.queryParameters['per_page'],
+      ApiDiscoveryDataSource.searchPageSize,
+    );
+    expect(result.page, 2);
+    expect(result.hasMore, isTrue);
+    expect(result.totalCount, 45);
   });
 
   test('searchHotels sends the single selected city as the city query param', () async {
@@ -321,6 +364,31 @@ void main() {
     expect(hotels.single.rating, 4.5);
     expect(hotels.single.reviewCount, 12);
     expect(hotels.single.coverUrl, 'https://cdn.example.com/oasis.jpg');
+  });
+
+  test('every read Home makes is served from the saved copy offline', () async {
+    final adapter = _FakeAdapter(<String, (int, Map<String, dynamic>)>{
+      'GET /guest/hotels': (200, <String, dynamic>{
+        'success': true,
+        'message': 'OK',
+        'data': <Map<String, dynamic>>[
+          <String, dynamic>{'id': 1, 'name': 'Oasis', 'city': 'Riyadh'},
+          <String, dynamic>{'id': 2, 'name': 'Marsa', 'city': 'Dammam'},
+        ],
+        'meta': <String, dynamic>{'total': 2},
+      }),
+    });
+    final ApiDiscoveryDataSource source =
+        _source(adapter, responseCache: InMemoryResponseCache());
+    await source.fetchFeaturedHotels();
+    await source.fetchGroupHotelCount();
+
+    adapter.offline = true;
+    expect(
+      (await source.fetchFeaturedHotels()).map((h) => h.id),
+      <String>['1', '2'],
+    );
+    expect(await source.fetchGroupHotelCount(), 2);
   });
 
   test('fetchFeaturedHotels requests recommended (most-booked) order', () async {

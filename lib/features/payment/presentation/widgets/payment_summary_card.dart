@@ -102,17 +102,25 @@ class PaymentSummaryCard extends StatelessWidget {
             label: l10n.bookingRoomSubtotal,
             amount: reservation.priceSnapshot,
           ),
-          if (taxesIncluded == true)
+          // The booking's own tax decides the row, because the total below
+          // adds exactly that amount: the hotel's current flag can be
+          // missing, or have changed since the booking was made.
+          if (reservation.tax != null)
+            _AmountRow(
+              label: reservation.taxRate == null
+                  ? l10n.roomTaxesLabel
+                  : l10n.bookingTaxRow(formatTaxRate(reservation.taxRate)),
+              amount: reservation.tax!,
+            )
+          else if (taxesIncluded == true)
             _TextRow(
               label: l10n.roomTaxesLabel,
               value: l10n.roomPriceIncludedValue,
             )
           else if (taxesIncluded == false)
             _AmountRow(
-              label: reservation.taxRate == null
-                  ? l10n.roomTaxesLabel
-                  : l10n.bookingTaxRow(formatTaxRate(reservation.taxRate)),
-              amount: reservation.tax ?? Money(amount: 0, currency: currency),
+              label: l10n.roomTaxesLabel,
+              amount: Money(amount: 0, currency: currency),
             ),
           _AmountRow(
             label: l10n.bookingServiceFee,

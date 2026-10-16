@@ -3,6 +3,21 @@ import 'package:flutter/foundation.dart';
 /// Strips any time component, keeping the local calendar day.
 DateTime dateOnly(DateTime value) => DateTime(value.year, value.month, value.day);
 
+/// Whole calendar days from [from] to [to], ignoring the time of day.
+///
+/// Counted on UTC dates: local midnights are 23 or 25 hours apart on a
+/// daylight-saving change (e.g. Egypt in spring and autumn), so a plain
+/// `difference().inDays` would drop or add a night.
+int calendarDaysBetween(DateTime from, DateTime to) =>
+    DateTime.utc(to.year, to.month, to.day)
+        .difference(DateTime.utc(from.year, from.month, from.day))
+        .inDays;
+
+/// The calendar day [days] after [date] (midnight), safe across
+/// daylight-saving changes, unlike adding a 24-hour `Duration`.
+DateTime addCalendarDays(DateTime date, int days) =>
+    DateTime(date.year, date.month, date.day + days);
+
 /// A confirmed check-in / check-out pair (`16 · Stay dates & available rooms`).
 ///
 /// Both dates are calendar days (no time component). Check-out is always strictly
@@ -35,7 +50,7 @@ class StayRange {
   final DateTime checkOut;
 
   /// Number of nights between the two dates. Always `>= 1`.
-  int get nights => checkOut.difference(checkIn).inDays;
+  int get nights => calendarDaysBetween(checkIn, checkOut);
 
   @override
   bool operator ==(Object other) =>

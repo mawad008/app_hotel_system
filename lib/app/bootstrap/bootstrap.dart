@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/di/core_providers.dart';
+import '../../core/network/connect_timeout.dart';
+import '../../core/network/response_cache.dart';
 import '../../core/security/secure_token_store.dart';
 import '../../core/storage/app_preferences.dart';
 import '../app.dart';
@@ -18,6 +20,8 @@ import '../app.dart';
 /// [ProviderScope] with configuration injected.
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Give up on a silently dropped connection after 10 s, not the OS's ~2 min.
+  installConnectTimeout();
 
   final AppConfig config = AppConfig.fromEnvironment();
 
@@ -41,6 +45,8 @@ Future<void> bootstrap() async {
         tokenStoreProvider.overrideWithValue(SecureTokenStore()),
         // Remember onboarding + language so they are only asked once.
         appPreferencesProvider.overrideWithValue(preferences),
+        // Keep the hotel catalogue browsable offline.
+        responseCacheProvider.overrideWithValue(PersistentResponseCache()),
       ],
       child: const HotelGuestApp(),
     ),

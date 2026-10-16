@@ -10,6 +10,7 @@ import '../../../../core/widgets/settings_row.dart';
 import '../../../app_content/domain/entities/app_content.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
 import '../../../app_content/presentation/widgets/brand_link_actions.dart';
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../state/account_providers.dart';
 import '../state/account_summary.dart';
 import '../widgets/profile_subpage.dart';
@@ -33,7 +34,11 @@ class SupportPage extends ConsumerWidget {
     final SupportContacts contacts = ref.watch(brandingProvider).support;
 
     return ProfileSubpage(
-      onRefresh: () => ref.refresh(accountSummaryProvider.future),
+      onRefresh: () {
+        // Derived from the bookings list: refetch that, not just the summary.
+        ref.invalidate(bookingsListProvider);
+        return ref.refresh(accountSummaryProvider.future);
+      },
       title: l10n.profileSupportTitle,
       bannerTitle: l10n.profileSupportBannerTitle,
       bannerMessage: l10n.profileSupportBannerBody,

@@ -26,10 +26,14 @@ abstract interface class DiscoveryRepository {
 
   /// Searches the group's hotels. [query] matches hotel and city names;
   /// [filters] and [sort] are applied by the data source.
+  ///
+  /// One [page] (1-based) at a time; [HotelSearchResult.hasMore] says
+  /// whether to ask for the next.
   Future<HotelSearchResult> searchHotels({
     String query = '',
     HotelFilters filters = HotelFilters.none,
     HotelSort sort = HotelSort.recommended,
+    int page = 1,
   });
 
   /// The full hotel for the detail screen.

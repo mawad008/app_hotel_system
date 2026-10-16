@@ -41,12 +41,14 @@ class DiscoveryRepositoryImpl implements DiscoveryRepository {
     String query = '',
     HotelFilters filters = HotelFilters.none,
     HotelSort sort = HotelSort.recommended,
+    int page = 1,
   }) =>
       _guard(() async {
         final result = await _dataSource.searchHotels(
           query: query,
           filters: filters,
           sort: sort,
+          page: page,
         );
         return result.toEntity();
       });

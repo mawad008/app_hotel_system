@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/di/core_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
+import '../../../../core/errors/failure.dart';
 import '../../../../core/presentation/ui_state.dart';
 import '../../../authentication/presentation/state/auth_controller.dart';
 import '../../../authentication/presentation/state/auth_state.dart';
@@ -97,8 +98,22 @@ class DiscoverController extends AutoDisposeAsyncNotifier<DiscoverView> {
       isSingleHotel: single,
       soleHotelRooms:
           single ? await repo.hotelRooms(hotels.first.id) : const <AvailableRoom>[],
-      upcomingStay: _isSignedIn(auth) ? await _resolveUpcomingStay(ref, repo) : null,
+      upcomingStay: _isSignedIn(auth) ? await _upcomingStayOrNull(ref, repo) : null,
     );
+  }
+
+  /// The upcoming-stay card is extra: when the guest's reservations can't be
+  /// read (offline, a server hiccup) Home still shows the hotels — which may
+  /// come from the offline copy — and the card returns on the next refresh.
+  Future<UpcomingStay?> _upcomingStayOrNull(
+    Ref ref,
+    DiscoveryRepository repo,
+  ) async {
+    try {
+      return await _resolveUpcomingStay(ref, repo);
+    } on Failure {
+      return null;
+    }
   }
 
   /// The guest's next confirmed stay for the Home `إقامتك القادمة` card.

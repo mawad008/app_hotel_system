@@ -12,6 +12,9 @@
     <!-- The access token is encrypted with a device-bound Keystore key, so a
          backed-up copy is undecryptable on another device: keep it out of
          cloud backup and device transfer (the guest signs in again there). -->
+    <!-- Predictive back on every Android 13+ device, as Android 16 already
+         does by default at this targetSdk: one back path to support, and all
+         back interception in Dart uses PopScope, which works with it. -->
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"
@@ -20,7 +23,8 @@
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
-        android:supportsRtl="true">
+        android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SliverConstraints;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -59,7 +60,9 @@ class DiscoverPage extends ConsumerWidget {
   /// afterwards (the deferred-auth post-sign-in redirect).
   void _openNotifications(BuildContext context, WidgetRef ref) {
     if (ref.read(authControllerProvider) is! Authenticated) {
-      ref.read(postAuthRedirectProvider.notifier).remember(AppRoutes.notifications);
+      ref
+          .read(postAuthRedirectProvider.notifier)
+          .remember(AppRoutes.notifications);
       ref.read(loginFlowControllerProvider.notifier).reset();
       context.goNamed(AppRoutes.signInName);
       return;
@@ -132,36 +135,49 @@ class DiscoverPage extends ConsumerWidget {
             child: PullToRefresh(
               onRefresh: () =>
                   ref.read(discoverControllerProvider.notifier).refresh(),
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(
-                  gutter,
-                  singleHotel ? 0 : AppSpacing.space2,
-                  gutter,
-                  AppSpacing.space6,
-                ),
-                children: <Widget>[
-                  if (singleHotel) ...<Widget>[
-                    HotelSearchField(
-                      readOnly: true,
-                      onTap: () => _openSearch(context),
-                      trailingIcon: AppIcons.filter,
+              // Slivers so the hotel cards — and their photos — are built
+              // lazily as they scroll into view, not all up front.
+              child: CustomScrollView(
+                slivers: <Widget>[
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      gutter,
+                      singleHotel ? 0 : AppSpacing.space2,
+                      gutter,
+                      AppSpacing.space6,
                     ),
-                    const SizedBox(height: AppSpacing.space5),
-                  ],
-                  if (nextStay != null) ...<Widget>[
-                    nextStay,
-                    SizedBox(
-                      height: singleHotel
-                          ? AppSpacing.space5
-                          : AppSpacing.space4,
+                    sliver: SliverMainAxisGroup(
+                      slivers: <Widget>[
+                        SliverList.list(
+                          children: <Widget>[
+                            if (singleHotel) ...<Widget>[
+                              HotelSearchField(
+                                readOnly: true,
+                                onTap: () => _openSearch(context),
+                                trailingIcon: AppIcons.filter,
+                              ),
+                              const SizedBox(height: AppSpacing.space5),
+                            ],
+                            if (nextStay != null) ...<Widget>[
+                              nextStay,
+                              SizedBox(
+                                height: singleHotel
+                                    ? AppSpacing.space5
+                                    : AppSpacing.space4,
+                              ),
+                            ],
+                          ],
+                        ),
+                        _Listings(
+                          state: discoverUiState(discover),
+                          onRetry: () => ref
+                              .read(discoverControllerProvider.notifier)
+                              .refresh(),
+                          onOpenHotel: (String id) => _openHotel(context, id),
+                          onOpenSearch: () => _openSearch(context),
+                        ),
+                      ],
                     ),
-                  ],
-                  _Listings(
-                    state: discoverUiState(discover),
-                    onRetry: () =>
-                        ref.read(discoverControllerProvider.notifier).refresh(),
-                    onOpenHotel: (String id) => _openHotel(context, id),
-                    onOpenSearch: () => _openSearch(context),
                   ),
                 ],
               ),
@@ -262,7 +278,9 @@ class _HomeHeader extends StatelessWidget {
               ],
               Badge(
                 isLabelVisible: unreadNotifications > 0,
-                label: Text(unreadNotifications > 9 ? '9+' : '$unreadNotifications'),
+                label: Text(
+                  unreadNotifications > 9 ? '9+' : '$unreadNotifications',
+                ),
                 backgroundColor: c.bgPrimary,
                 textColor: c.textOnPrimary,
                 offset: const Offset(-2, 2),
@@ -331,89 +349,108 @@ class _Listings extends StatelessWidget {
   /// Figma room-card width on the 393 frame.
   static const double _railCardMinWidth = 345;
 
+  /// A sliver: the hotel grid builds its cards lazily; every other state
+  /// (loading skeleton, empty, error, the single-hotel rail) is one box.
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return UiStateView<DiscoverView>(
-      state: state,
-      onRetry: onRetry,
-      emptyTitle: l10n.discoverEmptyTitle,
-      emptyMessage: l10n.discoverEmptyBody,
-      skeleton: const _HotelCardsSkeleton(),
-      onSuccess: (DiscoverView view) {
-        if (view.isSingleHotel) {
-          final String hotelId = view.soleHotel!.id;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              SectionHeader(
-                title: l10n.discoverExploreRooms,
-                onSeeAll: () => onOpenHotel(hotelId),
-              ),
-              const SizedBox(height: AppSpacing.space5),
-              // `HOME_if One hotel`: a horizontal rail of room cards, 12px
-              // apart, scrolling from the reading-start edge. Cards are 345
-              // wide on a 393 phone (the Figma) and grow with the screen (90%
-              // of the content width) so larger text never overflows them.
-              LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final double cardWidth = math.max(
-                    _railCardMinWidth,
-                    constraints.maxWidth * 0.9,
-                  );
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    clipBehavior: Clip.none,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        for (
-                          int i = 0;
-                          i < view.soleHotelRooms.length;
-                          i++
-                        ) ...<Widget>[
-                          if (i > 0) const SizedBox(width: AppSpacing.space3),
-                          SizedBox(
-                            width: cardWidth,
-                            child: RoomSummaryCard(
-                              room: view.soleHotelRooms[i],
-                              nights: 1,
-                              selected: false,
-                              showStayTotal: false,
-                              onViewDetails: () => onOpenHotel(hotelId),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            SectionHeader(
-              title: l10n.discoverExploreHotels,
-              compact: true,
-              onTap: onOpenSearch,
+    final UiState<DiscoverView> current = state;
+    if (current is UiSuccess<DiscoverView> && !current.data.isSingleHotel) {
+      return SliverMainAxisGroup(
+        slivers: <Widget>[
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SectionHeader(
+                  title: l10n.discoverExploreHotels,
+                  compact: true,
+                  onTap: onOpenSearch,
+                ),
+                const SizedBox(height: AppSpacing.space2),
+              ],
             ),
-            const SizedBox(height: AppSpacing.space2),
-            _HotelCardList(hotels: view.featuredHotels, onOpen: onOpenHotel),
-          ],
-        );
-      },
+          ),
+          _HotelCardGrid(
+            hotels: current.data.featuredHotels,
+            onOpen: onOpenHotel,
+          ),
+        ],
+      );
+    }
+    return SliverToBoxAdapter(
+      child: UiStateView<DiscoverView>(
+        state: state,
+        onRetry: onRetry,
+        emptyTitle: l10n.discoverEmptyTitle,
+        emptyMessage: l10n.discoverEmptyBody,
+        skeleton: const _HotelCardsSkeleton(),
+        onSuccess: (DiscoverView view) {
+          if (view.isSingleHotel) {
+            final String hotelId = view.soleHotel!.id;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SectionHeader(
+                  title: l10n.discoverExploreRooms,
+                  onSeeAll: () => onOpenHotel(hotelId),
+                ),
+                const SizedBox(height: AppSpacing.space5),
+                // `HOME_if One hotel`: a horizontal rail of room cards, 12px
+                // apart, scrolling from the reading-start edge. Cards are 345
+                // wide on a 393 phone (the Figma) and grow with the screen (90%
+                // of the content width) so larger text never overflows them.
+                LayoutBuilder(
+                  builder: (BuildContext context, BoxConstraints constraints) {
+                    final double cardWidth = math.max(
+                      _railCardMinWidth,
+                      constraints.maxWidth * 0.9,
+                    );
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          for (
+                            int i = 0;
+                            i < view.soleHotelRooms.length;
+                            i++
+                          ) ...<Widget>[
+                            if (i > 0) const SizedBox(width: AppSpacing.space3),
+                            SizedBox(
+                              width: cardWidth,
+                              child: RoomSummaryCard(
+                                room: view.soleHotelRooms[i],
+                                nights: 1,
+                                selected: false,
+                                showStayTotal: false,
+                                onViewDetails: () => onOpenHotel(hotelId),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          }
+          // Multi-hotel success is the sliver grid above.
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
 }
 
 /// `HOME_Default` rail: full-width hotel cards 16px apart. On wide layouts
 /// (tablet / landscape) the cards pair up two per row, keeping the Figma card
-/// aspect ratio instead of stretching one card across the screen.
-class _HotelCardList extends StatelessWidget {
-  const _HotelCardList({required this.hotels, required this.onOpen});
+/// aspect ratio instead of stretching one card across the screen. A lazy
+/// grid: cards (and their cover photos) are built as they come into view.
+class _HotelCardGrid extends StatelessWidget {
+  const _HotelCardGrid({required this.hotels, required this.onOpen});
 
   final List<HotelSummary> hotels;
   final ValueChanged<String> onOpen;
@@ -423,27 +460,28 @@ class _HotelCardList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = constraints.maxWidth >= _twoColumnBreakpoint
+    return SliverLayoutBuilder(
+      builder: (BuildContext context, SliverConstraints constraints) {
+        final int columns = constraints.crossAxisExtent >= _twoColumnBreakpoint
             ? 2
             : 1;
         const double gap = AppSpacing.space4;
-        final double width =
-            (constraints.maxWidth - gap * (columns - 1)) / columns;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: <Widget>[
-            for (final HotelSummary hotel in hotels)
-              SizedBox(
-                width: width,
-                child: HomeHotelCard(
-                  hotel: hotel,
-                  onTap: () => onOpen(hotel.id),
-                ),
-              ),
-          ],
+        return SliverGrid.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: gap,
+            crossAxisSpacing: gap,
+            childAspectRatio: HomeHotelCard.aspectRatio,
+          ),
+          itemCount: hotels.length,
+          itemBuilder: (BuildContext context, int index) {
+            final HotelSummary hotel = hotels[index];
+            return HomeHotelCard(
+              key: ValueKey<String>('home-hotel-${hotel.id}'),
+              hotel: hotel,
+              onTap: () => onOpen(hotel.id),
+            );
+          },
         );
       },
     );

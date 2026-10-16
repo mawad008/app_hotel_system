@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../localization/l10n.dart';
 import '../theme/app_colors.dart';
+import 'app_image.dart';
 
 /// How the brand lock-up is arranged.
 enum BrandLogoVariant {
@@ -73,8 +74,8 @@ class BrandLogo extends StatelessWidget {
         ? vectorMark
         : SizedBox.square(
             dimension: markSize,
-            child: Image.network(
-              url,
+            child: Image(
+              image: AppNetworkImages.provider(url),
               fit: BoxFit.contain,
               // Fade in once decoded; nothing (not the default mark) shows
               // meanwhile, so the brand never flips from one logo to another.

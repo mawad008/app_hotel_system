@@ -8,6 +8,7 @@ import '../health/data/health_repository_impl.dart';
 import '../health/domain/health_repository.dart';
 import '../localization/content_language_provider.dart';
 import '../network/api_client.dart';
+import '../network/response_cache.dart';
 import '../network/session_events.dart';
 import '../security/in_memory_token_store.dart';
 import '../security/token_store.dart';
@@ -32,8 +33,15 @@ final apiClientProvider = Provider<ApiClient>((Ref ref) {
     // client — and with it every repository and in-flight controller.
     languageCode: () => ref.read(contentLanguageProvider),
     sessionEvents: ref.watch(sessionEventsProvider),
+    responseCache: ref.watch(responseCacheProvider),
   );
 });
+
+/// Saved copies of public catalogue responses for offline browsing. In-memory
+/// by default (tests); `bootstrap()` installs the persistent one.
+final responseCacheProvider = Provider<ResponseCache>(
+  (Ref ref) => InMemoryResponseCache(),
+);
 
 /// "The backend rejected our token" events from [ApiClient] — the auth
 /// feature listens and ends the session.

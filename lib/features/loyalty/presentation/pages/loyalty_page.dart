@@ -196,22 +196,64 @@ class _Body extends ConsumerWidget {
             if (txs.isEmpty) {
               return _HistoryEmpty();
             }
-            return AppCard(
-              child: Column(
-                children: <Widget>[
-                  for (int i = 0; i < txs.length; i++) ...<Widget>[
-                    if (i > 0) const Divider(height: 1),
-                    LoyaltyTransactionTile(
-                      transaction: txs[i],
-                      highlightReservationId: reservationId,
-                    ),
-                  ],
-                ],
-              ),
+            return _TransactionsCard(
+              transactions: txs,
+              highlightReservationId: reservationId,
             );
           },
         ),
         const SizedBox(height: AppSpacing.xl),
+      ],
+    );
+  }
+}
+
+/// The points ledger: it only grows, so rows are revealed a batch at a time
+/// ("Show more") instead of all being built up front.
+class _TransactionsCard extends StatefulWidget {
+  const _TransactionsCard({
+    required this.transactions,
+    required this.highlightReservationId,
+  });
+
+  final List<LoyaltyTransaction> transactions;
+  final String? highlightReservationId;
+
+  @override
+  State<_TransactionsCard> createState() => _TransactionsCardState();
+}
+
+class _TransactionsCardState extends State<_TransactionsCard> {
+  static const int _batch = 20;
+  int _visible = _batch;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<LoyaltyTransaction> txs = widget.transactions;
+    final int shown = txs.length < _visible ? txs.length : _visible;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppCard(
+          child: Column(
+            children: <Widget>[
+              for (int i = 0; i < shown; i++) ...<Widget>[
+                if (i > 0) const Divider(height: 1),
+                LoyaltyTransactionTile(
+                  transaction: txs[i],
+                  highlightReservationId: widget.highlightReservationId,
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (txs.length > shown)
+          Center(
+            child: TextButton(
+              onPressed: () => setState(() => _visible += _batch),
+              child: Text(context.l10n.commonShowMore),
+            ),
+          ),
       ],
     );
   }

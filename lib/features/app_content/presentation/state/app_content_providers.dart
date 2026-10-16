@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/di/core_providers.dart';
+import '../../../../core/presentation/cache_for.dart';
 import '../../../../core/storage/app_preferences.dart';
 import '../../data/datasources/api_app_content_data_source.dart';
 import '../../data/datasources/app_content_data_source.dart';
@@ -45,21 +48,42 @@ const Duration appContentTimeout = Duration(seconds: 3);
 /// Branding must never block entry: any failure or a slow response resolves
 /// to the last content this device received, else [AppContent.empty] — so
 /// every screen falls back to its bundled defaults only when nothing was
-/// ever fetched.
-final appContentProvider = FutureProvider<AppContent>((Ref ref) async {
-  try {
-    return await ref
+/// ever fetched. A response that lands after [appContentTimeout] (common on a
+/// cold start: DNS + TLS on a mobile network) is still adopted when it
+/// arrives — on a first run that is usually while the guest is choosing a
+/// language, before the onboarding screen shows.
+final appContentProvider =
+    AsyncNotifierProvider<AppContentController, AppContent>(
+      AppContentController.new,
+    );
+
+class AppContentController extends AsyncNotifier<AppContent> {
+  @override
+  Future<AppContent> build() async {
+    bool stale = false;
+    ref.onDispose(() => stale = true);
+    final Future<AppContent> fetch = ref
         .watch(appContentRepositoryProvider)
-        .content()
-        .timeout(appContentTimeout);
-  } catch (error) {
-    final AppContent? cached = ref.read(cachedAppContentProvider);
-    if (kDebugMode) {
-      debugPrint('appContent: using ${cached == null ? 'bundled defaults' : 'cached content'} — $error');
+        .content();
+    try {
+      return await fetch.timeout(appContentTimeout);
+    } catch (error) {
+      if (error is TimeoutException) {
+        fetch.then(
+          (AppContent late) {
+            if (!stale) state = AsyncData<AppContent>(late);
+          },
+          onError: (Object _) {},
+        ).ignore();
+      }
+      final AppContent? cached = ref.read(cachedAppContentProvider);
+      if (kDebugMode) {
+        debugPrint('appContent: using ${cached == null ? 'bundled defaults' : 'cached content'} — $error');
+      }
+      return cached ?? AppContent.empty;
     }
-    return cached ?? AppContent.empty;
   }
-});
+}
 
 /// App-wide branding that never waits: the fresh content once loaded, the
 /// cached one meanwhile, else the bundled defaults. For chrome that must
@@ -76,6 +100,7 @@ final brandingProvider = Provider<AppContent>((Ref ref) {
 /// [appContentProvider] a failure is surfaced (with retry) instead of
 /// silently showing "no questions".
 final faqProvider = FutureProvider.autoDispose<List<FaqEntry>>((Ref ref) async {
+  ref.cacheFor(CacheDurations.reference);
   final AppContent content = await ref.watch(appContentRepositoryProvider).content();
   return content.faq;
 });

@@ -47,8 +47,16 @@ List<RoomTypeSpec> _customRoomSpecs(Object? raw) => <RoomTypeSpec>[
 /// display convenience, not a claim of full-dataset multi-city search (the
 /// backend has no such parameter; a genuine multi-city filter is a backend
 /// gap, not invented here).
+///
+/// The public catalogue reads (cities, hotel lists, a hotel's details) keep
+/// their last good response for offline browsing (`offlineFallback`); live
+/// availability never does — a stale price or "available" must not show.
 class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
   ApiDiscoveryDataSource(this._client);
+
+  /// Hotels per search page: small enough for a fast first screen, the rest
+  /// loads as the guest scrolls.
+  static const int searchPageSize = 20;
 
   final ApiClient _client;
 
@@ -56,6 +64,7 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
   Future<List<CityModel>> fetchCities() async {
     final Map<String, dynamic> json = await _client.getJson(
       '/guest/hotels/cities',
+      offlineFallback: true,
     );
     final List<Object?> data =
         (json['data'] as List<Object?>?) ?? const <Object?>[];
@@ -85,6 +94,7 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
     final Map<String, dynamic> json = await _client.getJson(
       '/guest/hotels',
       query: const <String, dynamic>{'sort': 'recommended', 'per_page': 20},
+      offlineFallback: true,
     );
     final List<Object?> rows =
         (json['data'] as List<Object?>?) ?? const <Object?>[];
@@ -99,6 +109,7 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
     required String query,
     required HotelFilters filters,
     required HotelSort sort,
+    int page = 1,
   }) async {
     final Map<String, dynamic> json = await _client.getJson(
       '/guest/hotels',
@@ -110,8 +121,10 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
         if (filters.facilities.isNotEmpty)
           'facilities': filters.facilities.map(_facilityKey).join(','),
         'sort': _sortParam(sort),
-        'per_page': 50,
+        'page': page,
+        'per_page': searchPageSize,
       },
+      offlineFallback: true,
     );
     final List<Object?> rows =
         (json['data'] as List<Object?>?) ?? const <Object?>[];
@@ -130,9 +143,13 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
     }
 
     final Json meta = (json['meta'] as Json?) ?? const <String, Object?>{};
+    final int currentPage = (meta['current_page'] as num?)?.toInt() ?? page;
+    final int lastPage = (meta['last_page'] as num?)?.toInt() ?? currentPage;
     return HotelSearchResultModel(
       hotels: hotels,
       totalCount: (meta['total'] as num?)?.toInt() ?? hotels.length,
+      page: currentPage,
+      hasMore: currentPage < lastPage,
     );
   }
 
@@ -140,6 +157,7 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
   Future<HotelModel> fetchHotel(String hotelId) async {
     final Map<String, dynamic> json = await _client.getJson(
       '/guest/hotels/$hotelId',
+      offlineFallback: true,
     );
     final Json data = (json['data'] as Json?) ?? const <String, Object?>{};
     return _hotelFromPublicHotel(data);
@@ -188,6 +206,9 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
     final Map<String, dynamic> json = await _client.getJson(
       '/guest/hotels',
       query: const <String, dynamic>{'per_page': 1},
+      // Home needs this too: offline it must not fail while the hotel list
+      // itself is served from the saved copy.
+      offlineFallback: true,
     );
     final Json meta = (json['meta'] as Json?) ?? const <String, Object?>{};
     return (meta['total'] as num?)?.toInt() ?? 0;
@@ -200,6 +221,7 @@ class ApiDiscoveryDataSource implements DiscoveryDataSource, RemoteDataSource {
     // checked; a genuine live availability read is `fetchAvailability`.
     final Map<String, dynamic> json = await _client.getJson(
       '/guest/hotels/$hotelId',
+      offlineFallback: true,
     );
     final Json data = (json['data'] as Json?) ?? const <String, Object?>{};
     final List<Object?> roomTypes =

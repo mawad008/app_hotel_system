@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/localization/l10n.dart';
-import '../../../../core/widgets/money_text.dart';
+import '../../../../core/presentation/latin_digits_formatter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icons.dart';
 import '../../../../core/widgets/bottom_action_bar.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/loading_view.dart';
+import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../reservation/domain/entities/reservation.dart';
 import '../../../reservation/presentation/state/reservation_detail_provider.dart';
@@ -95,6 +97,11 @@ class _PaymentCardDetailsPageState
               TextField(
                 controller: _cardNumber,
                 keyboardType: TextInputType.number,
+                inputFormatters: <TextInputFormatter>[
+                  const LatinDigitsFormatter(),
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9 ]')),
+                  LengthLimitingTextInputFormatter(23),
+                ],
                 decoration: InputDecoration(hintText: l10n.paymentCardNumberHint),
                 onChanged: (_) => setState(() {}),
               ),
@@ -122,8 +129,8 @@ class _PaymentCardDetailsPageState
       bottomNavigationBar: BottomActionBar.actions(
         primary: PrimaryButton(
           label: l10n.paymentConfirmCta,
-          onPressed: (_canConfirm && reservationAsync.value != null)
-              ? () => _confirm(reservationAsync.value!)
+          onPressed: (_canConfirm && reservationAsync.valueOrNull != null)
+              ? () => _confirm(reservationAsync.valueOrNull!)
               : null,
         ),
       ),

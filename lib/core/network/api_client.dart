@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
+import '../errors/app_exception.dart';
 import '../security/token_store.dart';
 import 'api_image_url_resolver.dart';
 import 'interceptors/auth_interceptor.dart';
@@ -8,6 +11,7 @@ import 'interceptors/error_interceptor.dart';
 import 'interceptors/locale_interceptor.dart';
 import 'interceptors/logging_interceptor.dart';
 import 'interceptors/session_interceptor.dart';
+import 'response_cache.dart';
 import 'session_events.dart';
 
 /// Thin wrapper over [Dio] that centralizes base URL, `/api/v1` prefix,
@@ -20,23 +24,27 @@ class ApiClient {
   ApiClient({
     required AppConfig config,
     required TokenStore tokenStore,
-    String Function()? languageCode,
+    this._languageCode,
     SessionEvents? sessionEvents,
-  })
-      : _imageUrlResolver = ApiImageUrlResolver(config.apiBaseUrl),
-        _dio = Dio(
-          BaseOptions(
-            baseUrl: config.apiRoot,
-            connectTimeout: const Duration(seconds: 15),
-            sendTimeout: const Duration(seconds: 15),
-            receiveTimeout: const Duration(seconds: 20),
-            contentType: Headers.jsonContentType,
-            responseType: ResponseType.json,
-          ),
-        ) {
+    this._responseCache,
+  }) : _imageUrlResolver = ApiImageUrlResolver(config.apiBaseUrl),
+       _dio = Dio(
+         BaseOptions(
+           baseUrl: config.apiRoot,
+           // Long enough for a slow mobile network (TCP + TLS take a couple
+           // of round trips), short enough that a dropped connection gets
+           // to `getJson`'s retry quickly.
+           connectTimeout: const Duration(seconds: 10),
+           sendTimeout: const Duration(seconds: 15),
+           receiveTimeout: const Duration(seconds: 20),
+           contentType: Headers.jsonContentType,
+           responseType: ResponseType.json,
+         ),
+       ) {
     _dio.interceptors.addAll(<Interceptor>[
       AuthInterceptor(tokenStore),
-      if (languageCode != null) LocaleInterceptor(languageCode),
+      if (_languageCode case final String Function() languageCode)
+        LocaleInterceptor(languageCode),
       LoggingInterceptor(),
       if (sessionEvents != null) SessionInterceptor(sessionEvents),
       ErrorInterceptor(),
@@ -51,10 +59,14 @@ class ApiClient {
   ApiClient.withDio(
     this._dio, {
     this._imageUrlResolver = const ApiImageUrlResolver(''),
+    this._responseCache,
+    this._languageCode,
   });
 
   final Dio _dio;
   final ApiImageUrlResolver _imageUrlResolver;
+  final ResponseCache? _responseCache;
+  final String Function()? _languageCode;
 
   /// Rewrites a real API media URL (`cover_url`, `gallery[].url`, …) onto a
   /// host this client can actually reach — see [ApiImageUrlResolver]. Never
@@ -63,15 +75,74 @@ class ApiClient {
   /// so a hotel with no photo still renders no photo in real API mode.
   String? resolveMediaUrl(String? rawUrl) => _imageUrlResolver.resolve(rawUrl);
 
+  /// `GET` [path]. With [offlineFallback] the response is saved in the
+  /// [ResponseCache], and served from there when a later request fails for
+  /// connectivity reasons (offline, timeout, server down) — for public
+  /// catalogue reads only, never the guest's own or live-priced data.
   Future<Map<String, dynamic>> getJson(
     String path, {
     Map<String, dynamic>? query,
+    bool offlineFallback = false,
   }) async {
-    final Response<dynamic> response = await _dio.get<dynamic>(
-      path,
-      queryParameters: query,
-    );
-    return _asJsonMap(response.data);
+    final ResponseCache? cache = offlineFallback ? _responseCache : null;
+    final String? key = cache == null ? null : _cacheKey(path, query);
+    try {
+      final Response<dynamic> response = await _get(path, query);
+      final Map<String, dynamic> json = _asJsonMap(response.data);
+      if (cache != null) unawaited(cache.write(key!, json));
+      return json;
+    } on DioException catch (error) {
+      if (cache != null && _isConnectivityFailure(error)) {
+        final Map<String, dynamic>? saved = await cache.read(key!);
+        if (saved != null) return saved;
+      }
+      rethrow;
+    }
+  }
+
+  /// A read that never reached the server (connection refused, dropped, or
+  /// timed out while connecting) is tried once more straight away: it is
+  /// safe to repeat, and on a flaky network the second attempt usually
+  /// connects. Anything the server answered (4xx, 429, 5xx) is final.
+  Future<Response<dynamic>> _get(
+    String path,
+    Map<String, dynamic>? query,
+  ) async {
+    try {
+      return await _dio.get<dynamic>(path, queryParameters: query);
+    } on DioException catch (error) {
+      if (!_neverReachedServer(error)) rethrow;
+      return _dio.get<dynamic>(path, queryParameters: query);
+    }
+  }
+
+  static bool _neverReachedServer(DioException error) =>
+      error.response == null &&
+      (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout);
+
+  /// Responses are localized, so the language is part of the key.
+  String _cacheKey(String path, Map<String, dynamic>? query) {
+    final List<String> params = <String>[
+      for (final MapEntry<String, dynamic> e
+          in (query ?? const <String, dynamic>{}).entries)
+        '${e.key}=${e.value}',
+    ]..sort();
+    return '${_languageCode?.call() ?? ''}|$path?${params.join('&')}';
+  }
+
+  static bool _isConnectivityFailure(DioException error) {
+    final Object? cause = error.error;
+    return cause is NetworkException ||
+        cause is RequestTimeoutException ||
+        cause is ServerException ||
+        switch (error.type) {
+          DioExceptionType.connectionError ||
+          DioExceptionType.connectionTimeout ||
+          DioExceptionType.sendTimeout ||
+          DioExceptionType.receiveTimeout => true,
+          _ => false,
+        };
   }
 
   Future<Map<String, dynamic>> postJson(
@@ -150,7 +221,10 @@ class ApiClient {
     Map<String, String>? headers,
     void Function(int sent, int total)? onSendProgress,
   }) async {
-    final FormData form = FormData.fromMap(<String, dynamic>{...fields, ...files});
+    final FormData form = FormData.fromMap(<String, dynamic>{
+      ...fields,
+      ...files,
+    });
     final Response<dynamic> response = await _dio.post<dynamic>(
       path,
       data: form,

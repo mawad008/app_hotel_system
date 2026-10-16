@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_image.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../app_content/domain/entities/app_content.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
@@ -44,7 +45,7 @@ class EntrySplashBackdrop extends ConsumerWidget {
       final String? url = next.value?.onboardingImageUrl;
       if (url != null) {
         precacheImage(
-          NetworkImage(url),
+          AppNetworkImages.provider(url),
           context,
           onError: (Object _, StackTrace? _) {},
         );

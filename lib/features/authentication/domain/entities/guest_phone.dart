@@ -1,3 +1,5 @@
+import '../../../../core/localization/latin_digits.dart';
+
 /// A guest mobile number split into its dialling code and national part.
 ///
 /// The approved SRS (§3.1) and the `09 · Authentication` reference show a fixed
@@ -18,17 +20,39 @@ class GuestPhone {
   /// Default dialling code shown in the UI (`09 · Authentication`).
   static const String defaultDialCode = '+966';
 
-  /// Builds a phone from raw field input, stripping spaces, dashes and a single
-  /// leading zero from the national part.
+  /// Builds a phone from raw field input — see [nationalDigits] for what is
+  /// accepted.
   factory GuestPhone.fromInput({
     String dialCode = defaultDialCode,
     required String rawNationalNumber,
   }) {
-    final String digits =
-        rawNationalNumber.replaceAll(RegExp(r'[^0-9]'), '');
-    final String normalised =
-        digits.startsWith('0') ? digits.substring(1) : digits;
-    return GuestPhone(dialCode: dialCode, nationalNumber: normalised);
+    return GuestPhone(
+      dialCode: dialCode,
+      nationalNumber: nationalDigits(rawNationalNumber, dialCode: dialCode),
+    );
+  }
+
+  /// The national part of what a guest typed or pasted: Arabic-Indic digits
+  /// become `0`–`9`, spaces, dashes and `+` are dropped, the country code is
+  /// removed when it was included (`+966 5…`, `00966 5…`, `966 5…`), and so is
+  /// a single trunk zero (`05…` → `5…`).
+  static String nationalDigits(
+    String raw, {
+    String dialCode = defaultDialCode,
+  }) {
+    String digits = toLatinDigits(raw).replaceAll(RegExp(r'[^0-9]'), '');
+    final String country = dialCode.replaceAll(RegExp(r'[^0-9]'), '');
+    if (country.isNotEmpty) {
+      for (final String prefix in <String>['00$country', country]) {
+        // Only when a full national number follows, so a national number
+        // that merely starts with the same digits is left alone.
+        if (digits.startsWith(prefix) && digits.length - prefix.length >= 8) {
+          digits = digits.substring(prefix.length);
+          break;
+        }
+      }
+    }
+    return digits.startsWith('0') ? digits.substring(1) : digits;
   }
 
   /// Best-effort split of a canonical E.164 string back into a dialling code

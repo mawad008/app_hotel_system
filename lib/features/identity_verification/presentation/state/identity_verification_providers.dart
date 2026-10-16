@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/di/core_providers.dart';
+import '../../../../core/presentation/cache_for.dart';
 import '../../../../core/time/clock.dart';
 import '../../data/datasources/api_identity_verification_data_source.dart';
 import '../../data/datasources/dummy_identity_verification_data_source.dart';
@@ -46,6 +47,7 @@ final identityStatusProvider = FutureProvider.autoDispose
 /// loaded, so the flow never dead-ends — the server re-validates the upload.
 final identityDocumentOptionsProvider =
     FutureProvider.autoDispose<List<IdentityDocumentOption>>((Ref ref) async {
+  ref.cacheFor(CacheDurations.reference);
   try {
     final List<IdentityDocumentOption> options =
         await ref.watch(identityVerificationRepositoryProvider).documentTypes();

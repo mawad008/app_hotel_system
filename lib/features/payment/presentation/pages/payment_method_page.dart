@@ -117,9 +117,9 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
       bottomNavigationBar: BottomActionBar.actions(
         primary: PrimaryButton(
           label: l10n.commonContinue,
-          onPressed: reservationAsync.value == null
+          onPressed: reservationAsync.valueOrNull == null
               ? null
-              : () => _continue(reservationAsync.value!),
+              : () => _continue(reservationAsync.valueOrNull!),
         ),
       ),
     );

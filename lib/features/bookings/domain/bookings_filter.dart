@@ -7,10 +7,14 @@ import '../../reservation/domain/entities/reservation_status.dart';
 /// state, it only groups the statuses the backend already returns.
 enum BookingsFilter { current, upcoming, past }
 
-/// Statuses the guest is currently occupying the room for.
+/// Statuses the guest is currently occupying the room for — including a
+/// checkout that has started or is blocked (e.g. an outstanding balance): the
+/// guest is still in the room and must be able to find the booking to finish.
 const Set<ReservationStatus> _ongoingStatuses = <ReservationStatus>{
   ReservationStatus.checkedIn,
   ReservationStatus.inStay,
+  ReservationStatus.checkoutInProgress,
+  ReservationStatus.checkoutBlocked,
 };
 
 /// Statuses for a booking that has not started yet but is still live

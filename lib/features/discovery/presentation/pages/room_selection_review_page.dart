@@ -3,17 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
+import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/localization/numerals.dart';
-import '../../../../core/time/stay_date_format.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/widgets/back_fallback_scope.dart';
-import '../../../../core/widgets/bottom_action_bar.dart';
+import '../../../../core/time/stay_date_format.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/back_fallback_scope.dart';
+import '../../../../core/widgets/bottom_action_bar.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/info_banner.dart';
 import '../../../../core/widgets/message_view.dart';
@@ -30,14 +31,17 @@ import '../../../loyalty/presentation/state/loyalty_providers.dart';
 import '../../../loyalty/presentation/widgets/loyalty_redemption_field.dart';
 import '../../../reservation/domain/entities/create_reservation_request.dart';
 import '../../../reservation/domain/entities/reservation.dart';
-import '../state/hotel_detail_provider.dart';
+import '../../../reservation/domain/entities/reservation_status.dart';
 import '../../../reservation/presentation/state/create_reservation_controller.dart';
+import '../../../reservation/presentation/state/reservation_detail_provider.dart';
 import '../../domain/entities/guest_party.dart';
+import '../../domain/entities/hotel.dart';
 import '../../domain/entities/hotel_guest_details.dart';
 import '../../domain/entities/money.dart';
 import '../../domain/entities/room_selection.dart';
 import '../state/booking_price.dart';
 import '../state/guest_party_controller.dart';
+import '../state/hotel_detail_provider.dart';
 import '../state/room_selection_controller.dart';
 import '../widgets/guest_stepper.dart';
 import '../widgets/hotel_thumbnail.dart';
@@ -73,6 +77,34 @@ class RoomSelectionReviewPage extends ConsumerWidget {
   /// posts the capped credit), then continues to payment. A refused
   /// redemption never blocks the booking — the guest is told nothing was
   /// deducted.
+  /// Back on the summary with a booking already created for this exact
+  /// request: reopen its payment while it still awaits payment, but if it was
+  /// cancelled or expired meanwhile (unpaid bookings lapse after a while),
+  /// book again rather than send the guest to pay for a dead reservation.
+  Future<void> _continueCreated(
+    BuildContext context,
+    WidgetRef ref,
+    Reservation created,
+    CreateReservationRequest request,
+    int points,
+  ) async {
+    Reservation current = created;
+    try {
+      ref.invalidate(reservationDetailProvider(created.id));
+      current = await ref.read(reservationDetailProvider(created.id).future);
+    } catch (_) {
+      // Offline: carry on with what we have; the payment screen re-checks.
+    }
+    if (!context.mounted) return;
+    if (current.status == ReservationStatus.pending) {
+      await _redeemThenPay(context, ref, current, points);
+      return;
+    }
+    ref.read(createReservationControllerProvider.notifier)
+      ..reset()
+      ..submit(request);
+  }
+
   Future<void> _redeemThenPay(
     BuildContext context,
     WidgetRef ref,
@@ -146,10 +178,14 @@ class RoomSelectionReviewPage extends ConsumerWidget {
     final LoyaltyProgram? program = signedIn
         ? ref.watch(loyaltyProgramProvider(hotelId)).valueOrNull
         : null;
-    final HotelGuestDetails? hotelDetails = ref
-        .watch(hotelDetailProvider(hotelId))
-        .valueOrNull
-        ?.details;
+    final AsyncValue<Hotel> hotelAsync = ref.watch(
+      hotelDetailProvider(hotelId),
+    );
+    final HotelGuestDetails? hotelDetails = hotelAsync.valueOrNull?.details;
+    // The service fee and tax come from the hotel's details: until they are
+    // in (e.g. refetched after a mid-booking sign-in) the total would be the
+    // room alone, so the price card waits and booking stays disabled.
+    final bool priceReady = hotelAsync.hasValue;
     // The hotel's own service fee and tax (dashboard-managed); none when off.
     final Money? serviceFee = hotelDetails?.serviceFee?.feeFor(
       selection.stayTotal,
@@ -243,7 +279,28 @@ class RoomSelectionReviewPage extends ConsumerWidget {
                 ),
               ],
               const SizedBox(height: AppSpacing.md),
-              PriceBreakdownCard(breakdown: breakdown),
+              if (priceReady)
+                PriceBreakdownCard(breakdown: breakdown)
+              else if (hotelAsync.hasError)
+                InfoBanner(
+                  tone: InfoBannerTone.error,
+                  title: l10n.stateErrorTitle,
+                  message: ErrorMapper.toFailure(hotelAsync.error!)
+                      .localizedMessage(l10n),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton(
+                      onPressed: () =>
+                          ref.invalidate(hotelDetailProvider(hotelId)),
+                      child: Text(l10n.actionRetry),
+                    ),
+                  ),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
               if (failure != null) ...<Widget>[
                 const SizedBox(height: AppSpacing.md),
                 InfoBanner(
@@ -269,11 +326,16 @@ class RoomSelectionReviewPage extends ConsumerWidget {
                       ? l10n.reservationConfirming
                       : l10n.bookingProceedToPayment,
                   isLoading: submitting,
-                  onPressed: submitting
+                  onPressed: submitting || !priceReady
                       ? null
                       : created != null
-                      ? () =>
-                            _redeemThenPay(context, ref, created, redeemPoints)
+                      ? () => _continueCreated(
+                          context,
+                          ref,
+                          created,
+                          request!,
+                          redeemPoints,
+                        )
                       : () => ref
                             .read(createReservationControllerProvider.notifier)
                             .submit(request!),

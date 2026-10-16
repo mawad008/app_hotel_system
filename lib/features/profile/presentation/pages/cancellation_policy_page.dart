@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/l10n.dart';
+import '../../../../core/widgets/app_icons.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
 import '../../../../core/widgets/loading_view.dart';
+import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/pull_to_refresh.dart';
+import '../../../app_content/domain/entities/app_content.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
 import '../../../bookings/presentation/widgets/cancellation_policy_card.dart';
 
@@ -15,10 +18,8 @@ class CancellationPolicyPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final int? hours = ref
-        .watch(appContentProvider)
-        .valueOrNull
-        ?.freeCancellationHours;
+    final AsyncValue<AppContent> content = ref.watch(appContentProvider);
+    final int? hours = content.valueOrNull?.freeCancellationHours;
     return Scaffold(
       appBar: HotelAppBar(title: context.l10n.bookingCancellationPolicyHeading),
       body: SafeArea(
@@ -28,10 +29,19 @@ class CancellationPolicyPage extends ConsumerWidget {
             padding: const EdgeInsets.all(24),
             children: <Widget>[
               // The platform rule, with the window the server configures.
-              if (hours == null)
+              if (hours != null)
+                CancellationPolicyCard(freeCancellationHours: hours)
+              else if (content.isLoading)
                 const LoadingView()
               else
-                CancellationPolicyCard(freeCancellationHours: hours),
+                // Loaded without a policy (e.g. a first launch offline): say
+                // so with a retry instead of spinning forever.
+                MessageView(
+                  icon: AppIcons.warning,
+                  title: context.l10n.stateErrorTitle,
+                  actionLabel: context.l10n.actionRetry,
+                  onAction: () => ref.invalidate(appContentProvider),
+                ),
             ],
           ),
         ),

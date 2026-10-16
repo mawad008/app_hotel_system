@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/presentation/latin_digits_formatter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radius.dart';
 import '../../../../core/theme/app_typography.dart';
@@ -125,6 +126,8 @@ class _OtpCodeFieldState extends State<OtpCodeField> {
                     showCursor: false,
                     enableInteractiveSelection: false,
                     inputFormatters: <TextInputFormatter>[
+                      // Arabic keyboards type ٠–٩; keep them as 0–9.
+                      const LatinDigitsFormatter(),
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(widget.length),
                     ],

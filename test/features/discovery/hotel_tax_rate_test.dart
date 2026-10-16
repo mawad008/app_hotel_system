@@ -32,6 +32,12 @@ void main() {
     expect(const HotelGuestDetails().taxFor(Money(amount: 200)), isNull);
   });
 
+  test('taxFor adds nothing when the hotel says its rates include taxes', () {
+    const HotelGuestDetails details =
+        HotelGuestDetails(taxRate: 15, pricesIncludeTaxes: true);
+    expect(details.taxFor(Money(amount: 200)), isNull);
+  });
+
   test('the booking breakdown adds the tax to the total', () {
     final BookingPriceBreakdown breakdown = BookingPriceBreakdown.of(
       fakeSelection(price: 100),

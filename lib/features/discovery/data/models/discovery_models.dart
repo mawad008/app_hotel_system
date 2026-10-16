@@ -359,6 +359,8 @@ class HotelSearchResultModel {
   const HotelSearchResultModel({
     required this.hotels,
     required this.totalCount,
+    this.page = 1,
+    this.hasMore = false,
   });
 
   factory HotelSearchResultModel.fromJson(Json json) => HotelSearchResultModel(
@@ -372,12 +374,16 @@ class HotelSearchResultModel {
 
   final List<HotelSummaryModel> hotels;
   final int totalCount;
+  final int page;
+  final bool hasMore;
 
   HotelSearchResult toEntity() => HotelSearchResult(
     hotels: hotels
         .map((HotelSummaryModel m) => m.toEntity())
         .toList(growable: false),
     totalCount: totalCount,
+    page: page,
+    hasMore: hasMore,
   );
 }
 

@@ -75,11 +75,38 @@ void main() {
     expect(_location(c), AppRoutes.bookings);
   });
 
+  testWidgets('the Android back gesture on booking details opened with go '
+      'returns to the bookings list instead of closing the app',
+      (WidgetTester tester) async {
+    final ProviderContainer c = await pumpApp(
+      tester,
+      bootSession: completeSession(),
+      extraOverrides: <Override>[
+        reservationDetailProvider.overrideWith(
+          (Ref ref, String id) async => fakeReservation(id: id),
+        ),
+      ],
+    );
+    c.read(appRouterProvider).go('/reservation/9');
+    await tester.pumpAndSettle();
+
+    // What Android's system back does; `false` would mean "exit the app".
+    final bool handled = await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(handled, isTrue);
+    expect(_location(c), AppRoutes.bookings);
+  });
+
   test('no screen navigates to the debug-only diagnostics route', () {
     final List<String> offenders = Directory('lib')
         .listSync(recursive: true)
         .whereType<File>()
-        .where((File f) => f.path.endsWith('.dart') && !f.path.contains('app/router/'))
+        .where((File f) {
+          // Normalised so the router exemption also holds on Windows paths.
+          final String path = f.path.replaceAll(r'\', '/');
+          return path.endsWith('.dart') && !path.contains('app/router/');
+        })
         .where((File f) => RegExp(r'AppRoutes\.home(Name)?\b').hasMatch(f.readAsStringSync()))
         .map((File f) => f.path)
         .toList();

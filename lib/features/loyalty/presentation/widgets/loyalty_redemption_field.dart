@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/localization/numerals.dart';
+import '../../../../core/presentation/latin_digits_formatter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_icons.dart';
@@ -348,6 +349,7 @@ class _NumberField extends StatelessWidget {
           onChanged: onChanged,
           keyboardType: TextInputType.numberWithOptions(decimal: decimal),
           inputFormatters: <TextInputFormatter>[
+            const LatinDigitsFormatter(),
             FilteringTextInputFormatter.allow(
               decimal ? RegExp(r'^\d*\.?\d{0,2}') : RegExp(r'\d*'),
             ),

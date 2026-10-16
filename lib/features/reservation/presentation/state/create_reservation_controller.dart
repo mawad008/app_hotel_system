@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../authentication/presentation/state/auth_controller.dart';
+import '../../../authentication/presentation/state/auth_state.dart';
 import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
@@ -68,7 +70,21 @@ class CreateReservationFailed extends CreateReservationState {
 ///   matches, so the UI re-enables submit for the new criteria.
 class CreateReservationController extends Notifier<CreateReservationState> {
   @override
-  CreateReservationState build() => const CreateReservationIdle();
+  CreateReservationState build() {
+    // A booking belongs to the account that made it: signing out, or into
+    // another account on the same phone, starts clean — the next guest can
+    // never reopen the previous guest's reservation from the summary.
+    ref.watch(authControllerProvider.select(_accountOf));
+    _attemptFor = null;
+    _attemptToken = null;
+    return const CreateReservationIdle();
+  }
+
+  static String? _accountOf(AuthState auth) => switch (auth) {
+    Authenticated(:final session) => session.accessToken,
+    AuthAwaitingProfile(:final session) => session.accessToken,
+    _ => null,
+  };
 
   /// The current booking attempt: the criteria it was for and its token. A
   /// retry of the same criteria (even after [reset] / a failure) reuses the
@@ -122,6 +138,17 @@ class CreateReservationController extends Notifier<CreateReservationState> {
   /// Clears a failure so the guest can try again, and resets when leaving the
   /// flow so a stale success can't be re-used for a new selection.
   void reset() => state = const CreateReservationIdle();
+
+  /// Drops the remembered success when it is [reservationId] — called after
+  /// that booking is cancelled, so booking the same room and dates again
+  /// creates a new reservation instead of reopening the cancelled one.
+  void forget(String reservationId) {
+    final CreateReservationState current = state;
+    if (current is CreateReservationDone &&
+        current.reservation.id == reservationId) {
+      reset();
+    }
+  }
 }
 
 final createReservationControllerProvider =

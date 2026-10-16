@@ -108,8 +108,10 @@ class _OnboardingPhoto extends StatelessWidget {
     if (url == null) return _bundled;
     return ColoredBox(
       color: AppPrimitives.stone950,
-      child: Image.network(
-        url,
+      // Same provider as the splash's precache, so it is usually already
+      // decoded — and on later launches it comes from the disk cache.
+      child: Image(
+        image: AppNetworkImages.provider(url),
         fit: BoxFit.cover,
         frameBuilder:
             (

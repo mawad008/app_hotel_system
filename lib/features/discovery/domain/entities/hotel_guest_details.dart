@@ -46,7 +46,9 @@ class HotelGuestDetails {
   /// `null` when the hotel adds no tax.
   Money? taxFor(Money stayTotal, {Money? serviceFee}) {
     final num? rate = taxRate;
-    if (rate == null || rate <= 0) return null;
+    // Rates that already include taxes get nothing added on top — otherwise
+    // the screen would say "included" and still add the tax to the total.
+    if (pricesIncludeTaxes || rate == null || rate <= 0) return null;
     final num base = stayTotal.amount + (serviceFee?.amount ?? 0);
     return Money(
       amount: (base * rate + 1e-9).floor() / 100,

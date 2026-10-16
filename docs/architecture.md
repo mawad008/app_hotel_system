@@ -192,3 +192,77 @@ Confirmed Stay → Check-in → Digital Access → In Stay
 
 The app must handle deep links only where an approved feature requires
 them.
+
+Every route uses one default page transition, a short fade
+(`core/theme/fade_page_transitions.dart`, registered in `AppTheme`'s
+`pageTransitionsTheme`); iOS keeps its edge swipe-back gesture. Android back
+on the Bookings / Services / Account tabs returns to Home (`AppBottomNav`);
+screens reached with `go` wrap themselves in `BackFallbackScope`. Android
+predictive back is on (`enableOnBackInvokedCallback` in the manifest, as
+Android 16 already defaults to at our target SDK), so intercept back only with
+`PopScope` — never `WillPopScope`.
+
+## 11. Layout: safe areas
+
+Android 15+ draws apps edge-to-edge, so every screen must keep its content out
+of the status bar / notch, the gesture bar / home indicator and, in landscape,
+the side notches:
+
+- one horizontal `SafeArea` around the whole navigator (`app.dart` builder)
+  covers the side insets for every screen, sheet and dialog;
+- top and bottom are per screen: `HotelAppBar` handles the top, and bodies use
+  `SafeArea`; `BottomActionBar`, `AppBottomNav` and the sheet scaffold handle
+  the bottom; full-bleed heroes may draw under the status bar, their buttons
+  may not.
+
+`test/app/safe_area_test.dart` renders every screen on a notched phone
+(portrait and landscape, real Tajawal metrics) and fails if visible text or an
+icon sits in an unsafe band — add new routes to its list.
+
+## 12. Performance: caching and lazy loading
+
+**Images** — always through `AppImage` / `AppNetworkImages`
+(`core/widgets/app_image.dart`): network images are kept in a disk + memory
+cache (`cached_network_image`), every image is decoded at the size it is shown
+(not the uploaded resolution), and network images fade in over a placeholder.
+
+**Data** — two layers, public data only:
+
+- in memory: `ref.cacheFor(...)` (`core/presentation/cache_for.dart`) keeps an
+  `autoDispose` provider for a few minutes after its screen closes (hotel
+  details, FAQ, document types, review categories, a hotel's service menu);
+- on disk: `ApiClient.getJson(offlineFallback: true)` saves the last good
+  response and serves it when a request fails for connectivity reasons
+  (offline, timeout, 5xx) — the city list, hotel lists and hotel details.
+
+Never cache the guest's own live data (bookings, payments, notifications,
+folio, room key) or anything priced live (availability).
+
+**Lazy loading** — lists build rows as they scroll into view (`ListView`
+children / builders, slivers; never a `Column` of every row inside a scroll
+view). Hotel search loads 20 hotels per page and fetches the next page near
+the end of the list; growing histories (notifications, loyalty points) reveal
+a batch at a time; heavy below-the-fold content waits with
+`BuildWhenVisible` (Hotel Detail's live map).
+
+**Flaky connections** — every HTTP client must connect within 10 s
+(`installConnectTimeout()`, `core/network/connect_timeout.dart`, called in
+`bootstrap`; Android's own limit is about two minutes). A `GET` that never
+reached the server is retried once straight away (`ApiClient.getJson`), and a
+photo that failed to load is retried after 2 s and 6 s (`AppImage`). Writes
+are never retried automatically, and nothing the server answered (4xx, 429,
+5xx) is retried.
+
+**Rebuild scope** — read one aspect, not the whole object:
+`ModalRoute.isFirstOf` / `canPopOf` / `isCurrentOf` rather than
+`ModalRoute.of`, and `MediaQuery.sizeOf` / `paddingOf` / … rather than
+`MediaQuery.of`. Depending on the whole route rebuilds a screen every time a
+page is pushed over it or popped back to it.
+
+`integration_test/scroll_performance_test.dart` measures scrolling and
+transitions on a device (profile mode); see `test_driver/perf_driver.dart`.
+`flutter drive` regenerates the Android plugin registrant with the dev-only
+`integration_test` plugin, so the next release build must run `pub get`
+(don't pass `--no-pub`), or it fails to compile. The release guide's
+commands already do this.
+

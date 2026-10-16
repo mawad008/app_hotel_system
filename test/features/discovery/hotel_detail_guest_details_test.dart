@@ -108,9 +108,10 @@ Future<AppLocalizations> _pump(
 
 /// The page's vertical scroll view (the highlight row scrolls horizontally).
 final Finder _pageScrollable = find
-    .descendant(
-      of: find.byType(SingleChildScrollView),
-      matching: find.byType(Scrollable),
+    .byWidgetPredicate(
+      (Widget w) =>
+          w is Scrollable &&
+          axisDirectionToAxis(w.axisDirection) == Axis.vertical,
     )
     .first;
 
@@ -165,6 +166,11 @@ void main() {
       scrollable: _pageScrollable,
     );
     expect(find.text('10 minutes from the Corniche'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey<String>('hotel-location-map')),
+      300,
+      scrollable: _pageScrollable,
+    );
     expect(find.bySemanticsLabel(en.hotelLocationMapSemantics), findsOneWidget);
     expect(
       find.text(en.hotelNearbyPlace('Jeddah Airport', 25)),

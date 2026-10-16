@@ -54,6 +54,31 @@ void main() {
     expect(calls, 2);
   });
 
+  testWidgets('does not poll while the app is in the background, and catches up '
+      'on resume', (WidgetTester tester) async {
+    int calls = 0;
+    await tester.pumpWidget(
+      _host(
+        LiveRefresh(
+          interval: const Duration(seconds: 10),
+          onRefresh: () => calls++,
+          child: const SizedBox(),
+        ),
+      ),
+    );
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump(const Duration(seconds: 35));
+    expect(calls, 0);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(calls, 1);
+  });
+
   testWidgets('does not refresh while hidden (inactive tab / ticker off)', (WidgetTester tester) async {
     int calls = 0;
     await tester.pumpWidget(

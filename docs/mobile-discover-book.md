@@ -52,6 +52,9 @@ Rebuilt frame-by-frame on the v2 Figma `HOME_Default` / `HOME_if One hotel`
   check-in/out date row is omitted: `UpcomingStay` has no dates (nor a photo —
   the thumbnail is the honest placeholder). `Frame 38` itself is the *current*
   stay with "تمديد الاقامة"; for an upcoming stay the button opens the booking.
+  When the guest's reservations can't be read (offline, a server error) Home
+  still renders, just without this card; offline, the hotel list and its count
+  come from the last saved copy (`architecture.md` §12).
 - `اكتشف فنادق المجموعة` — compact `SectionHeader` (16 Medium, no "عرض الكل");
   the whole header opens search (Figma prototype link). 8px below, a vertical
   list of `HomeHotelCard`s 16px apart.

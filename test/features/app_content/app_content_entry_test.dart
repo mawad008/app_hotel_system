@@ -15,6 +15,17 @@ class _FailingSource implements AppContentDataSource {
   Future<AppContent> fetchContent() async => throw const NetworkException();
 }
 
+/// Answers only after [delay] — a cold start on a slow mobile network.
+class _SlowSource implements AppContentDataSource {
+  _SlowSource(this.delay, this.content);
+  final Duration delay;
+  final AppContent content;
+
+  @override
+  Future<AppContent> fetchContent() =>
+      Future<AppContent>.delayed(delay, () => content);
+}
+
 void main() {
   testWidgets('onboarding shows the dashboard-managed copy', (
     WidgetTester tester,
@@ -71,5 +82,29 @@ void main() {
       await container.read(appContentProvider.future),
       same(AppContent.empty),
     );
+  });
+
+  testWidgets('a response that lands after the timeout is still adopted', (
+    WidgetTester tester,
+  ) async {
+    const AppContent fresh =
+        AppContent(appName: ManagedText(en: 'STDY HOTELS', ar: 'ستدي هوتلز'));
+    final ProviderContainer container = ProviderContainer(
+      overrides: <Override>[
+        appContentDataSourceProvider.overrideWithValue(
+          _SlowSource(const Duration(seconds: 5), fresh),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.listen(appContentProvider, (_, _) {});
+
+    // The deadline passes first: the bundled defaults stand in.
+    await tester.pump(appContentTimeout + const Duration(milliseconds: 10));
+    expect(container.read(appContentProvider).value, same(AppContent.empty));
+
+    // Then the real answer arrives and replaces them.
+    await tester.pump(const Duration(seconds: 3));
+    expect(container.read(appContentProvider).value, same(fresh));
   });
 }

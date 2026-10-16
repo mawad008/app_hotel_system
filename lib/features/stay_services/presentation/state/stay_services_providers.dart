@@ -1,8 +1,9 @@
-import '../../../../core/localization/content_language_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/config/app_config.dart';
 import '../../../../core/di/core_providers.dart';
+import '../../../../core/localization/content_language_provider.dart';
+import '../../../../core/presentation/cache_for.dart';
 import '../../../../core/time/clock.dart';
 import '../../data/datasources/api_stay_services_data_source.dart';
 import '../../data/datasources/dummy_stay_services_data_source.dart';
@@ -31,6 +32,7 @@ final stayServicesRepositoryProvider = Provider<StayServicesRepository>(
 /// The hotel's service catalogue.
 final serviceCatalogueProvider = FutureProvider.autoDispose
     .family<ServiceCatalogue, String>((Ref ref, String hotelId) {
+  ref.cacheFor(CacheDurations.reference);
   ref.watch(contentLanguageProvider); // refetch after a language switch
   return ref.watch(stayServicesRepositoryProvider).catalogue(hotelId);
 });

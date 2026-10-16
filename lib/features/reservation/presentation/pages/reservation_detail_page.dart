@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure.dart';
@@ -12,15 +11,17 @@ import '../../../../core/localization/l10n.dart';
 import '../../../../core/localization/numerals.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/back_fallback_scope.dart';
 import '../../../../core/widgets/confirm_action_sheet.dart';
 import '../../../../core/widgets/danger_button.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
+import '../../../../core/widgets/live_refresh.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
-import '../../../../core/widgets/secondary_button.dart';
-import '../../../../core/widgets/live_refresh.dart';
 import '../../../../core/widgets/pull_to_refresh.dart';
+import '../../../../core/widgets/secondary_button.dart';
+import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../bookings/presentation/widgets/booking_summary_card.dart';
 import '../../../bookings/presentation/widgets/booking_timeline_card.dart';
 import '../../../bookings/presentation/widgets/cancellation_policy_card.dart';
@@ -30,6 +31,7 @@ import '../../../reviews/domain/entities/review.dart';
 import '../../../reviews/presentation/state/review_providers.dart';
 import '../../domain/entities/reservation.dart';
 import '../../domain/entities/reservation_status.dart';
+import '../state/create_reservation_controller.dart';
 import '../state/reservation_detail_provider.dart';
 import '../state/reservation_providers.dart';
 
@@ -53,55 +55,61 @@ class ReservationDetailPage extends ConsumerWidget {
 
     return LiveRefresh(
       onRefresh: () => ref.invalidate(reservationDetailProvider(reservationId)),
-      child: Scaffold(
-        appBar: HotelAppBar(
-          title: l10n.bookingDetailTitle,
-          // Reached with `go` (payment / identity / check-in hand-offs) there
-          // is nothing to pop: back leads to the bookings list. (Not the
-          // diagnostics home — that route is debug-only, so in a release
-          // build it hit the router's error page.)
-          fallbackLocation: AppRoutes.bookings,
-        ),
-        body: SafeArea(
-          child: PullToRefresh(
-            onRefresh: () =>
-                ref.refresh(reservationDetailProvider(reservationId).future),
-            child: async.when(
-              // A failed background refresh keeps the last good data on screen.
-              skipError: true,
-              loading: () =>
-                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-              error: (Object error, StackTrace _) {
-                final failure = ErrorMapper.toFailure(error);
-                return MessageView(
-                  icon: AppIcons.invoice,
-                  title: l10n.bookingNotFoundTitle,
-                  message: failure.localizedMessage(l10n),
-                  actionLabel: l10n.actionRetry,
-                  onAction: () =>
-                      ref.invalidate(reservationDetailProvider(reservationId)),
-                );
-              },
-              data: (Reservation reservation) =>
-                  _Body(reservation: reservation),
-            ),
+      // The system back gesture too: reached with `go`, it would otherwise
+      // close the app instead of returning to the bookings list.
+      child: BackFallbackScope(
+        fallback: AppRoutes.bookings,
+        child: Scaffold(
+          appBar: HotelAppBar(
+            title: l10n.bookingDetailTitle,
+            // Reached with `go` (payment / identity / check-in hand-offs) there
+            // is nothing to pop: back leads to the bookings list. (Not the
+            // diagnostics home — that route is debug-only, so in a release
+            // build it hit the router's error page.)
+            fallbackLocation: AppRoutes.bookings,
           ),
-        ),
-        bottomNavigationBar: async.maybeWhen(
-          skipError: true,
-          data: (Reservation reservation) => SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.pageGutter,
-                AppSpacing.bottomBarTop,
-                AppSpacing.pageGutter,
-                AppSpacing.bottomBarBottom,
+          body: SafeArea(
+            child: PullToRefresh(
+              onRefresh: () =>
+                  ref.refresh(reservationDetailProvider(reservationId).future),
+              child: async.when(
+                // A failed background refresh keeps the last good data on screen.
+                skipError: true,
+                loading: () =>
+                    Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+                error: (Object error, StackTrace _) {
+                  final failure = ErrorMapper.toFailure(error);
+                  return MessageView(
+                    icon: AppIcons.invoice,
+                    title: l10n.bookingNotFoundTitle,
+                    message: failure.localizedMessage(l10n),
+                    actionLabel: l10n.actionRetry,
+                    onAction: () => ref.invalidate(
+                      reservationDetailProvider(reservationId),
+                    ),
+                  );
+                },
+                data: (Reservation reservation) =>
+                    _Body(reservation: reservation),
               ),
-              child: _Actions(reservation: reservation),
             ),
           ),
-          orElse: () => null,
+          bottomNavigationBar: async.maybeWhen(
+            skipError: true,
+            data: (Reservation reservation) => SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.pageGutter,
+                  AppSpacing.bottomBarTop,
+                  AppSpacing.pageGutter,
+                  AppSpacing.bottomBarBottom,
+                ),
+                child: _Actions(reservation: reservation),
+              ),
+            ),
+            orElse: () => null,
+          ),
         ),
       ),
     );
@@ -512,6 +520,9 @@ class _Actions extends ConsumerWidget {
     try {
       await ref.read(reservationRepositoryProvider).cancel(reservation.id);
       refreshGuestReservations(ref.invalidate, reservationId: reservation.id);
+      ref
+          .read(createReservationControllerProvider.notifier)
+          .forget(reservation.id);
     } catch (error) {
       if (!context.mounted) return;
       final failure = ErrorMapper.toFailure(error);

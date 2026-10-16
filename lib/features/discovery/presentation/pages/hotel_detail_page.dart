@@ -8,17 +8,20 @@ import '../../../../core/di/core_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/localization/l10n.dart';
-import '../../../../core/time/hotel_time.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/time/hotel_time.dart';
 import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/app_image.dart';
+import '../../../../core/widgets/build_when_visible.dart';
 import '../../../../core/widgets/button_spinner.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/pull_to_refresh.dart';
+import '../../../reservation/presentation/state/create_reservation_controller.dart';
 import '../../domain/entities/guest_party.dart';
 import '../../domain/entities/hotel.dart';
 import '../../domain/entities/hotel_facility.dart';
@@ -32,11 +35,10 @@ import '../state/room_availability_controller.dart';
 import '../state/room_selection_controller.dart';
 import '../state/stay_dates_controller.dart';
 import '../widgets/detail_premium.dart';
-import '../widgets/hotel_location_map.dart';
 import '../widgets/hotel_favorite_toggle.dart';
+import '../widgets/hotel_location_map.dart';
 import '../widgets/hotel_share.dart';
 import '../widgets/hotel_thumbnail.dart';
-import '../../../reservation/presentation/state/create_reservation_controller.dart';
 
 /// `HOTEL_Detail_Premium` (v2 Figma, `02 · Discover & Book`).
 ///
@@ -136,10 +138,13 @@ class _Body extends ConsumerWidget {
         ? hotel.galleryUrls
         : (hotel.coverUrl != null ? <String>[hotel.coverUrl!] : <String>[]);
 
-    final String location = <String>[
-      s.cityName.resolve(locale),
-      if (hotel.country != null) hotel.country!.resolve(locale),
-    ].where((String p) => p.isNotEmpty).join(locale.languageCode == 'ar' ? '، ' : ', ');
+    final String location =
+        <String>[
+              s.cityName.resolve(locale),
+              if (hotel.country != null) hotel.country!.resolve(locale),
+            ]
+            .where((String p) => p.isNotEmpty)
+            .join(locale.languageCode == 'ar' ? '، ' : ', ');
 
     final String description = hotel.description.resolve(locale);
     // Figma `why-section` subtitle is the hotel's one-line tagline; the long
@@ -149,11 +154,13 @@ class _Body extends ConsumerWidget {
 
     const SizedBox gap = SizedBox(height: AppSpacing.space6);
 
-    // A short, bounded column of cards — built eagerly (not a lazy list) so
-    // every section is in the tree for screen readers and tests.
+    // A list, not a scroll view around a column: only the sections on screen
+    // are built and painted (each in its own repaint boundary), which keeps
+    // scrolling and the page's opening frame light. Screen readers and tests
+    // reach the rest by scrolling.
     return PullToRefresh(
       onRefresh: () => ref.refresh(hotelDetailProvider(hotel.id).future),
-      child: SingleChildScrollView(
+      child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.space4,
@@ -161,64 +168,61 @@ class _Body extends ConsumerWidget {
           AppSpacing.space4,
           AppSpacing.space6,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            DetailHeroCard(
-              entityId: hotel.id,
-              photos: photos,
-              aspectRatio: 361 / 371,
-              // Figma `right-actions`: share nearest the middle, favourite at
-              // the outer edge.
-              actions: <Widget>[
-                DetailHeroButton(
-                  icon: AppIcons.share,
-                  tooltip: context.l10n.hotelShare,
-                  onPressed: () => shareHotel(
-                    context,
-                    name: s.name.resolve(locale),
-                    location: location,
-                    latitude: hotel.details.location?.latitude,
-                    longitude: hotel.details.location?.longitude,
-                  ),
+        children: <Widget>[
+          DetailHeroCard(
+            entityId: hotel.id,
+            photos: photos,
+            aspectRatio: 361 / 371,
+            // Figma `right-actions`: share nearest the middle, favourite at
+            // the outer edge.
+            actions: <Widget>[
+              DetailHeroButton(
+                icon: AppIcons.share,
+                tooltip: context.l10n.hotelShare,
+                onPressed: () => shareHotel(
+                  context,
+                  name: s.name.resolve(locale),
+                  location: location,
+                  latitude: hotel.details.location?.latitude,
+                  longitude: hotel.details.location?.longitude,
                 ),
-                _FavoriteButton(hotelId: hotel.id),
-              ],
-              copy: HotelHeroCopy(
-                name: s.name.resolve(locale),
-                location: location,
-                rating: s.rating,
-                reviewCount: s.reviewCount,
               ),
+              _FavoriteButton(hotelId: hotel.id),
+            ],
+            copy: HotelHeroCopy(
+              name: s.name.resolve(locale),
+              location: location,
+              rating: s.rating,
+              reviewCount: s.reviewCount,
             ),
+          ),
+          gap,
+          _QuickInfoCard(hotel: hotel),
+          if (whySubtitle.isNotEmpty ||
+              hotel.details.highlights.isNotEmpty) ...<Widget>[
             gap,
-            _QuickInfoCard(hotel: hotel),
-            if (whySubtitle.isNotEmpty ||
-                hotel.details.highlights.isNotEmpty) ...<Widget>[
-              gap,
-              _WhyChooseSection(
-                description: whySubtitle,
-                highlights: hotel.details.highlights,
-              ),
-            ],
-            if (hotel.facilities.isNotEmpty) ...<Widget>[
-              gap,
-              _FacilitiesSection(facilities: hotel.facilities),
-            ],
-            if (hotel.entryRoom != null) ...<Widget>[
-              gap,
-              _RoomsSection(room: hotel.entryRoom!, onBook: onBook),
-            ],
-            if (hotel.reviewSummary?.hasContent ?? false) ...<Widget>[
-              gap,
-              _HotelReviewsSection(summary: hotel.reviewSummary!),
-            ],
-            if (hotel.details.location?.hasContent ?? false) ...<Widget>[
-              gap,
-              _LocationSection(location: hotel.details.location!),
-            ],
+            _WhyChooseSection(
+              description: whySubtitle,
+              highlights: hotel.details.highlights,
+            ),
           ],
-        ),
+          if (hotel.facilities.isNotEmpty) ...<Widget>[
+            gap,
+            _FacilitiesSection(facilities: hotel.facilities),
+          ],
+          if (hotel.entryRoom != null) ...<Widget>[
+            gap,
+            _RoomsSection(room: hotel.entryRoom!, onBook: onBook),
+          ],
+          if (hotel.reviewSummary?.hasContent ?? false) ...<Widget>[
+            gap,
+            _HotelReviewsSection(summary: hotel.reviewSummary!),
+          ],
+          if (hotel.details.location?.hasContent ?? false) ...<Widget>[
+            gap,
+            _LocationSection(location: hotel.details.location!),
+          ],
+        ],
       ),
     );
   }
@@ -478,7 +482,10 @@ class _LocationSection extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 if (location.hasCoordinates)
+                  // Its own node, so the label, hint and the tap action stay
+                  // together instead of merging into the section around it.
                   Semantics(
+                    container: true,
                     image: true,
                     button: true,
                     label: l10n.hotelLocationMapSemantics,
@@ -490,16 +497,27 @@ class _LocationSection extends StatelessWidget {
                         child: Stack(
                           fit: StackFit.expand,
                           children: <Widget>[
-                            HotelLocationMap(
-                              latitude: location.latitude!,
-                              longitude: location.longitude!,
+                            // The live map (and its tile downloads) waits until
+                            // the guest scrolls near it; the static map art
+                            // stands in until then.
+                            BuildWhenVisible(
+                              placeholder: const AppImage(
+                                asset: AppImages.locationMiniMap,
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              child: HotelLocationMap(
+                                latitude: location.latitude!,
+                                longitude: location.longitude!,
+                              ),
                             ),
                             // The preview is non-interactive; a tap opens the
                             // pannable/zoomable map.
                             Material(
                               type: MaterialType.transparency,
                               child: InkWell(
-                                key: const ValueKey<String>('hotel-location-map'),
+                                key: const ValueKey<String>(
+                                  'hotel-location-map',
+                                ),
                                 onTap: () => Navigator.of(context).push<void>(
                                   HotelMapPage.route(
                                     latitude: location.latitude!,
@@ -553,7 +571,8 @@ class _NearbyPlaceRow extends StatelessWidget {
         place.name,
         minutes,
       ),
-      NearbyPlace(distanceUnit: DistanceUnit.kilometers) when distance != null =>
+      NearbyPlace(distanceUnit: DistanceUnit.kilometers)
+          when distance != null =>
         l10n.hotelNearbyPlaceKm(place.name, distance),
       NearbyPlace(distanceUnit: DistanceUnit.meters) when distance != null =>
         l10n.hotelNearbyPlaceMeters(place.name, distance),
@@ -713,8 +732,11 @@ class _RoomsSection extends ConsumerWidget {
                       // Figma `Price / Size=Medium`: 17 Bold (21 line), 15px
                       // riyal mark.
                       MoneyText(
-                        room.nightlyRate.amount, currency: room.nightlyRate.currency,
-                        semanticsLabel: l10n.priceFrom(MoneyText.digits(context, room.nightlyRate.amount)),
+                        room.nightlyRate.amount,
+                        currency: room.nightlyRate.currency,
+                        semanticsLabel: l10n.priceFrom(
+                          MoneyText.digits(context, room.nightlyRate.amount),
+                        ),
                         style: AppTypography.numMd(c.textPrimary).copyWith(
                           fontWeight: AppTypography.bold,
                           height: 21 / 17,
@@ -910,12 +932,14 @@ class _StickyBookingBar extends StatelessWidget {
                   from,
                   currency: hotel.summary.nightlyRateFrom.currency,
                   suffix: l10n.priceNightSuffix,
-                  semanticsLabel: l10n.priceFrom(MoneyText.digits(context, from)),
-                  // Figma: 18 Bold on a 23 line.
-                  style: AppTypography.numMd(c.textPrimary, size: 18).copyWith(
-                    fontWeight: AppTypography.bold,
-                    height: 23 / 18,
+                  semanticsLabel: l10n.priceFrom(
+                    MoneyText.digits(context, from),
                   ),
+                  // Figma: 18 Bold on a 23 line.
+                  style: AppTypography.numMd(
+                    c.textPrimary,
+                    size: 18,
+                  ).copyWith(fontWeight: AppTypography.bold, height: 23 / 18),
                 ),
               ],
             ),

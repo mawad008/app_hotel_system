@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../bookings/presentation/state/bookings_providers.dart';
 import '../../../../core/errors/error_mapper.dart';
 import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/localization/l10n.dart';
@@ -16,6 +15,8 @@ import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/money_text.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../bookings/presentation/state/bookings_providers.dart';
+import '../../../discovery/domain/entities/stay_range.dart';
 import '../../../reservation/domain/entities/extend_stay.dart';
 import '../../../reservation/domain/entities/reservation.dart';
 import '../../../reservation/presentation/state/reservation_detail_provider.dart';
@@ -76,12 +77,12 @@ class _ExtendStayPageState extends ConsumerState<ExtendStayPage> {
   }
 
   Future<void> _pickDate(Reservation reservation) async {
-    final DateTime initial = reservation.stay.checkOut.add(const Duration(days: 1));
+    final DateTime initial = addCalendarDays(reservation.stay.checkOut, 1);
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initial,
       firstDate: initial,
-      lastDate: initial.add(const Duration(days: 60)),
+      lastDate: addCalendarDays(initial, 60),
     );
     if (picked != null) setState(() => _newCheckOut = picked);
   }
@@ -152,7 +153,7 @@ class _Body extends StatelessWidget {
 
     final int provisionalNights = newCheckOut == null
         ? 0
-        : newCheckOut!.difference(reservation.stay.checkOut).inDays;
+        : calendarDaysBetween(reservation.stay.checkOut, newCheckOut!);
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.pageGutter),

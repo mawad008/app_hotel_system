@@ -8,19 +8,20 @@ import '../../../../core/errors/failure_l10n.dart';
 import '../../../../core/localization/l10n.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_card.dart';
+import '../../../../core/widgets/app_icons.dart';
+import '../../../../core/widgets/back_fallback_scope.dart';
 import '../../../../core/widgets/hotel_app_bar.dart';
+import '../../../../core/widgets/live_refresh.dart';
 import '../../../../core/widgets/loading_view.dart';
 import '../../../../core/widgets/message_view.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/pull_to_refresh.dart';
 import '../../../reservation/domain/entities/reservation.dart';
 import '../../../reservation/presentation/state/reservation_detail_provider.dart';
 import '../../domain/entities/access_grant.dart';
 import '../../domain/entities/check_in.dart';
 import '../state/check_in_controller.dart';
 import '../state/digital_access_providers.dart';
-import '../../../../core/widgets/app_icons.dart';
-import '../../../../core/widgets/live_refresh.dart';
-import '../../../../core/widgets/pull_to_refresh.dart';
 
 /// `04 · Check in & Stay` — the check-in review / eligibility screen.
 ///
@@ -63,55 +64,63 @@ class _CheckInPageState extends ConsumerState<CheckInPage> {
       onRefresh: () => ref
         ..invalidate(reservationDetailProvider(widget.reservationId))
         ..invalidate(accessGrantProvider(widget.reservationId)),
-      child: Scaffold(
-        appBar: HotelAppBar(
-          title: l10n.checkInTitle,
-          // Reached with `go` from the identity result — nothing to pop.
-          fallbackLocation: AppRoutes.reservationDetail.replaceFirst(
-            ':reservationId',
-            widget.reservationId,
-          ),
+      // The system back gesture too: reached with `go`, it would otherwise
+      // close the app instead of returning to the booking.
+      child: BackFallbackScope(
+        fallback: AppRoutes.reservationDetail.replaceFirst(
+          ':reservationId',
+          widget.reservationId,
         ),
-        body: SafeArea(
-          child: PullToRefresh(
-            onRefresh: () => refreshAll(<Future<Object?>>[
-              ref.refresh(
-                reservationDetailProvider(widget.reservationId).future,
-              ),
-              ref.refresh(accessGrantProvider(widget.reservationId).future),
-            ]),
-            child: _merge(
-              reservationAsync,
-              grantAsync,
-              loading: () =>
-                  Center(child: LoadingView(label: l10n.stateLoadingTitle)),
-              error: (Object error) {
-                final failure = ErrorMapper.toFailure(error);
-                return MessageView(
-                  icon: AppIcons.room,
-                  title: l10n.checkInUnavailableTitle,
-                  message: failure.localizedMessage(l10n),
-                  actionLabel: l10n.actionRetry,
-                  onAction: () {
-                    ref.invalidate(accessGrantProvider(widget.reservationId));
-                    ref.invalidate(
-                      reservationDetailProvider(widget.reservationId),
+        child: Scaffold(
+          appBar: HotelAppBar(
+            title: l10n.checkInTitle,
+            // Reached with `go` from the identity result — nothing to pop.
+            fallbackLocation: AppRoutes.reservationDetail.replaceFirst(
+              ':reservationId',
+              widget.reservationId,
+            ),
+          ),
+          body: SafeArea(
+            child: PullToRefresh(
+              onRefresh: () => refreshAll(<Future<Object?>>[
+                ref.refresh(
+                  reservationDetailProvider(widget.reservationId).future,
+                ),
+                ref.refresh(accessGrantProvider(widget.reservationId).future),
+              ]),
+              child: _merge(
+                reservationAsync,
+                grantAsync,
+                loading: () =>
+                    Center(child: LoadingView(label: l10n.stateLoadingTitle)),
+                error: (Object error) {
+                  final failure = ErrorMapper.toFailure(error);
+                  return MessageView(
+                    icon: AppIcons.room,
+                    title: l10n.checkInUnavailableTitle,
+                    message: failure.localizedMessage(l10n),
+                    actionLabel: l10n.actionRetry,
+                    onAction: () {
+                      ref.invalidate(accessGrantProvider(widget.reservationId));
+                      ref.invalidate(
+                        reservationDetailProvider(widget.reservationId),
+                      );
+                    },
+                  );
+                },
+                data: (Reservation reservation, AccessGrant grant) {
+                  // A grant already exists — the access screen owns it from here.
+                  if (grant.exists) {
+                    WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => _handOff(),
                     );
-                  },
-                );
-              },
-              data: (Reservation reservation, AccessGrant grant) {
-                // A grant already exists — the access screen owns it from here.
-                if (grant.exists) {
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => _handOff(),
-                  );
-                  return Center(
-                    child: LoadingView(label: l10n.stateLoadingTitle),
-                  );
-                }
-                return _Body(reservation: reservation);
-              },
+                    return Center(
+                      child: LoadingView(label: l10n.stateLoadingTitle),
+                    );
+                  }
+                  return _Body(reservation: reservation);
+                },
+              ),
             ),
           ),
         ),

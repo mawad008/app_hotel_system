@@ -31,11 +31,14 @@ class ApiAppContentDataSource
     final Map<String, dynamic> json = await _client.getJson(
       '/guest/app-content',
     );
+    // Parsed before caching, so a response this version cannot read is never
+    // stored and replayed on every later launch.
+    final AppContent content = _parse(json);
     if (json['data'] is Json) {
       // Best effort: a failed write only costs the next launch's head start.
       _preferences?.setAppContentCache(jsonEncode(json)).ignore();
     }
-    return _parse(json);
+    return content;
   }
 
   /// The last response this device received, or null when there is none (or
@@ -46,7 +49,9 @@ class ApiAppContentDataSource
     try {
       final Object? json = jsonDecode(raw);
       return json is Json ? _parse(json) : null;
-    } on FormatException catch (e) {
+    } catch (e) {
+      // Any unreadable cache (bad JSON, or a shape an older build stored)
+      // must fall back to the bundled defaults, never break app start-up.
       debugPrint('appContent: unreadable cache — $e');
       return null;
     }
@@ -55,9 +60,12 @@ class ApiAppContentDataSource
   AppContent _parse(Json json) {
     final Object? data = json['data'];
     if (data is! Json) return AppContent.empty;
-    final Json policy = ((json['meta'] as Json?)?['booking_policy'] as Json?) ?? const <String, Object?>{};
-    final Json support = (data['support'] as Json?) ?? const <String, Object?>{};
-    final Json legal = (data['legal'] as Json?) ?? const <String, Object?>{};
+    // Laravel sends an empty object as `[]`, so every nested object and
+    // number is read leniently: a missing or oddly typed field falls back to
+    // the bundled default instead of throwing.
+    final Json policy = _map(_map(json['meta'])['booking_policy']);
+    final Json support = _map(data['support']);
+    final Json legal = _map(data['legal']);
 
     return AppContent(
       appName: _text(data['app_name_i18n']),
@@ -76,10 +84,10 @@ class ApiAppContentDataSource
       onboardingTitle: _text(data['onboarding_title_i18n']),
       onboardingBody: _text(data['onboarding_body_i18n']),
       onboardingCta: _text(data['onboarding_cta_i18n']),
-      freeCancellationHours: (policy['free_cancellation_hours'] as num?)?.toInt(),
-      identityRetentionDays: (policy['identity_retention_days'] as num?)?.toInt(),
+      freeCancellationHours: _int(policy['free_cancellation_hours']),
+      identityRetentionDays: _int(policy['identity_retention_days']),
       faq: <FaqEntry>[
-        for (final Object? item in (data['faq'] as List<Object?>?) ?? const <Object?>[])
+        for (final Object? item in data['faq'] is List ? data['faq']! as List<Object?> : const <Object?>[])
           if (item is Json)
             FaqEntry(
               question: _text(item['question_i18n']),
@@ -93,6 +101,15 @@ class ApiAppContentDataSource
     if (raw is! String || raw.isEmpty) return null;
     return _client.resolveMediaUrl(raw);
   }
+
+  static Json _map(Object? raw) =>
+      raw is Map ? raw.cast<String, Object?>() : const <String, Object?>{};
+
+  static int? _int(Object? raw) => switch (raw) {
+    final num n => n.toInt(),
+    final String s => int.tryParse(s.trim()),
+    _ => null,
+  };
 
   static String? _string(Object? raw) =>
       raw is String && raw.trim().isNotEmpty ? raw.trim() : null;
