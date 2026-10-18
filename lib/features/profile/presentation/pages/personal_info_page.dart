@@ -73,7 +73,7 @@ class _PersonalInfoPageState extends ConsumerState<PersonalInfoPage> {
         ? auth.session.profile
         : null;
     final bool trusted =
-        ref.watch(accountSummaryProvider).valueOrNull?.trustedGuest ?? false;
+        ref.watch(accountSummaryProvider).value?.trustedGuest ?? false;
     final String email = _draftEmail ?? profile?.email ?? '';
     final bool dirty = _draftEmail != null && _draftEmail != profile?.email;
 

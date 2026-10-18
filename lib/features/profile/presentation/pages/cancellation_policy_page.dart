@@ -17,7 +17,7 @@ class CancellationPolicyPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final int? hours = ref
         .watch(appContentProvider)
-        .valueOrNull
+        .value
         ?.freeCancellationHours;
     return Scaffold(
       appBar: HotelAppBar(title: context.l10n.bookingCancellationPolicyHeading),

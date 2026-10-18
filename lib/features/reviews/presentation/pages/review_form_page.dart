@@ -169,7 +169,7 @@ class _Form extends ConsumerWidget {
     // error, or when the hotel defines none, the form is just the overall
     // rating + text.
     final List<ReviewCategory> categories =
-        ref.watch(reviewCategoriesProvider(reservationId)).valueOrNull ??
+        ref.watch(reviewCategoriesProvider(reservationId)).value ??
         const <ReviewCategory>[];
 
     return Column(

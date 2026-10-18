@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/app/router/app_router.dart';
 import 'package:hotel_guest_app/app/router/app_routes.dart';
+import 'package:hotel_guest_app/core/theme/app_theme.dart';
 import 'package:hotel_guest_app/core/errors/failure.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
 import 'package:hotel_guest_app/core/widgets/message_view.dart';
@@ -47,6 +49,7 @@ class _LiveRepo implements ReservationRepository {
 }
 
 Widget _host(Widget child) => MaterialApp(
+  theme: AppTheme.light,
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   locale: const Locale('en'),

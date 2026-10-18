@@ -27,7 +27,7 @@ class SupportPage extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final AccountSummary? summary = ref
         .watch(accountSummaryProvider)
-        .valueOrNull;
+        .value;
     final String? activeStay = summary?.activeStayReservationId;
     final String? contactStay = summary?.contactReservationId;
     final SupportContacts contacts = ref.watch(brandingProvider).support;

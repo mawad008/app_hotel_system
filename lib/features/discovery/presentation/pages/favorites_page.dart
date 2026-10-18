@@ -127,7 +127,7 @@ class _FavoriteRoomTile extends ConsumerWidget {
     // The hotel line reuses the detail fetch (usually already cached).
     final HotelSummary? hotel = ref
         .watch(hotelDetailProvider(room.hotelId))
-        .valueOrNull
+        .value
         ?.summary;
     final bool useDummyData = ref.watch(appConfigProvider).useDummyData;
 
@@ -222,7 +222,7 @@ class _FavoriteHotelTile extends ConsumerWidget {
           toggleHotelFavorite(context, ref, hotelId, offerViewAction: false),
     );
 
-    final HotelSummary? summary = hotel.valueOrNull?.summary;
+    final HotelSummary? summary = hotel.value?.summary;
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.sm),
       onTap: summary == null

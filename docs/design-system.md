@@ -321,11 +321,10 @@ matched by widget tests).
 
 ## Brand logo — `core/widgets/brand_logo.dart`
 
-`BrandLogo({variant: stacked|markOnly, markSize})` + `BrandMark` — the **exact**
-v2 `Logo Placeholder` artwork as vector `Path`s (decoded from the `.fig` vector
-network, 120×120 box): `ink/700` towers + `gold/400` spire, crisp at any size.
-`stacked` = mark + 5px + `Hotel System` wordmark (`brandWordmark`, 24/36 Bold) —
-the v2 splash. No raster asset (the v1 knockout `logo.png` was removed).
+`BrandLogo({variant: stacked|markOnly, markSize, logoUrl, wordmark})` — the
+dashboard-uploaded logo; with none, only the app name (`wordmark`, else
+`brandWordmark`, 24/36 Bold). `stacked` = logo + 5px + app name — the v2 splash.
+No bundled logo (the vector `BrandMark` was removed 2026-10-18).
 
 ---
 

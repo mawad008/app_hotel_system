@@ -99,7 +99,7 @@ class _LoyaltyRedemptionFieldState
         ref.watch(loyaltyProgramProvider(widget.hotelId));
     // A failed / pending read never blocks the booking — the field simply
     // isn't offered until the program is known.
-    final LoyaltyProgram? program = async.valueOrNull;
+    final LoyaltyProgram? program = async.value;
     if (program == null) return const SizedBox.shrink();
 
     final AppLocalizations l10n = context.l10n;

@@ -26,10 +26,18 @@ import '../../../app_content/presentation/widgets/managed_brand_logo.dart';
 /// is the first screen, so it also warms the onboarding photo into the image
 /// cache as soon as the content arrives — onboarding then paints it at once.
 class EntrySplashBackdrop extends ConsumerWidget {
-  const EntrySplashBackdrop({super.key, this.overlay});
+  const EntrySplashBackdrop({
+    super.key,
+    this.overlay,
+    this.animateEntrance = false,
+  });
 
   /// Painted above the lock-up (the language sheet).
   final Widget? overlay;
+
+  /// Plays the brand entrance ([BrandLogo.entrance]) once on mount. Only the
+  /// splash sets it; the language sheet's backdrop stays still underneath.
+  final bool animateEntrance;
 
   static const Color background = AppPrimitives.stone0;
 
@@ -63,8 +71,12 @@ class EntrySplashBackdrop extends ConsumerWidget {
           body: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              const Center(
-                child: ManagedBrandLogo(variant: BrandLogoVariant.stacked),
+              Center(
+                child: animateEntrance
+                    ? const _AnimatedLockup()
+                    : const ManagedBrandLogo(
+                        variant: BrandLogoVariant.stacked,
+                      ),
               ),
               ?overlay,
             ],
@@ -73,4 +85,45 @@ class EntrySplashBackdrop extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// The splash lock-up with its one-shot entrance. 1.4s, so it settles inside
+/// the 1.6s splash hold; skipped (drawn at rest) when the OS asks to reduce
+/// motion.
+class _AnimatedLockup extends StatefulWidget {
+  const _AnimatedLockup();
+
+  @override
+  State<_AnimatedLockup> createState() => _AnimatedLockupState();
+}
+
+class _AnimatedLockupState extends State<_AnimatedLockup>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_controller.isAnimating || _controller.isCompleted) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ManagedBrandLogo(
+    variant: BrandLogoVariant.stacked,
+    entrance: _controller,
+  );
 }

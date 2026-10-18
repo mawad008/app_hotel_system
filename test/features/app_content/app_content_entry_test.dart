@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/core/errors/app_exception.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
-import 'package:hotel_guest_app/core/widgets/brand_logo.dart';
 import 'package:hotel_guest_app/features/app_content/data/datasources/app_content_data_source.dart';
 import 'package:hotel_guest_app/features/app_content/data/datasources/dummy_app_content_data_source.dart';
 import 'package:hotel_guest_app/features/app_content/domain/entities/app_content.dart';
@@ -39,8 +39,8 @@ void main() {
     expect(find.text(en.entryHeadline), findsNothing);
     // Not configured → the bundled copy.
     expect(find.text(en.entrySubtext), findsOneWidget);
-    // No uploaded logo → the bundled vector mark.
-    expect(find.byType(BrandMark), findsOneWidget);
+    // No uploaded logo → only the app name.
+    expect(find.text(en.brandWordmark), findsOneWidget);
   });
 
   testWidgets('a failed content fetch falls back to the bundled defaults', (
@@ -56,7 +56,7 @@ void main() {
 
     expect(find.text(en.entryHeadline), findsOneWidget);
     expect(find.text(en.entryStartAction), findsOneWidget);
-    expect(find.byType(BrandMark), findsOneWidget);
+    expect(find.text(en.brandWordmark), findsOneWidget);
   });
 
   test('appContentProvider never throws', () async {

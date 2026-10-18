@@ -78,7 +78,7 @@ class DiscoverView {
 }
 
 /// Loads the Home screen. Read as a `UiState` via [discoverUiState].
-class DiscoverController extends AutoDisposeAsyncNotifier<DiscoverView> {
+class DiscoverController extends AsyncNotifier<DiscoverView> {
   @override
   Future<DiscoverView> build() async {
     // Watch auth so the greeting + upcoming stay fill in once restore resolves.
@@ -176,7 +176,7 @@ class DiscoverController extends AutoDisposeAsyncNotifier<DiscoverView> {
 }
 
 final discoverControllerProvider =
-    AutoDisposeAsyncNotifierProvider<DiscoverController, DiscoverView>(
+    AsyncNotifierProvider.autoDispose<DiscoverController, DiscoverView>(
   DiscoverController.new,
 );
 

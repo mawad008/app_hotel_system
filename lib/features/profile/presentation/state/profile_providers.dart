@@ -32,7 +32,7 @@ final guestAccountSettingsProvider =
   GuestAccountSettingsController.new,
 );
 
-class GuestAccountSettingsController extends AutoDisposeAsyncNotifier<GuestAccountSettings> {
+class GuestAccountSettingsController extends AsyncNotifier<GuestAccountSettings> {
   @override
   Future<GuestAccountSettings> build() => ref.watch(profileRepositoryProvider).settings();
 

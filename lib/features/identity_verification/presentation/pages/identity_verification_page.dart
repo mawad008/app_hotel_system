@@ -164,7 +164,7 @@ class _IdentityVerificationPageState
       identityVerificationControllerProvider(widget.reservationId),
     );
 
-    _options = ref.watch(identityDocumentOptionsProvider).valueOrNull ??
+    _options = ref.watch(identityDocumentOptionsProvider).value ??
         IdentityDocumentOption.defaults;
 
     ref.listen<IdentityVerificationState>(

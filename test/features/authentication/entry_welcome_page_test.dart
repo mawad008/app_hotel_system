@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
-import 'package:hotel_guest_app/core/widgets/brand_logo.dart';
 import 'package:hotel_guest_app/core/widgets/primary_button.dart';
 
 import '../../support/pump_app.dart';
@@ -25,7 +24,9 @@ void main() {
     final AppLocalizations en = await tester.l10n();
 
     // v2 onboarding is photo-forward: one glass card, no language toggle.
-    expect(find.byType(BrandMark), findsOneWidget);
+    // No uploaded logo → the app name instead, never a bundled mark.
+    expect(find.text(en.brandWordmark), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget); // just the hero photo
     expect(find.byType(PrimaryButton), findsOneWidget);
     expect(find.text(en.languageArabic), findsNothing);
     expect(find.text(en.languageEnglish), findsNothing);

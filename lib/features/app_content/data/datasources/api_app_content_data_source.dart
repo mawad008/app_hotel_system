@@ -55,8 +55,11 @@ class ApiAppContentDataSource
   AppContent _parse(Json json) {
     final Object? data = json['data'];
     if (data is! Json) return AppContent.empty;
-    final Json policy = ((json['meta'] as Json?)?['booking_policy'] as Json?) ?? const <String, Object?>{};
-    final Json support = (data['support'] as Json?) ?? const <String, Object?>{};
+    final Json policy =
+        ((json['meta'] as Json?)?['booking_policy'] as Json?) ??
+        const <String, Object?>{};
+    final Json support =
+        (data['support'] as Json?) ?? const <String, Object?>{};
     final Json legal = (data['legal'] as Json?) ?? const <String, Object?>{};
 
     return AppContent(
@@ -76,10 +79,13 @@ class ApiAppContentDataSource
       onboardingTitle: _text(data['onboarding_title_i18n']),
       onboardingBody: _text(data['onboarding_body_i18n']),
       onboardingCta: _text(data['onboarding_cta_i18n']),
-      freeCancellationHours: (policy['free_cancellation_hours'] as num?)?.toInt(),
-      identityRetentionDays: (policy['identity_retention_days'] as num?)?.toInt(),
+      freeCancellationHours: (policy['free_cancellation_hours'] as num?)
+          ?.toInt(),
+      identityRetentionDays: (policy['identity_retention_days'] as num?)
+          ?.toInt(),
       faq: <FaqEntry>[
-        for (final Object? item in (data['faq'] as List<Object?>?) ?? const <Object?>[])
+        for (final Object? item
+            in (data['faq'] as List<Object?>?) ?? const <Object?>[])
           if (item is Json)
             FaqEntry(
               question: _text(item['question_i18n']),
@@ -100,7 +106,8 @@ class ApiAppContentDataSource
   /// `#RRGGBB` → an opaque [Color]; anything else → null (built-in palette).
   static Color? _color(Object? raw) {
     if (raw is! String) return null;
-    final RegExpMatch? m = RegExp(r'^#([0-9a-fA-F]{6})$').firstMatch(raw.trim());
+    final RegExpMatch? m = RegExp(r'^#([0-9a-fA-F]{6})$')
+        .firstMatch(raw.trim());
     if (m == null) return null;
     return Color(0xFF000000 | int.parse(m.group(1)!, radix: 16));
   }

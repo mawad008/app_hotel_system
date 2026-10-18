@@ -22,7 +22,7 @@ standalone `ENTRY_Language` screen no longer exists in the Figma.
 
 | Route | Widget | v2 frame | Notes |
 |---|---|---|---|
-| `/` | `AuthSplashPage` | `ENTRY_Splash` (board 14) | White field; 120px two-tone brand mark, 5px gap, `Hotel System` wordmark (`title-lg` 24/36 Bold) — centred. No tagline, no spinner. Held for `splashMinDurationProvider` (**1.6s** — the Figma `ENTRY_Splash` AFTER_TIMEOUT) while the stored session restores (`AuthState.unknown`). |
+| `/` | `AuthSplashPage` | `ENTRY_Splash` (board 14) | White field; 120px two-tone brand mark, 5px gap, `Hotel System` wordmark (`title-lg` 24/36 Bold) — centred. No tagline, no spinner. Plays a 1.4s one-shot entrance (`BrandLogo.entrance`): the mark starts at rest (matching the native launch screen), breathes 1→1.05→1, two gold ripples radiate and a sheen sweeps it, then the wordmark fades/rises in; skipped under reduce-motion, not played on the language backdrop. Held for `splashMinDurationProvider` (**1.6s** — the Figma `ENTRY_Splash` AFTER_TIMEOUT) while the stored session restores (`AuthState.unknown`). |
 | `/welcome/language` | `LanguageSelectionPage` | language `sheet` (board 14) | The **same splash composition** under a black @25% scrim with the sheet centred on it as a modal (see below). |
 | `/welcome` | `EntryWelcomePage` | `ENTRY_Onboarding` (board 01) | Full-bleed photo + one glass card (see below). |
 
@@ -32,37 +32,28 @@ moves when the sheet slides in. The splash, sheet and onboarding exist only in
 light in the Figma, so each subtree is pinned to `AppTheme.light` (fixed look in
 dark mode too).
 
-### Brand mark
+### Brand logo
 
-`BrandLogo` / `BrandMark` (`core/widgets/brand_logo.dart`) draw the **exact**
-v2 artwork — the vector network of `Logo Placeholder / Size=Splash`, decoded from
-the `.fig` into Flutter `Path`s in the 120×120 symbol box: three arched towers in
-`ink/700` + the gold "1" spire (`gold/400`). Crisp at any size (splash 120,
-onboarding avatar 50). The v1 knockout raster `assets/brand/logo.png` (made for
-the brown splash) and `AppImages.brandMark` were removed.
+There is **no bundled logo** (removed 2026-10-18). `BrandLogo`
+(`core/widgets/brand_logo.dart`) shows the logo uploaded on the dashboard
+(`/guest/app-content`); with no logo uploaded, or if it fails to load, only the
+app name shows (dashboard app name, else `brandWordmark`):
+
+* **Splash** — logo (120) + 5px + app name; no logo → the app name alone.
+* **Onboarding** — logo in the white avatar ring over the glass card; no logo →
+  no ring, the app name heads the card instead.
+
+`ManagedBrandLogo` / the onboarding card draw nothing until the content is known
+(`brandingKnownProvider`: fresh, cached or the settled fallback), so the name
+never flips to the logo in front of the guest.
 
 ### Native launch screen (before Flutter's first frame)
 
-The OS launch screen shows the **same vector mark at the same spot** as the
-Flutter splash, so the hand-off is invisible: white field, 120pt/dp mark raised
-20.5 (the mark's offset inside the centred 161-tall mark + gap + wordmark column).
-All are generated from the `BrandMark` paths — regenerate them if the mark changes.
-
-* **Android < 12** — `res/drawable/launch_background.xml` → vector
-  `drawable/launch_logo.xml` (minSdk 24, so no PNG densities).
-* **Android 12+** — the SplashScreen API ignores `windowBackground`; without
-  config it shows the launcher icon (still the Flutter default) upscaled and
-  clipped into a circle. `values-v31` / `values-night-v31` set a white background
-  and `drawable/splash_icon.xml`: a 288dp canvas (the no-icon-background size)
-  with the 120dp mark inside the 192dp mask circle, so nothing is clipped or
-  scaled. Don't set `windowSplashScreenIconBackgroundColor` — it switches the
-  canvas to 240dp and shrinks the mark.
-* **iOS** — `LaunchScreen.storyboard` centres `LaunchImage` (120/240/360 px PNGs
-  rendered from the vector) with a `-20.5` centerY constant.
-* **Web** — blank until Flutter boots; no native logo.
-
-A dashboard-uploaded logo (`/guest/app-content`) can only appear once Flutter
-runs; the native launch screen always shows the bundled mark.
+A plain white field on every platform — the native launch screen can't show the
+dashboard logo, so it shows none: `launch_background.xml` (Android < 12), an
+empty transparent `splash_icon.xml` (Android 12+ SplashScreen API, so it doesn't
+fall back to the launcher icon), and an image-less `LaunchScreen.storyboard`
+(iOS). Web is blank until Flutter boots.
 
 ## Language sheet
 
@@ -130,7 +121,7 @@ the **bundled defaults**, used for any field that isn't configured.
   content resolves, then fades it in. The splash precaches the onboarding
   photo as soon as the content arrives. Onboarding shows a dark ground while
   loading, never the bundled photo first. An uploaded image that fails to load
-  falls back to the bundled mark or photo.
+  falls back to the app name (logo) or the bundled photo.
 
 ### App-wide branding controls (2026-10-10)
 

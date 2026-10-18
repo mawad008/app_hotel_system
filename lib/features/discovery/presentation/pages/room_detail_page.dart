@@ -510,7 +510,7 @@ class _Body extends ConsumerWidget {
                     type.refundable,
                     ref
                         .watch(appContentProvider)
-                        .valueOrNull
+                        .value
                         ?.freeCancellationHours,
                   )) {
                     (false, _) => l10n.roomPolicyNonRefundable,

@@ -23,7 +23,8 @@ import '../state/language_selection_controller.dart';
 /// `01 · Entry` — onboarding (v2 Figma `ENTRY_Onboarding`).
 ///
 /// A full-bleed hotel photo with a single floating **glass card** at the bottom:
-/// the brand avatar in a white ring overlapping the card's top edge, a centred
+/// the uploaded logo in a white ring overlapping the card's top edge (or, with
+/// no logo uploaded, just the app name at the top of the card), a centred
 /// white headline + sub-line, and one `ابدأ الآن` call to action. RTL-first.
 ///
 /// Only defined in light in the Figma, so the subtree is pinned to
@@ -65,6 +66,8 @@ class EntryWelcomePage extends ConsumerWidget {
                 bottom: _bottomGap(context),
                 child: _OnboardingCard(
                   content: content.value ?? AppContent.empty,
+                  brandingKnown: ref.watch(brandingKnownProvider),
+                  branding: ref.watch(brandingProvider),
                   // Deferred auth: browsing is open. Sign-in is requested
                   // later, when the guest confirms a booking.
                   onStart: () {
@@ -111,6 +114,8 @@ class _OnboardingPhoto extends StatelessWidget {
       child: Image.network(
         url,
         fit: BoxFit.cover,
+        // Web: render via <img> when the CORS-checked fetch fails.
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
         frameBuilder:
             (
               BuildContext context,
@@ -135,9 +140,21 @@ class _OnboardingPhoto extends StatelessWidget {
 /// Figma `Frame 36`: the 70px avatar ring overlapping the glass `sheet` by 44px
 /// (a −44 auto-layout gap), so the card starts 26px below the ring's top.
 class _OnboardingCard extends StatelessWidget {
-  const _OnboardingCard({required this.content, required this.onStart});
+  const _OnboardingCard({
+    required this.content,
+    required this.brandingKnown,
+    required this.branding,
+    required this.onStart,
+  });
 
   final AppContent content;
+
+  /// False while the first content fetch is in flight: neither the logo nor
+  /// the app name shows yet, so one never replaces the other.
+  final bool brandingKnown;
+
+  /// The logo / app name ([brandingProvider]).
+  final AppContent branding;
   final VoidCallback onStart;
 
   static const double _ring = 70;
@@ -154,6 +171,8 @@ class _OnboardingCard extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final TextTheme text = Theme.of(context).textTheme;
     final Locale locale = Localizations.localeOf(context);
+    final String? logoUrl = branding.logoUrl;
+    final bool hasLogo = brandingKnown && logoUrl != null && logoUrl.isNotEmpty;
 
     final Widget glass = ClipRRect(
       borderRadius: const BorderRadius.all(Radius.circular(_radius)),
@@ -164,9 +183,9 @@ class _OnboardingCard extends StatelessWidget {
           color: AppPrimitives.white.withValues(alpha: 0.2),
           child: Padding(
             // 50 on top clears the overlapping avatar ring.
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSpacing.space4,
-              50,
+              hasLogo ? 50 : AppSpacing.space4,
               AppSpacing.space4,
               AppSpacing.space4,
             ),
@@ -174,6 +193,17 @@ class _OnboardingCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
+                // No uploaded logo → the app name stands in for it.
+                if (brandingKnown && !hasLogo) ...<Widget>[
+                  Text(
+                    branding.appName.resolve(locale) ?? l10n.brandWordmark,
+                    textAlign: TextAlign.center,
+                    style: text.headlineMedium?.copyWith(
+                      color: AppPrimitives.white,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.space2),
+                ],
                 // `display` 28/40 (ExtraBold Tajawal).
                 Text(
                   content.onboardingTitle.resolve(locale) ?? l10n.entryHeadline,
@@ -205,6 +235,7 @@ class _OnboardingCard extends StatelessWidget {
       ),
     );
 
+    if (!hasLogo) return glass;
     return Stack(
       clipBehavior: Clip.none,
       children: <Widget>[

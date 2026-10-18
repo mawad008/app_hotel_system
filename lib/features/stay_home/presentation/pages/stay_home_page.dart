@@ -230,7 +230,7 @@ class _Body extends ConsumerWidget {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 MoneyText(
-                  outstanding.valueOrNull ?? 0,
+                  outstanding.value ?? 0,
                   currency: reservation.priceSnapshot.currency,
                 ),
               ],

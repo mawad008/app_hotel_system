@@ -8,10 +8,11 @@ import '../widgets/entry_splash_backdrop.dart';
 ///
 /// v2 Figma `ENTRY_Splash` (`14 · Entry, loyalty & completion`): a white field
 /// with the two-tone brand mark and the "Hotel System" wordmark, centred. No
-/// tagline, no spinner.
+/// tagline, no spinner. The lock-up plays a short entrance on top of that
+/// (mark breath, gold ripples, sheen, wordmark rising in).
 class AuthSplashPage extends StatelessWidget {
   const AuthSplashPage({super.key});
 
   @override
-  Widget build(BuildContext context) => const EntrySplashBackdrop();
+  Widget build(BuildContext context) => const EntrySplashBackdrop(animateEntrance: true);
 }

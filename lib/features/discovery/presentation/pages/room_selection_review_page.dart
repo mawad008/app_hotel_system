@@ -144,11 +144,11 @@ class RoomSelectionReviewPage extends ConsumerWidget {
         ? ref.watch(bookingRedeemPointsProvider)[hotelId] ?? 0
         : 0;
     final LoyaltyProgram? program = signedIn
-        ? ref.watch(loyaltyProgramProvider(hotelId)).valueOrNull
+        ? ref.watch(loyaltyProgramProvider(hotelId)).value
         : null;
     final HotelGuestDetails? hotelDetails = ref
         .watch(hotelDetailProvider(hotelId))
-        .valueOrNull
+        .value
         ?.details;
     // The hotel's own service fee and tax (dashboard-managed); none when off.
     final Money? serviceFee = hotelDetails?.serviceFee?.feeFor(

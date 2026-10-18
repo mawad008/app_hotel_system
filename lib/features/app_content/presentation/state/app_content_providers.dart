@@ -40,7 +40,7 @@ final appContentRepositoryProvider = Provider<AppContentRepository>(
 const Duration appContentTimeout = Duration(seconds: 3);
 
 /// The Guest App's dashboard-managed branding + entry content, fetched once
-/// per launch (kept alive for the session).
+/// per launch and again on every app resume (see `HotelGuestApp`).
 ///
 /// Branding must never block entry: any failure or a slow response resolves
 /// to the last content this device received, else [AppContent.empty] — so
@@ -55,7 +55,9 @@ final appContentProvider = FutureProvider<AppContent>((Ref ref) async {
   } catch (error) {
     final AppContent? cached = ref.read(cachedAppContentProvider);
     if (kDebugMode) {
-      debugPrint('appContent: using ${cached == null ? 'bundled defaults' : 'cached content'} — $error');
+      debugPrint(
+        'appContent: using ${cached == null ? 'bundled defaults' : 'cached content'} — $error',
+      );
     }
     return cached ?? AppContent.empty;
   }
@@ -64,18 +66,28 @@ final appContentProvider = FutureProvider<AppContent>((Ref ref) async {
 /// App-wide branding that never waits: the fresh content once loaded, the
 /// cached one meanwhile, else the bundled defaults. For chrome that must
 /// render immediately (app title, theme colour, web icon, support / legal
-/// links); the entry screens keep watching [appContentProvider] itself so
-/// they never swap one logo for another mid-animation.
+/// links) and the brand logo (`ManagedBrandLogo`).
 final brandingProvider = Provider<AppContent>((Ref ref) {
-  return ref.watch(appContentProvider).valueOrNull ??
+  return ref.watch(appContentProvider).value ??
       ref.watch(cachedAppContentProvider) ??
       AppContent.empty;
+});
+
+/// Whether [brandingProvider] holds real content yet (fresh, cached or the
+/// settled fallback) rather than the placeholder used while the first fetch
+/// is in flight. The brand logo waits on it so it never swaps in front of the
+/// guest.
+final brandingKnownProvider = Provider<bool>((Ref ref) {
+  return ref.watch(appContentProvider).hasValue ||
+      ref.watch(cachedAppContentProvider) != null;
 });
 
 /// The FAQ for `PROFILE_Support` — fetched fresh, and unlike
 /// [appContentProvider] a failure is surfaced (with retry) instead of
 /// silently showing "no questions".
 final faqProvider = FutureProvider.autoDispose<List<FaqEntry>>((Ref ref) async {
-  final AppContent content = await ref.watch(appContentRepositoryProvider).content();
+  final AppContent content = await ref
+      .watch(appContentRepositoryProvider)
+      .content();
   return content.faq;
 });

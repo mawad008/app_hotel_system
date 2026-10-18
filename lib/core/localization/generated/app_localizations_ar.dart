@@ -10,7 +10,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appName => 'فندق سيستم';
+  String get appName => 'STDY HOTELS';
 
   @override
   String get appTagline => 'احجز، تحقّق، وادخل غرفتك من هاتفك.';

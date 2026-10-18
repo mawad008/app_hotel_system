@@ -9,7 +9,7 @@ import 'auth_state.dart';
 /// Drives the `إكمال البيانات` form. Auto-disposed: it only lives while the
 /// screen is on top. The session it completes comes from
 /// [AuthState.awaitingProfile].
-class CompleteProfileController extends AutoDisposeNotifier<FormSubmission> {
+class CompleteProfileController extends Notifier<FormSubmission> {
   @override
   FormSubmission build() => const FormSubmission.idle();
 
@@ -35,6 +35,6 @@ class CompleteProfileController extends AutoDisposeNotifier<FormSubmission> {
 }
 
 final completeProfileControllerProvider =
-    AutoDisposeNotifierProvider<CompleteProfileController, FormSubmission>(
+    NotifierProvider.autoDispose<CompleteProfileController, FormSubmission>(
       CompleteProfileController.new,
     );

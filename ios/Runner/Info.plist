@@ -14,7 +14,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>The camera is used to photograph your ID and take a live selfie to verify your identity before check-in.</string>
 	<key>CFBundleDisplayName</key>
-	<string>Stdy Hotel</string>
+	<string>STDY HOTELS</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

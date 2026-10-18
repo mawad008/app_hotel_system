@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appName": "Hotel System",
+  "appName": "STDY HOTELS",
   "@appName": { "description": "Product name shown in the app bar and app metadata." },
 
   "appTagline": "Book, verify and enter — from your phone.",

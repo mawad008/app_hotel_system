@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
-
 import 'app_environment.dart';
 
 /// Immutable runtime configuration.
@@ -27,12 +25,12 @@ class AppConfig {
   /// ```
   factory AppConfig.fromEnvironment() {
     const String env = String.fromEnvironment('APP_ENV', defaultValue: 'development');
-    // No override → pick a per-platform dev default (see
-    // [_devDefaultBaseUrl]). A physical device on the same LAN still needs:
-    //   --dart-define=API_BASE_URL=http://<your-Mac-LAN-IP>:8000
-    // The value is combined with `/api/v1` by [apiRoot]; never hard-code a host.
+    // No override → the hosted backend ([defaultBaseUrl]) on every platform.
+    // A local Laravel can still be targeted with e.g.:
+    //   --dart-define=API_BASE_URL=http://10.0.2.2:8000
+    // The value is combined with `/api/v1` by [apiRoot].
     const String overrideBaseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
-    final String baseUrl = overrideBaseUrl.isEmpty ? _devDefaultBaseUrl() : overrideBaseUrl;
+    final String baseUrl = overrideBaseUrl.isEmpty ? defaultBaseUrl : overrideBaseUrl;
     // Real integration: --dart-define=USE_DUMMY_DATA=false. As of the final
     // mobile↔backend integration pass, every feature's `Api*DataSource` is a
     // real implementation against the guest API (auth, discovery,
@@ -76,19 +74,10 @@ class AppConfig {
 
   bool get isProduction => environment == AppEnvironment.production;
 
-  /// Reachable Laravel dev host per platform, used only when
-  /// `API_BASE_URL` isn't overridden via `--dart-define`.
-  ///
-  /// Android's emulator is its own sandboxed device: `localhost` there means
-  /// the emulator, not the developer machine, so the emulator-to-host loopback
-  /// alias `10.0.2.2` is required. Every other target this app runs on in
-  /// development (Flutter Web, iOS Simulator, desktop) shares the developer
-  /// machine's own network namespace, so its real loopback `127.0.0.1` is
-  /// reachable directly. This must stay platform-specific rather than one
-  /// blanket default — `10.0.2.2` is meaningless outside the Android emulator.
-  static String _devDefaultBaseUrl() {
-    if (kIsWeb) return 'http://localhost:8000';
-    if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8000';
-    return 'http://127.0.0.1:8000';
-  }
+  /// Hosted Laravel API used when `API_BASE_URL` isn't overridden via
+  /// `--dart-define`. Not `hotel.webstdy.com` — that host is the Nuxt web
+  /// frontend (its `/api/*` returns the SPA HTML / 405), and it calls this
+  /// same `admin.` host itself. HTTPS: plain `http` 301-redirects, which would
+  /// drop POST bodies and is blocked by Android/iOS cleartext policy.
+  static const String defaultBaseUrl = 'https://admin.hotel.webstdy.com';
 }

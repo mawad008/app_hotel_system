@@ -151,6 +151,9 @@ class AppImage extends StatelessWidget {
           width: width,
           height: height,
           fit: fit,
+          // Web: render via <img> when the CORS-checked fetch fails (storage
+          // files served by nginx carry no CORS headers).
+          webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
           loadingBuilder: (
             BuildContext context,
             Widget child,

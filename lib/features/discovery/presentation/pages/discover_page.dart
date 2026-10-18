@@ -80,7 +80,7 @@ class DiscoverPage extends ConsumerWidget {
     final AsyncValue<DiscoverView> discover = ref.watch(
       discoverControllerProvider,
     );
-    final DiscoverView? view = discover.valueOrNull;
+    final DiscoverView? view = discover.value;
     final bool singleHotel = view?.isSingleHotel ?? false;
 
     final String greeting = view?.greetingName == null

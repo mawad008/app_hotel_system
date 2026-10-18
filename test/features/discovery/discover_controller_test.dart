@@ -17,7 +17,7 @@ void main() {
 
     DiscoverView? view;
     for (int i = 0; i < 50; i++) {
-      view = c.read(discoverControllerProvider).valueOrNull;
+      view = c.read(discoverControllerProvider).value;
       if (view?.greetingName != null) break;
       await Future<void>.delayed(Duration.zero);
     }

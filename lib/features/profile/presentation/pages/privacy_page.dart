@@ -140,7 +140,7 @@ class PrivacyPage extends ConsumerWidget {
                 ),
                 if (ref
                         .watch(appContentProvider)
-                        .valueOrNull
+                        .value
                         ?.identityRetentionDays
                     case final int days)
                   Text(

@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// Product name shown in the app bar and app metadata.
   ///
   /// In en, this message translates to:
-  /// **'Hotel System'**
+  /// **'STDY HOTELS'**
   String get appName;
 
   /// One-line promise shown on the foundation screen.

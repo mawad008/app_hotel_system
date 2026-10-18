@@ -56,7 +56,7 @@ class DigitalAccessPage extends ConsumerWidget {
         : null;
 
     final bool active =
-        (fromAction ?? grantAsync.valueOrNull)?.isActive ?? false;
+        (fromAction ?? grantAsync.value)?.isActive ?? false;
 
     return Scaffold(
       // Figma: "تم تسجيل دخولك" in the app bar once the key is live.
@@ -111,7 +111,7 @@ class _Body extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final Reservation? reservation = ref
         .watch(reservationDetailProvider(reservationId))
-        .valueOrNull;
+        .value;
     final String? roomNumber = reservation?.roomNumber;
     final Locale locale = Localizations.localeOf(context);
 
