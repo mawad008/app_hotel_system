@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appName": "Stdy Hotel",
+  "appName": "Stdy Hotels",
   "@appName": { "description": "Product name shown in the app bar and app metadata." },
 
   "appTagline": "Book, verify and enter — from your phone.",
@@ -79,8 +79,6 @@
   "textFieldExampleLabel": "Full name",
   "textFieldExampleHint": "Enter your name",
 
-  "brandWordmark": "Stdy Hotel",
-  "@brandWordmark": { "description": "Latin brand wordmark under the logo on the splash — the v2 Figma shows it untranslated in both languages." },
   "entryHeadline": "Explore our hotels and book your stay from wherever you are",
   "@entryHeadline": {"description": "Onboarding headline (v2 ENTRY_Onboarding). Platform-wide wording — the app lists many hotels, so it must never name a single one (QA 2026-10-08)."},
   "entrySubtext": "Simply pick your favourite room at the time that suits you",

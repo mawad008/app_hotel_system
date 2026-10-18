@@ -29,7 +29,7 @@ void main() {
     );
     // The sheet floats over the splash lock-up (v2 overlay).
     expect(find.byType(BrandMark), findsOneWidget);
-    expect(find.text(ar.brandWordmark), findsOneWidget);
+    expect(find.byType(BrandWordmark), findsOneWidget);
     // Arabic is the default until the guest picks; no separate continue step.
     expect(c.read(localeControllerProvider)?.languageCode, 'ar');
     expect(find.text(ar.commonContinue), findsNothing);

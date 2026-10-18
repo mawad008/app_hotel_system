@@ -2,7 +2,7 @@
 "NSCameraUsageDescription" = "تُستخدم الكاميرا لتصوير هويتك والتقاط صورة سيلفي مباشرة للتحقق من هويتك قبل تسجيل الدخول إلى الفندق.";
 
 /* Home-screen name. Matches the store listing name. */
-"CFBundleDisplayName" = "Stdy Hotel";
+"CFBundleDisplayName" = "Stdy Hotels";
 
 /* Never shown: the app does not record audio or read the photo library. */
 "NSMicrophoneUsageDescription" = "لا يُستخدم الميكروفون. التحقق من الهوية يلتقط صورًا ثابتة فقط.";

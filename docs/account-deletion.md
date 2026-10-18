@@ -1,6 +1,6 @@
-# Hotel System (Stdy Hotel) — Delete your account and data
+# Stdy Hotels — Delete your account and data
 
-This page explains how guests of the **Hotel System / Stdy Hotel** app
+This page explains how guests of the **Stdy Hotels** app
 (package `com.hotelsystem.hotel_guest_app`) can ask for their account and
 personal data to be deleted.
 

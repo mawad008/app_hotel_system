@@ -34,19 +34,20 @@ void main() {
     );
     await tester.pump();
 
-    // The splash is up while the (held) session restore is in flight: the v2
-    // white field with the two-tone vector mark + the "Hotel System" wordmark.
+    // The splash is up while the (held) session restore is in flight: the
+    // brand navy field with the app icon over the STDY HOTELS wordmark.
     expect(find.byType(AuthSplashPage), findsOneWidget);
     expect(find.byType(BrandMark), findsOneWidget);
+    expect(find.byType(BrandWordmark), findsOneWidget);
     final AppLocalizations en = await tester.l10n();
-    expect(find.text(en.brandWordmark), findsOneWidget);
+    expect(find.bySemanticsLabel(en.appName), findsOneWidget);
     final Scaffold scaffold = tester.widget(
       find.descendant(
         of: find.byType(AuthSplashPage),
         matching: find.byType(Scaffold),
       ),
     );
-    expect(scaffold.backgroundColor, AppPrimitives.stone0);
+    expect(scaffold.backgroundColor, AppPrimitives.brandNavy);
 
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();

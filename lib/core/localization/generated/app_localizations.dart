@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// Product name shown in the app bar and app metadata.
   ///
   /// In en, this message translates to:
-  /// **'Stdy Hotel'**
+  /// **'Stdy Hotels'**
   String get appName;
 
   /// One-line promise shown on the foundation screen.
@@ -373,12 +373,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter your name'**
   String get textFieldExampleHint;
-
-  /// Latin brand wordmark under the logo on the splash — the v2 Figma shows it untranslated in both languages.
-  ///
-  /// In en, this message translates to:
-  /// **'Stdy Hotel'**
-  String get brandWordmark;
 
   /// Onboarding headline (v2 ENTRY_Onboarding). Platform-wide wording — the app lists many hotels, so it must never name a single one (QA 2026-10-08).
   ///

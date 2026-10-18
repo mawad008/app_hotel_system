@@ -1,8 +1,8 @@
 /* Camera permission prompt (identity verification). */
 "NSCameraUsageDescription" = "The camera is used to photograph your ID and take a live selfie to verify your identity before check-in.";
 
-/* Home-screen name. Matches the store listing name. */
-"CFBundleDisplayName" = "Stdy Hotel";
+/* Home-screen name. Matches the logo (Design/brand/stdy-hotels-logo.svg). */
+"CFBundleDisplayName" = "Stdy Hotels";
 
 /* Never shown: the app does not record audio or read the photo library. */
 "NSMicrophoneUsageDescription" = "The microphone is not used. Identity verification only takes still photos.";

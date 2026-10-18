@@ -2,11 +2,11 @@
 <resources>
     <!-- Android 12+ (API 31) replaces windowBackground with the system SplashScreen.
          Without these items it shows the launcher icon (the default Flutter icon) masked
-         into a circle. The splash is always white like the Flutter splash, which is
+         into a circle. The splash is always brand navy like the Flutter splash, which is
          pinned to the light theme, so the night variant is identical. -->
     <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
         <item name="android:windowBackground">@drawable/launch_background</item>
-        <item name="android:windowSplashScreenBackground">@android:color/white</item>
+        <item name="android:windowSplashScreenBackground">@color/brand_navy</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     </style>
     <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">

@@ -1,8 +1,8 @@
-# Hotel System — Privacy Policy
+# Stdy Hotels — Privacy Policy
 
 **Effective date:** 7 October 2026
 
-This policy explains what personal data the **Hotel System** mobile app
+This policy explains what personal data the **Stdy Hotels** mobile app
 ("the app", package `com.hotelsystem.hotel_guest_app`) collects, why, and the
 choices you have. The app lets guests browse hotels, book a stay, verify their
 identity, check in, use a digital room key, order services and check out.

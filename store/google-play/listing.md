@@ -11,7 +11,7 @@ Privacy policy: https://github.com/mawad008/app_hotel_system/blob/release/store-
 
 **App name** (30 max)
 
-Hotel System
+Stdy Hotels
 
 **Short description** (80 max)
 
@@ -19,7 +19,7 @@ Book your stay, check in from your phone and manage everything in one app.
 
 **Full description** (4000 max)
 
-Hotel System is the guest app for our hotel group. Find a hotel, book a room and run your whole stay from your phone.
+Stdy Hotels is the guest app for our hotel group. Find a hotel, book a room and run your whole stay from your phone.
 
 BROWSE AND BOOK
 • Explore the group's hotels with photos, ratings, facilities and location
@@ -50,7 +50,7 @@ Available in Arabic and English.
 
 **App name**
 
-فندق سيستم
+ستدي هوتلز
 
 **Short description**
 
@@ -58,7 +58,7 @@ Available in Arabic and English.
 
 **Full description**
 
-فندق سيستم هو تطبيق النزلاء لمجموعتنا الفندقية. اختر فندقك، احجز غرفتك، وأدر إقامتك كاملة من هاتفك.
+ستدي هوتلز هو تطبيق النزلاء لمجموعتنا الفندقية. اختر فندقك، احجز غرفتك، وأدر إقامتك كاملة من هاتفك.
 
 تصفّح واحجز
 • استكشف فنادق المجموعة بالصور والتقييمات والمرافق والموقع
@@ -87,5 +87,5 @@ Available in Arabic and English.
 
 ## Release notes (1.0.0)
 
-en-US: First release of the Hotel System guest app.
-ar: الإصدار الأول من تطبيق فندق سيستم للنزلاء.
+en-US: First release of the Stdy Hotels guest app.
+ar: الإصدار الأول من تطبيق ستدي هوتلز للنزلاء.

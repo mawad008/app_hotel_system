@@ -13,11 +13,11 @@ import '../../../../core/theme/app_shadows.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_image.dart';
+import '../../../../core/widgets/brand_logo.dart';
 import '../../../../core/widgets/button_spinner.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../app_content/domain/entities/app_content.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
-import '../../../app_content/presentation/widgets/managed_brand_logo.dart';
 import '../state/language_selection_controller.dart';
 
 /// `01 · Entry` — onboarding (v2 Figma `ENTRY_Onboarding`).
@@ -226,7 +226,7 @@ class _OnboardingCard extends StatelessWidget {
 }
 
 /// Figma `Frame 35`: a white 70px circle with a 2px `stone/300` @50% ring and
-/// the soft tile shadow, holding the 50px brand avatar.
+/// the soft tile shadow, holding the app icon.
 class _AvatarRing extends StatelessWidget {
   const _AvatarRing({required this.size});
 
@@ -247,7 +247,7 @@ class _AvatarRing extends StatelessWidget {
         boxShadow: AppShadows.tile,
       ),
       alignment: Alignment.center,
-      child: const ManagedBrandLogo(markSize: 50),
+      child: const BrandMark(size: 44),
     );
   }
 }

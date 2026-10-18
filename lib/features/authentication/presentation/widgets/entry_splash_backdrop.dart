@@ -8,11 +8,11 @@ import '../../../../core/widgets/app_image.dart';
 import '../../../../core/widgets/brand_logo.dart';
 import '../../../app_content/domain/entities/app_content.dart';
 import '../../../app_content/presentation/state/app_content_providers.dart';
-import '../../../app_content/presentation/widgets/managed_brand_logo.dart';
 
-/// The v2 `ENTRY_Splash` composition: a plain white field with the brand
-/// lock-up (120px mark, 5px gap, "Hotel System" wordmark) centred on the
-/// screen.
+/// The splash composition: the brand navy field with the STDY HOTELS lock-up
+/// ([BrandLockup]: app icon over the wordmark) centred on the screen — the
+/// same ground and icon position as the native splash screens, so the
+/// hand-over from the OS is seamless.
 ///
 /// Shared by the splash and the first-run language sheet, which the Figma
 /// prototype opens as an **overlay on the splash** — so moving from one to the
@@ -23,16 +23,18 @@ import '../../../app_content/presentation/widgets/managed_brand_logo.dart';
 /// (the Figma only defines these frames in light), and everything inside —
 /// including the language sheet — reads the light tokens.
 ///
-/// The logo and app name are dashboard-managed (`ManagedBrandLogo`). The splash
-/// is the first screen, so it also warms the onboarding photo into the image
-/// cache as soon as the content arrives — onboarding then paints it at once.
+/// The lock-up is the bundled artwork rather than the dashboard-managed logo:
+/// it has to match the native splash, which can't load anything. The splash
+/// is the first screen, so it warms the onboarding photo into the image cache
+/// as soon as the dashboard content arrives — onboarding then paints it at
+/// once.
 class EntrySplashBackdrop extends ConsumerWidget {
   const EntrySplashBackdrop({super.key, this.overlay});
 
   /// Painted above the lock-up (the language sheet).
   final Widget? overlay;
 
-  static const Color background = AppPrimitives.stone0;
+  static const Color background = AppPrimitives.brandNavy;
 
   static final ThemeData _theme = AppTheme.light;
 
@@ -53,7 +55,7 @@ class EntrySplashBackdrop extends ConsumerWidget {
     });
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
+      value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
         systemNavigationBarColor: background,
       ),
@@ -64,9 +66,7 @@ class EntrySplashBackdrop extends ConsumerWidget {
           body: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              const Center(
-                child: ManagedBrandLogo(variant: BrandLogoVariant.stacked),
-              ),
+              const Center(child: BrandLockup()),
               ?overlay,
             ],
           ),

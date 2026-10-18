@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appName => 'Stdy Hotel';
+  String get appName => 'Stdy Hotels';
 
   @override
   String get appTagline => 'Book, verify and enter — from your phone.';
@@ -169,9 +169,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textFieldExampleHint => 'Enter your name';
-
-  @override
-  String get brandWordmark => 'Stdy Hotel';
 
   @override
   String get entryHeadline =>

@@ -10,7 +10,7 @@ class AppLocalizationsAr extends AppLocalizations {
   AppLocalizationsAr([String locale = 'ar']) : super(locale);
 
   @override
-  String get appName => 'Stdy Hotel';
+  String get appName => 'Stdy Hotels';
 
   @override
   String get appTagline => 'احجز، تحقّق، وادخل غرفتك من هاتفك.';
@@ -168,9 +168,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get textFieldExampleHint => 'أدخل اسمك';
-
-  @override
-  String get brandWordmark => 'Stdy Hotel';
 
   @override
   String get entryHeadline => 'استكشف فنادقنا واحجز إقامتك من مكانك';

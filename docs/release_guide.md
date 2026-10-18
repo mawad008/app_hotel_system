@@ -14,7 +14,7 @@ How to build and ship the app to Google Play and the App Store.
 | | Android | iOS |
 |---|---|---|
 | Id | `com.hotelsystem.hotel_guest_app` | `com.hotelsystem.hotelGuestApp` |
-| Name | Stdy Hotel | Stdy Hotel |
+| Name | Stdy Hotels | Stdy Hotels |
 | Team | — | `2CA9YNXZDR` |
 
 Both ids are **permanent once the first build is uploaded**. Change them before
@@ -162,14 +162,17 @@ upload the screenshots above, and a demo account for App Review.
 
 ## Icons and store graphics
 
-All icons and the feature graphic are generated from the vector brand mark:
+Every launcher icon, the native splash artwork, the in-app logo paths
+(`lib/core/widgets/brand_paths.dart`) and the Play icon + feature graphic are
+generated from the designer's logo, `Design/brand/stdy-hotels-logo.svg`:
 
 ```
-python tool/generate_store_assets.py      # requires Pillow
+pip install pillow svgelements
+python tool/generate_store_assets.py
 ```
 
-Re-run it if the mark in `lib/core/widgets/brand_logo.dart` /
-`android/.../drawable/launch_logo.xml` changes.
+To rebrand, replace that SVG and re-run the script. The store listing names
+are set in Play Console and App Store Connect, not here.
 
 ## Login session
 

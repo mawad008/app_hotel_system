@@ -105,7 +105,7 @@ class _LanguageSheet extends StatelessWidget {
 
     return DecoratedBox(
       decoration: const BoxDecoration(
-        color: EntrySplashBackdrop.background,
+        color: AppPrimitives.stone0,
         borderRadius: BorderRadius.all(Radius.circular(_radius)),
         boxShadow: AppShadows.tile,
       ),

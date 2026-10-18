@@ -1,7 +1,7 @@
 {
   "@@locale": "ar",
 
-  "appName": "Stdy Hotel",
+  "appName": "Stdy Hotels",
   "appTagline": "احجز، تحقّق، وادخل غرفتك من هاتفك.",
   "foundationScreenTitle": "الأساس ونظام التصميم",
   "foundationScreenSubtitle": "المرحلة صفر من التطبيق — بنية المشروع، السمة، الترجمة، وطبقة البيانات فقط. شاشات الميزات تأتي في المراحل التالية.",
@@ -63,7 +63,6 @@
   "textFieldExampleLabel": "الاسم الكامل",
   "textFieldExampleHint": "أدخل اسمك",
 
-  "brandWordmark": "Stdy Hotel",
   "entryHeadline": "استكشف فنادقنا واحجز إقامتك من مكانك",
   "entrySubtext": "ببساطة اختر غرفتك المفضلة في وقتك المفضل",
   "entryStartAction": "ابدأ الآن",

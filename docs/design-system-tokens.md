@@ -65,8 +65,8 @@ Getting Started · Changelog · Icons.
 
 > ⚠️ **App identity mismatch.** The `Content` collection names the app
 > **`نُزُل` / `Nuzul`**, tagline **`إقامة بلا أوراق` / "A paperless stay"**.
-> The cover page and current app still say *"Hotel System"*. Confirm the intended
-> product name with the owner before wiring `content/app/*` into `l10n`.
+> The cover page says *"Hotel System"*; the product is now **Stdy Hotels**
+> (logo: `Design/brand/stdy-hotels-logo.svg`), which is what `l10n` uses.
 > Likewise the `Getting Started` prose is **stale** (mentions `petrol`/`sand`
 > ramps, "56 primitives") — the collections below are authoritative; the ramp was
 > renamed `petrol → oud` (old CSS `codeSyntax` still reads `var(--petrol-500)`).

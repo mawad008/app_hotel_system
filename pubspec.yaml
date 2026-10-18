@@ -111,11 +111,11 @@ flutter:
   # AppImages (lib/core/widgets/app_image.dart) — never referenced by path.
   assets:
     - assets/images/
-    # The brand mark is drawn as vector paths (BrandLogo) — no raster asset.
+    # The logo is drawn as vector paths (BrandLogo) — no raster asset.
 
   # Tajawal — the approved (only) font family (decision 2026-09-26).
   # A humanist Arabic sans with a full Latin set, so the same family renders the
-  # Arabic UI and the "Hotel System" wordmark. SIL OFL 1.1, see
+  # Arabic UI and its Latin copy. SIL OFL 1.1, see
   # assets/fonts/OFL.txt.
   fonts:
     - family: Tajawal

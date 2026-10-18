@@ -115,6 +115,15 @@ abstract final class AppPrimitives {
   /// `#F1E7D3` — the 1px warm hairline around the Hotel Detail "why choose"
   /// feature cards (on `gold/25`). Not in the token library.
   static const Color goldHairline = Color(0xFFF1E7D3);
+
+  /// `#142544` — the STDY HOTELS brand navy, the ground of the logo artwork
+  /// (`Design/brand/stdy-hotels-logo.svg`) and of the splash screens. Also
+  /// `@color/brand_navy` on Android. Not in the token library.
+  static const Color brandNavy = Color(0xFF142544);
+
+  /// `#D3A524` — the gold of the logo's "O" and the app-icon ring. Not in the
+  /// token library.
+  static const Color brandGold = Color(0xFFD3A524);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

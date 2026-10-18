@@ -132,11 +132,6 @@ abstract final class AppTypography {
   static TextStyle labelRegular(Color color) =>
       _base(13, regular, height: 18 / 13, color: color);
 
-  /// The "Hotel System" wordmark lock-up — ExtraBold, tight leading, no
-  /// tracking. `size` is set by [BrandLogo] from the mark size.
-  static TextStyle brand(Color color, {double size = 20}) =>
-      _base(size, extraBold, height: 1.1, color: color);
-
   // ── `text/num/*` — tabular figures (room numbers, amounts, codes, points) ──
 
   static TextStyle numDisplay(Color color) =>

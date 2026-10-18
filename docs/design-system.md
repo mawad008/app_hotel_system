@@ -321,11 +321,17 @@ matched by widget tests).
 
 ## Brand logo — `core/widgets/brand_logo.dart`
 
-`BrandLogo({variant: stacked|markOnly, markSize})` + `BrandMark` — the **exact**
-v2 `Logo Placeholder` artwork as vector `Path`s (decoded from the `.fig` vector
-network, 120×120 box): `ink/700` towers + `gold/400` spire, crisp at any size.
-`stacked` = mark + 5px + `Hotel System` wordmark (`brandWordmark`, 24/36 Bold) —
-the v2 splash. No raster asset (the v1 knockout `logo.png` was removed).
+The STDY HOTELS logo (`Design/brand/stdy-hotels-logo.svg`) as vector `Path`s,
+generated into `brand_paths.dart` by `tool/generate_store_assets.py` — crisp at
+any size, no raster asset:
+
+- `BrandMark` — the app icon: rounded tile with the gold ring
+  (`AppPrimitives.brandGold`); the tile is navy on light grounds (as the
+  launcher icon) and white on the navy splash.
+- `BrandWordmark` — "STDY HOTELS": white letters with the gold "O", for the
+  navy ground (`AppPrimitives.brandNavy`); screen readers hear `appName`.
+- `BrandLockup` — mark over wordmark, the splash composition (161 tall, so the
+  icon sits where the native splash draws it).
 
 ---
 
@@ -448,7 +454,7 @@ exist in `lib/core/localization/arb/app_{en,ar}.arb` under feature prefixes — 
 
 | `content/*` | ARB key(s) |
 |---|---|
-| `content/app/{name,tagline}` | `appName`, `appTagline` — **kept as "Hotel System"** (the token's "نُزُل / Nuzul" is a product-naming question, not adopted) |
+| `content/app/{name,tagline}` | `appName`, `appTagline` — the product is **Stdy Hotels** (the token's "نُزُل / Nuzul" was not adopted) |
 | `content/nav/{home,bookings,services,account}` | `navHome` / `navBookings` / `navServices` / `navAccount` (exact) |
 | `content/action/{continue,back,retry,pay,viewAll,…}` | `commonContinue` / `commonBack` / `actionRetry` / `paymentPayNowCta` / `commonSeeAll` / … (feature-prefixed) |
 | `content/status/pending` | `reservationStatusPending`, `serviceStatusRequested` |
