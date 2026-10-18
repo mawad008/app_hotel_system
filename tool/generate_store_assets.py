@@ -6,9 +6,8 @@ brand logo.
 
 The source is Design/brand/stdy-hotels-logo.svg, the designer's export: the
 STDY HOTELS wordmark (white letters, gold O) and the app icon (white rounded
-tile, gold ring), both drawn for the navy brand ground. On light grounds the
-same artwork is used with the colours swapped (navy letters, navy tile), and
-the launcher icons are the gold ring on navy. The in-app logo and the splash
+tile, gold ring). The launcher icons are that icon: a white tile with the gold
+ring. The in-app logo and the splash
 are dashboard-managed (`GET /guest/app-content`), so only the launcher icons
 and the store graphics come from here.
 
@@ -179,11 +178,11 @@ def draw_wordmark(image, left, top, width, letters=WHITE, accent=GOLD):
 
 
 def square_icon(size, tile_fraction=1.0, shape=None):
-    """A launcher icon: the navy tile with the gold ring, the ring sized as on
-    a tile spanning `tile_fraction` of the icon. `shape`: None (full bleed),
-    'round' or 'squircle', transparent outside."""
+    """A launcher icon: the white tile with the gold ring, the ring sized as
+    on a tile spanning `tile_fraction` of the icon. `shape`: None (full
+    bleed), 'round' or 'squircle', transparent outside."""
     big = size * SUPERSAMPLE
-    image = Image.new("RGBA", (big, big), NAVY + (255,))
+    image = Image.new("RGBA", (big, big), WHITE + (255,))
     tile = big * tile_fraction
     draw_icon(image, (big - tile) / 2, (big - tile) / 2, tile, tile=None)
     if shape:
@@ -284,8 +283,8 @@ def android_icons():
 
     # Adaptive icon (API 26+): a 108dp canvas of which launchers show the
     # centre 72dp — the tile maps onto that, so the ring keeps the artwork's
-    # proportions and stays inside the 66dp safe zone. The navy tile itself
-    # is the adaptive background (@color/brand_navy).
+    # proportions and stays inside the 66dp safe zone. The white tile itself
+    # is the adaptive background.
     write_text(
         RES / "drawable/ic_launcher_foreground.xml",
         vector(108, 108, "Adaptive launcher icon foreground: the gold ring.",
@@ -300,7 +299,7 @@ def android_icons():
     adaptive = (
         '<?xml version="1.0" encoding="utf-8"?>\n'
         '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
-        '    <background android:drawable="@color/brand_navy" />\n'
+        '    <background android:drawable="@android:color/white" />\n'
         '    <foreground android:drawable="@drawable/ic_launcher_foreground" />\n'
         '    <monochrome android:drawable="@drawable/ic_launcher_monochrome" />\n'
         "</adaptive-icon>\n"
