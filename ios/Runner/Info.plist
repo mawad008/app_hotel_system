@@ -49,7 +49,7 @@
 	<true/>
 	<!-- Dev-only: lets the app reach the local Laravel backend over plain
 	     HTTP (Simulator localhost/127.0.0.1 or a LAN IP set via
-	     --dart-define=API_BASE_URL). NSAllowsLocalNetworking scopes this to
+	     the API_BASE_URL dart-define). NSAllowsLocalNetworking scopes this to
 	     local-network hosts/IPs only, not arbitrary internet traffic, so it
 	     does not weaken ATS for a production HTTPS API. -->
 	<key>NSAppTransportSecurity</key>
