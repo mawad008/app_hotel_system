@@ -1,5 +1,7 @@
 import '../../../../core/localization/content_language_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/misc.dart';
 
 import '../../../notifications/presentation/state/notifications_providers.dart';
 import '../../../reservation/domain/entities/reservation.dart';

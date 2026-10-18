@@ -212,7 +212,7 @@ class _Timeline extends ConsumerWidget {
             ),
             BookingTimelineRow(
               title: l10n.bookingDepositAmountHeldRowTitle,
-              amount: depositAmount.valueOrNull,
+              amount: depositAmount.value,
               currency: reservation.priceSnapshot.currency,
             ),
           ],
@@ -240,7 +240,7 @@ class _Timeline extends ConsumerWidget {
             ),
             BookingTimelineRow(
               title: l10n.bookingExtraChargesRowTitle,
-              amount: outstanding.valueOrNull,
+              amount: outstanding.value,
               currency: reservation.priceSnapshot.currency,
             ),
           ],
@@ -289,7 +289,7 @@ class _Timeline extends ConsumerWidget {
             ),
             BookingTimelineRow(
               title: l10n.bookingTotalPaidRowTitle,
-              amount: paid.valueOrNull,
+              amount: paid.value,
               currency: reservation.priceSnapshot.currency,
               filled: true,
             ),
@@ -445,7 +445,7 @@ class _Actions extends ConsumerWidget {
         final AsyncValue<Review?> review = ref.watch(
           reservationReviewProvider(reservation.id),
         );
-        final bool hasReview = review.valueOrNull != null;
+        final bool hasReview = review.value != null;
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[

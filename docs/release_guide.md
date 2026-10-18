@@ -33,13 +33,12 @@ Release builds must be given the production defines:
 --dart-define-from-file=config/production.json
 ```
 
-As a safety net, a **release** build without them still talks to the
-production API (`AppConfig.productionBaseUrl`, which a test keeps equal to
-`config/production.json`). Before that fallback existed, App Review rejected
-iOS 1.0 (2) with "no internet connection" on launch, which is what a build
-without the defines does: it calls a developer machine (`127.0.0.1`).
-Debug and profile builds without them still use the local development backend
-(`http://10.0.2.2:8000` on the Android emulator, `127.0.0.1:8000` elsewhere).
+As a safety net, any build without them still talks to the production API
+(`AppConfig.productionBaseUrl`, which a test keeps equal to
+`config/production.json`). Before that default existed, App Review rejected
+iOS 1.0 (2) with "no internet connection" on launch: a build without the
+defines called a developer machine (`127.0.0.1`). To work against a local
+Laravel, pass e.g. `--dart-define=API_BASE_URL=http://10.0.2.2:8000`.
 
 ## Android
 
@@ -162,9 +161,10 @@ upload the screenshots above, and a demo account for App Review.
 
 ## Icons and store graphics
 
-Every launcher icon, the native splash artwork, the in-app logo paths
-(`lib/core/widgets/brand_paths.dart`) and the Play icon + feature graphic are
-generated from the designer's logo, `Design/brand/stdy-hotels-logo.svg`:
+The Android and iOS launcher icons and the Play icon + feature graphic are
+generated from the designer's logo, `Design/brand/stdy-hotels-logo.svg` (the
+in-app logo and splash are dashboard-managed; the native splash is plain
+white):
 
 ```
 pip install pillow svgelements

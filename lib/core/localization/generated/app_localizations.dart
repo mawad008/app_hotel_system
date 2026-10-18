@@ -101,8 +101,14 @@ abstract class AppLocalizations {
   /// Product name shown in the app bar and app metadata.
   ///
   /// In en, this message translates to:
-  /// **'Stdy Hotels'**
+  /// **'STDY HOTELS'**
   String get appName;
+
+  /// Brand name under the logo on the splash when the dashboard has no app name — untranslated in both languages.
+  ///
+  /// In en, this message translates to:
+  /// **'STDY HOTELS'**
+  String get brandWordmark;
 
   /// One-line promise shown on the foundation screen.
   ///

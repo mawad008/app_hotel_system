@@ -9,7 +9,7 @@ import '../domain/health_repository.dart';
 /// Drives the "Backend connectivity" card on the foundation screen. Demonstrates
 /// the full UI → state → repository → data source path with explicit
 /// loading / success / failure states (mobile/docs/feature_guide.md Step 6).
-class BackendHealthController extends AutoDisposeAsyncNotifier<BackendHealth> {
+class BackendHealthController extends AsyncNotifier<BackendHealth> {
   @override
   Future<BackendHealth> build() {
     final HealthRepository repository = ref.watch(healthRepositoryProvider);
@@ -25,7 +25,7 @@ class BackendHealthController extends AutoDisposeAsyncNotifier<BackendHealth> {
 }
 
 final backendHealthControllerProvider =
-    AutoDisposeAsyncNotifierProvider<BackendHealthController, BackendHealth>(
+    AsyncNotifierProvider.autoDispose<BackendHealthController, BackendHealth>(
   BackendHealthController.new,
 );
 

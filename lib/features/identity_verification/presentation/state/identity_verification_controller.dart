@@ -106,14 +106,14 @@ class IdentityVerificationState {
 ///
 /// The controller never transitions the session itself: it only reflects what
 /// the repository returns, and never claims approval before that.
-class IdentityVerificationController
-    extends FamilyNotifier<IdentityVerificationState, String> {
-  late String _reservationId;
+class IdentityVerificationController extends Notifier<IdentityVerificationState> {
+  IdentityVerificationController(this._reservationId);
+
+  final String _reservationId;
   int _token = 0;
 
   @override
-  IdentityVerificationState build(String arg) {
-    _reservationId = arg;
+  IdentityVerificationState build() {
     _token += 1;
     _load(_token);
     return const IdentityVerificationState.loading();

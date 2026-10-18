@@ -123,13 +123,13 @@ class CancelOrderFailed extends CancelOrderState {
   final Failure failure;
 }
 
-class CancelOrderController
-    extends FamilyNotifier<CancelOrderState, ServiceOrderKey> {
-  late ServiceOrderKey _key;
+class CancelOrderController extends Notifier<CancelOrderState> {
+  CancelOrderController(this._key);
+
+  final ServiceOrderKey _key;
 
   @override
-  CancelOrderState build(ServiceOrderKey arg) {
-    _key = arg;
+  CancelOrderState build() {
     return const CancelOrderIdle();
   }
 

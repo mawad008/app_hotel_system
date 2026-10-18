@@ -1,14 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pre-Android-12 launch window: the navy brand ground + the app icon at 120dp,
-     raised 20.5dp (bottom inset 41dp) so it lands exactly where the Flutter splash
-     (BrandLockup) paints it above the wordmark. Android 12+ uses the SplashScreen
-     API instead (values-v31/styles.xml). -->
+<!-- Pre-Android-12 launch window: a plain white field. The logo is
+     dashboard-managed, so no bundled mark is shown here; the Flutter splash
+     (EntrySplashBackdrop) paints the uploaded logo / app name. Android 12+ uses
+     the SplashScreen API instead (values-v31/styles.xml). -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/brand_navy" />
-    <item
-        android:bottom="41dp"
-        android:drawable="@drawable/launch_logo"
-        android:gravity="center"
-        android:width="120dp"
-        android:height="120dp" />
+    <item android:drawable="@android:color/white" />
 </layer-list>

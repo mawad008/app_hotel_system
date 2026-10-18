@@ -1,5 +1,5 @@
-"""Generates the launcher icons, the native splash artwork, the in-app logo
-paths and the Google Play listing graphics from the brand logo.
+"""Generates the launcher icons and the Google Play listing graphics from the
+brand logo.
 
     pip install pillow svgelements
     python tool/generate_store_assets.py
@@ -8,20 +8,16 @@ The source is Design/brand/stdy-hotels-logo.svg, the designer's export: the
 STDY HOTELS wordmark (white letters, gold O) and the app icon (white rounded
 tile, gold ring), both drawn for the navy brand ground. On light grounds the
 same artwork is used with the colours swapped (navy letters, navy tile), and
-the launcher icons are the gold ring on navy. Everything below is derived from
-the SVG, so the launcher icon, the splash and the in-app logo are always the
-same artwork.
+the launcher icons are the gold ring on navy. The in-app logo and the splash
+are dashboard-managed (`GET /guest/app-content`), so only the launcher icons
+and the store graphics come from here.
 
 Writes:
   * android/app/src/main/res/mipmap-*/ic_launcher(.png|_round.png)   legacy icons
   * android/app/src/main/res/drawable/ic_launcher_(foreground|monochrome).xml
   * android/app/src/main/res/mipmap-anydpi-v26/ic_launcher(_round).xml  adaptive
-  * android/app/src/main/res/drawable/(launch_logo|splash_icon).xml  native splash
   * ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png              (no alpha)
-  * ios/Runner/Assets.xcassets/LaunchImage.imageset/*.png            native splash
-  * web/icons/*.png, web/favicon.png
   * store/google-play/icon-512.png, feature-graphic-1024x500.png
-  * lib/core/widgets/brand_paths.dart                                in-app logo
 """
 
 import json
@@ -49,13 +45,6 @@ WHITE = (255, 255, 255)
 NAVY = (0x14, 0x25, 0x44)  # AppPrimitives.brandNavy
 GOLD = (0xD3, 0xA5, 0x24)  # AppPrimitives.brandGold
 SUPERSAMPLE = 4
-
-# The native splash and the in-app splash share one layout: the 120dp icon
-# raised 20.5dp so that, with the wordmark under it (BrandLockup), the whole
-# lock-up is centred on screen.
-SPLASH_ICON = 120
-SPLASH_RAISE = 20.5
-
 
 # --- Reading the artwork ---------------------------------------------------
 
@@ -320,24 +309,6 @@ def android_icons():
     write_text(RES / "mipmap-anydpi-v26/ic_launcher_round.xml", adaptive)
 
 
-def android_splash():
-    write_text(
-        RES / "drawable/launch_logo.xml",
-        vector(SPLASH_ICON, SPLASH_ICON,
-               "The app icon at the splash size (120dp) for the pre-Android-12 launch"
-               " window (launch_background.xml).",
-               icon_body(SPLASH_ICON)),
-    )
-    # The SplashScreen API (Android 12+) draws the icon on a 288dp canvas and
-    # clips it to a centred 192dp circle; the rounded tile fits inside it.
-    write_text(
-        RES / "drawable/splash_icon.xml",
-        vector(288, 288,
-               "Android 12+ system splash icon: the 120dp app icon, raised 20.5dp to"
-               " line up with the Flutter splash (BrandLockup).",
-               icon_body(SPLASH_ICON),
-               translate=((288 - SPLASH_ICON) / 2, (288 - SPLASH_ICON) / 2 - SPLASH_RAISE)),
-    )
 
 
 def ios_icons():
@@ -356,24 +327,8 @@ def ios_icons():
         save(square_icon(pixels), folder / name, alpha=False)
 
 
-def ios_splash():
-    # LaunchScreen.storyboard: navy ground, this image centred, raised 20.5pt.
-    folder = ROOT / "ios/Runner/Assets.xcassets/LaunchImage.imageset"
-    for suffix, factor in (("", 1), ("@2x", 2), ("@3x", 3)):
-        big = SPLASH_ICON * factor * SUPERSAMPLE
-        image = Image.new("RGBA", (big, big), (0, 0, 0, 0))
-        draw_icon(image, 0, 0, big)
-        size = SPLASH_ICON * factor
-        save(image.resize((size, size), Image.LANCZOS), folder / f"LaunchImage{suffix}.png")
 
 
-def web_icons():
-    icons = ROOT / "web/icons"
-    save(square_icon(192), icons / "Icon-192.png", alpha=False)
-    save(square_icon(512), icons / "Icon-512.png", alpha=False)
-    save(square_icon(192, 0.78), icons / "Icon-maskable-192.png", alpha=False)
-    save(square_icon(512, 0.78), icons / "Icon-maskable-512.png", alpha=False)
-    save(square_icon(32, 1.3), ROOT / "web/favicon.png")
 
 
 def play_listing():
@@ -404,64 +359,9 @@ def play_listing():
     save(graphic.resize((1024, 500), Image.LANCZOS), out / "feature-graphic-1024x500.png")
 
 
-def dart_paths():
-    def dart_path(subpaths):
-        lines = ["Path()", "    ..fillType = PathFillType.evenOdd"]
-        for sp in subpaths:
-            for c in sp:
-                if c[0] == "M":
-                    lines.append(f"    ..moveTo({num(c[1])}, {num(c[2])})")
-                elif c[0] == "L":
-                    lines.append(f"    ..lineTo({num(c[1])}, {num(c[2])})")
-                elif c[0] == "C":
-                    lines.append("    ..cubicTo(" + ", ".join(num(v) for v in c[1:]) + ")")
-                else:
-                    lines.append("    ..close()")
-        return "\n".join(lines)
-
-    # Unit coordinates need more precision than the 120dp vectors.
-    global num
-    coarse = num
-
-    def fine(v):
-        s = f"{v:.5f}".rstrip("0").rstrip(".")
-        return "0" if s in ("-0", "") else s
-
-    num = fine
-    try:
-        text = f"""// Generated by tool/generate_store_assets.py from
-// Design/brand/stdy-hotels-logo.svg — do not edit by hand.
-
-import 'dart:ui';
-
-/// The STDY HOTELS artwork as vector paths, drawn by `brand_logo.dart`.
-abstract final class BrandPaths {{
-  /// Corner radius of the app-icon tile, as a fraction of its edge.
-  static const double tileRadius = {fine(ART["tile_radius"])};
-
-  /// The gold ring on the app-icon tile, in a 1×1 box (the tile).
-  static final Path ring = {dart_path(ART["ring"])};
-
-  /// Width of the wordmark when it is 1 unit tall.
-  static const double wordmarkWidth = {fine(ART["word_width"])};
-
-  /// The wordmark's letters (white on navy in the artwork), 1 unit tall.
-  static final Path wordmarkLetters = {dart_path(ART["letters"])};
-
-  /// The wordmark's gold "O", 1 unit tall.
-  static final Path wordmarkAccent = {dart_path(ART["accent"])};
-}}
-"""
-    finally:
-        num = coarse
-    write_text(ROOT / "lib/core/widgets/brand_paths.dart", text)
 
 
 if __name__ == "__main__":
     android_icons()
-    android_splash()
     ios_icons()
-    ios_splash()
-    web_icons()
     play_listing()
-    dart_paths()

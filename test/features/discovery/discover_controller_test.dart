@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/core/config/app_config.dart';
 import 'package:hotel_guest_app/core/config/app_environment.dart';
@@ -33,7 +34,7 @@ void main() {
 
     DiscoverView? view;
     for (int i = 0; i < 50; i++) {
-      view = c.read(discoverControllerProvider).valueOrNull;
+      view = c.read(discoverControllerProvider).value;
       if (view?.greetingName != null) break;
       await Future<void>.delayed(Duration.zero);
     }
@@ -85,14 +86,14 @@ void main() {
     // Wait for the signed-in load (the greeting), when reservations are read.
     AsyncValue<DiscoverView> state = c.read(discoverControllerProvider);
     for (int i = 0; i < 100; i++) {
-      if (state.hasError || state.valueOrNull?.greetingName != null) break;
+      if (state.hasError || state.value?.greetingName != null) break;
       await Future<void>.delayed(Duration.zero);
       state = c.read(discoverControllerProvider);
     }
 
     expect(state.hasError, isFalse, reason: '${state.error}');
-    expect(state.valueOrNull?.greetingName, 'Test');
-    expect(state.valueOrNull?.featuredHotels, isNotEmpty);
-    expect(state.valueOrNull?.upcomingStay, isNull);
+    expect(state.value?.greetingName, 'Test');
+    expect(state.value?.featuredHotels, isNotEmpty);
+    expect(state.value?.upcomingStay, isNull);
   });
 }

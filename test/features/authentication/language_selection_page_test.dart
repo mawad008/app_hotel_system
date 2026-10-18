@@ -6,7 +6,6 @@ import 'package:hotel_guest_app/app/router/app_router.dart';
 import 'package:hotel_guest_app/app/router/app_routes.dart';
 import 'package:hotel_guest_app/core/localization/generated/app_localizations.dart';
 import 'package:hotel_guest_app/core/localization/locale_controller.dart';
-import 'package:hotel_guest_app/core/widgets/brand_logo.dart';
 
 import '../../support/auth_test_support.dart';
 import '../../support/pump_app.dart';
@@ -28,8 +27,7 @@ void main() {
       TextDirection.rtl,
     );
     // The sheet floats over the splash lock-up (v2 overlay).
-    expect(find.byType(BrandMark), findsOneWidget);
-    expect(find.byType(BrandWordmark), findsOneWidget);
+    expect(find.text(ar.brandWordmark), findsOneWidget);
     // Arabic is the default until the guest picks; no separate continue step.
     expect(c.read(localeControllerProvider)?.languageCode, 'ar');
     expect(find.text(ar.commonContinue), findsNothing);

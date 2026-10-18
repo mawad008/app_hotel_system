@@ -1,11 +1,11 @@
 {
-    "name": "Stdy Hotels",
-    "short_name": "Stdy Hotels",
+    "name": "STDY HOTELS",
+    "short_name": "STDY HOTELS",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#142544",
     "theme_color": "#142544",
-    "description": "Stdy Hotels — book a room and run your stay.",
+    "description": "STDY HOTELS guest app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

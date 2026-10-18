@@ -1,8 +1,10 @@
 {
   "@@locale": "en",
 
-  "appName": "Stdy Hotels",
+  "appName": "STDY HOTELS",
   "@appName": { "description": "Product name shown in the app bar and app metadata." },
+  "brandWordmark": "STDY HOTELS",
+  "@brandWordmark": { "description": "Brand name under the logo on the splash when the dashboard has no app name — untranslated in both languages." },
 
   "appTagline": "Book, verify and enter — from your phone.",
   "@appTagline": { "description": "One-line promise shown on the foundation screen." },

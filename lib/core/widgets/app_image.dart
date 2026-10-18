@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
@@ -101,8 +101,14 @@ abstract final class AppNetworkImages {
   /// pixels wide (height follows the aspect ratio) when given — decoding a
   /// large upload at thumbnail size saves memory and raster time.
   static ImageProvider provider(String url, {int? decodeWidth}) {
-    final ImageProvider source =
-        diskCache ? CachedNetworkImageProvider(url) : NetworkImage(url);
+    final ImageProvider source = diskCache && !kIsWeb
+        ? CachedNetworkImageProvider(url)
+        // Web: render via <img> when the CORS-checked fetch fails (storage
+        // files served by nginx carry no CORS headers).
+        : NetworkImage(
+            url,
+            webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+          );
     if (decodeWidth == null) return source;
     return ResizeImage(
       source,

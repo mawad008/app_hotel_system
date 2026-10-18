@@ -128,7 +128,7 @@ class _PreferencesPageState extends ConsumerState<PreferencesPage> {
             setState(() => _draft = next == saved.preferences ? null : next);
         final String? roomType = ref
             .watch(accountSummaryProvider)
-            .valueOrNull
+            .value
             ?.preferredRoomName
             ?.resolve(locale);
 

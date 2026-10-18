@@ -77,7 +77,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     final AsyncValue<PriceRange> bounds = ref.watch(priceBoundsProvider);
     final Locale locale = Localizations.localeOf(context);
 
-    final PriceRange? resolvedBounds = bounds.valueOrNull;
+    final PriceRange? resolvedBounds = bounds.value;
     if (resolvedBounds != null) _syncPrice(resolvedBounds);
 
     return SheetScaffold(

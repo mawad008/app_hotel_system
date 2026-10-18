@@ -6,12 +6,13 @@ import '../widgets/entry_splash_backdrop.dart';
 /// router replaces it with the entry flow or the home screen as soon as restore
 /// resolves.
 ///
-/// The brand navy field with the STDY HOTELS lock-up (app icon over the
-/// wordmark), centred — matching the native launch screen. No tagline, no
-/// spinner.
+/// v2 Figma `ENTRY_Splash` (`14 · Entry, loyalty & completion`): a white field
+/// with the two-tone brand mark and the "Hotel System" wordmark, centred. No
+/// tagline, no spinner. The lock-up plays a short entrance on top of that
+/// (mark breath, gold ripples, sheen, wordmark rising in).
 class AuthSplashPage extends StatelessWidget {
   const AuthSplashPage({super.key});
 
   @override
-  Widget build(BuildContext context) => const EntrySplashBackdrop();
+  Widget build(BuildContext context) => const EntrySplashBackdrop(animateEntrance: true);
 }

@@ -166,7 +166,7 @@ class RoomDetailPage extends ConsumerWidget {
 
     // `valueOrNull`: `value` rethrows when the hotel request failed with
     // nothing loaded before, which would crash this build.
-    final Hotel? loadedHotel = hotelAsync.valueOrNull;
+    final Hotel? loadedHotel = hotelAsync.value;
     if (loadedHotel == null && hotelAsync.hasError) {
       return Scaffold(
         appBar: HotelAppBar(title: l10n.roomDetailsTitle),
@@ -529,7 +529,7 @@ class _Body extends ConsumerWidget {
                   type.refundable,
                   ref
                       .watch(appContentProvider)
-                      .valueOrNull
+                      .value
                       ?.freeCancellationHours,
                 )) {
                   (false, _) => l10n.roomPolicyNonRefundable,

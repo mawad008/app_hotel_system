@@ -176,12 +176,12 @@ class RoomSelectionReviewPage extends ConsumerWidget {
         ? ref.watch(bookingRedeemPointsProvider)[hotelId] ?? 0
         : 0;
     final LoyaltyProgram? program = signedIn
-        ? ref.watch(loyaltyProgramProvider(hotelId)).valueOrNull
+        ? ref.watch(loyaltyProgramProvider(hotelId)).value
         : null;
     final AsyncValue<Hotel> hotelAsync = ref.watch(
       hotelDetailProvider(hotelId),
     );
-    final HotelGuestDetails? hotelDetails = hotelAsync.valueOrNull?.details;
+    final HotelGuestDetails? hotelDetails = hotelAsync.value?.details;
     // The service fee and tax come from the hotel's details: until they are
     // in (e.g. refetched after a mid-booking sign-in) the total would be the
     // room alone, so the price card waits and booking stays disabled.

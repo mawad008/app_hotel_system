@@ -41,5 +41,5 @@ final notificationFeedProvider = FutureProvider.autoDispose<NotificationFeed>((R
 
 /// Bell badge count — 0 while loading / signed out / on error.
 final unreadNotificationsCountProvider = Provider.autoDispose<int>(
-  (Ref ref) => ref.watch(notificationFeedProvider).valueOrNull?.unreadCount ?? 0,
+  (Ref ref) => ref.watch(notificationFeedProvider).value?.unreadCount ?? 0,
 );

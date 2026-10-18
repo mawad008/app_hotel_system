@@ -321,17 +321,10 @@ matched by widget tests).
 
 ## Brand logo — `core/widgets/brand_logo.dart`
 
-The STDY HOTELS logo (`Design/brand/stdy-hotels-logo.svg`) as vector `Path`s,
-generated into `brand_paths.dart` by `tool/generate_store_assets.py` — crisp at
-any size, no raster asset:
-
-- `BrandMark` — the app icon: rounded tile with the gold ring
-  (`AppPrimitives.brandGold`); the tile is navy on light grounds (as the
-  launcher icon) and white on the navy splash.
-- `BrandWordmark` — "STDY HOTELS": white letters with the gold "O", for the
-  navy ground (`AppPrimitives.brandNavy`); screen readers hear `appName`.
-- `BrandLockup` — mark over wordmark, the splash composition (161 tall, so the
-  icon sits where the native splash draws it).
+`BrandLogo({variant: stacked|markOnly, markSize, logoUrl, wordmark})` — the
+dashboard-uploaded logo; with none, only the app name (`wordmark`, else
+`brandWordmark`, 24/36 Bold). `stacked` = logo + 5px + app name — the v2 splash.
+No bundled logo (the vector `BrandMark` was removed 2026-10-18).
 
 ---
 

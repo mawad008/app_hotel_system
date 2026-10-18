@@ -129,8 +129,8 @@ class _PaymentCardDetailsPageState
       bottomNavigationBar: BottomActionBar.actions(
         primary: PrimaryButton(
           label: l10n.paymentConfirmCta,
-          onPressed: (_canConfirm && reservationAsync.valueOrNull != null)
-              ? () => _confirm(reservationAsync.valueOrNull!)
+          onPressed: (_canConfirm && reservationAsync.value != null)
+              ? () => _confirm(reservationAsync.value!)
               : null,
         ),
       ),

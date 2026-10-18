@@ -1,10 +1,4 @@
-import 'package:flutter/foundation.dart'
-    show
-        TargetPlatform,
-        defaultTargetPlatform,
-        kIsWeb,
-        kReleaseMode,
-        visibleForTesting;
+import 'package:flutter/foundation.dart' show kReleaseMode, visibleForTesting;
 
 import 'app_environment.dart';
 
@@ -13,8 +7,8 @@ import 'app_environment.dart';
 /// Values come from `--dart-define`s at build time (mobile/docs/coding_rules.md
 /// §10). Nothing here is secret: only the API host and feature flags.
 /// Tokens/credentials live in the storage layer at runtime, never in config.
-/// The one host in source is [productionBaseUrl], the fallback that keeps a
-/// release build built without its defines working.
+/// The one host in source is [productionBaseUrl], the default when no
+/// `API_BASE_URL` is passed.
 class AppConfig {
   const AppConfig({
     required this.environment,
@@ -24,14 +18,17 @@ class AppConfig {
     this.singleHotelGroup = false,
   });
 
-  /// The production API host — the same value as `config/production.json`,
-  /// which a test keeps in step.
+  /// The hosted Laravel API — the same value as `config/production.json`,
+  /// which a test keeps in step — used whenever `API_BASE_URL` isn't passed,
+  /// in every build mode.
   ///
-  /// A release build built without its defines falls back to it, so a store
-  /// build can never point at a developer's machine: an iOS archive made in
-  /// Xcode after `flutter pub get` (which resets the defines) once reached
-  /// App Review calling `127.0.0.1` and showing "you appear to be offline" on
-  /// launch.
+  /// So a store build can never point at a developer's machine: an iOS
+  /// archive made in Xcode after `flutter pub get` (which resets the defines)
+  /// once reached App Review calling `127.0.0.1` and showing "you appear to be
+  /// offline" on launch. Not `hotel.webstdy.com` — that host is the Nuxt web
+  /// frontend (its `/api/*` returns the SPA HTML / 405). HTTPS: plain `http`
+  /// 301-redirects, which drops POST bodies and is blocked by the Android/iOS
+  /// cleartext policy.
   static const String productionBaseUrl = 'https://admin.hotel.webstdy.com';
 
   /// Reads configuration from compile-time defines:
@@ -48,8 +45,9 @@ class AppConfig {
   factory AppConfig.fromEnvironment() => AppConfig.resolve(
     release: kReleaseMode,
     appEnv: const String.fromEnvironment('APP_ENV'),
-    // Combined with `/api/v1` by [apiRoot]. A physical device on the
-    // developer's LAN needs:
+    // Combined with `/api/v1` by [apiRoot]. A local Laravel can still be
+    // targeted with e.g.:
+    //   --dart-define=API_BASE_URL=http://10.0.2.2:8000   (Android emulator)
     //   --dart-define=API_BASE_URL=http://<your-Mac-LAN-IP>:8000
     apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
     // Real integration: --dart-define=USE_DUMMY_DATA=false. As of the final
@@ -73,8 +71,8 @@ class AppConfig {
 
   /// [AppConfig.fromEnvironment]'s rules, with the defines passed in so tests
   /// can run both build modes. A define that was passed always wins. Without
-  /// one, a **release** build is production ([productionBaseUrl]); debug and
-  /// profile builds use the local dev server ([_devDefaultBaseUrl]).
+  /// one the API is [productionBaseUrl], and the environment is `production`
+  /// in a release build, `development` otherwise.
   @visibleForTesting
   factory AppConfig.resolve({
     required bool release,
@@ -88,7 +86,7 @@ class AppConfig {
         : (release ? 'production' : 'development');
     final String baseUrl = apiBaseUrl.isNotEmpty
         ? apiBaseUrl
-        : (release ? productionBaseUrl : _devDefaultBaseUrl());
+        : productionBaseUrl;
     return AppConfig(
       environment: AppEnvironment.fromName(env),
       apiBaseUrl: baseUrl,
@@ -112,20 +110,4 @@ class AppConfig {
   String get apiRoot => '$apiBaseUrl/api/$apiVersion';
 
   bool get isProduction => environment == AppEnvironment.production;
-
-  /// Reachable Laravel dev host per platform, used only by debug/profile
-  /// builds when `API_BASE_URL` isn't overridden via `--dart-define`.
-  ///
-  /// Android's emulator is its own sandboxed device: `localhost` there means
-  /// the emulator, not the developer machine, so the emulator-to-host loopback
-  /// alias `10.0.2.2` is required. Every other target this app runs on in
-  /// development (Flutter Web, iOS Simulator, desktop) shares the developer
-  /// machine's own network namespace, so its real loopback `127.0.0.1` is
-  /// reachable directly. This must stay platform-specific rather than one
-  /// blanket default — `10.0.2.2` is meaningless outside the Android emulator.
-  static String _devDefaultBaseUrl() {
-    if (kIsWeb) return 'http://localhost:8000';
-    if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8000';
-    return 'http://127.0.0.1:8000';
-  }
 }

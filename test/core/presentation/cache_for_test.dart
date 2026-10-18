@@ -4,7 +4,7 @@ import 'package:hotel_guest_app/core/presentation/cache_for.dart';
 
 int _fetches = 0;
 
-final AutoDisposeFutureProvider<int> _cached =
+final FutureProvider<int> _cached =
     FutureProvider.autoDispose<int>((Ref ref) async {
   ref.cacheFor(const Duration(minutes: 5));
   return ++_fetches;

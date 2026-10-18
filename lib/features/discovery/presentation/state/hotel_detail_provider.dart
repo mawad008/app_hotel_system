@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../../core/localization/content_language_provider.dart';
 import '../../../../core/presentation/cache_for.dart';

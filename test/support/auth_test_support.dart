@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:hotel_guest_app/features/identity_verification/presentation/state/identity_verification_providers.dart';
 import 'package:hotel_guest_app/core/config/app_config.dart';
 import 'package:hotel_guest_app/core/di/core_providers.dart';
@@ -104,6 +104,17 @@ class SeededLanguageSelection extends LanguageSelectionController {
 class DeviceLocaleController extends LocaleController {
   @override
   Locale? build() => null;
+}
+
+/// Riverpod 3 rejects a provider overridden twice in one container, but tests
+/// layer per-test overrides on top of [authOverrides]: the last one wins.
+List<Override> mergeOverrides(Iterable<Override> overrides) {
+  final Map<Object, Override> byOrigin = <Object, Override>{};
+  for (final Override override in overrides) {
+    byOrigin.remove(override.origin);
+    byOrigin[override.origin] = override;
+  }
+  return byOrigin.values.toList();
 }
 
 /// Base overrides for an authentication test: deterministic config + a

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/features/authentication/presentation/state/auth_controller.dart';
 import 'package:hotel_guest_app/features/authentication/domain/entities/guest_profile.dart';

@@ -90,12 +90,14 @@ class LegalLinksRow extends ConsumerWidget {
       children: <Widget>[
         if (terms != null)
           TextButton(
-            onPressed: () => openBrandLink(context, ref, (l) => l.openUrl(terms)),
+            onPressed: () =>
+                openBrandLink(context, ref, (l) => l.openUrl(terms)),
             child: Text(l10n.legalTerms),
           ),
         if (privacy != null)
           TextButton(
-            onPressed: () => openBrandLink(context, ref, (l) => l.openUrl(privacy)),
+            onPressed: () =>
+                openBrandLink(context, ref, (l) => l.openUrl(privacy)),
             child: Text(l10n.legalPrivacy),
           ),
       ],

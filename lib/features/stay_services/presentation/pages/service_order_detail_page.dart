@@ -289,7 +289,7 @@ class _RateServiceButton extends ConsumerWidget {
     final AsyncValue<Object?> reviewAsync = ref.watch(
       serviceOrderReviewProvider(orderKey),
     );
-    final bool alreadyReviewed = reviewAsync.valueOrNull != null;
+    final bool alreadyReviewed = reviewAsync.value != null;
 
     return SecondaryButton(
       label: alreadyReviewed

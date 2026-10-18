@@ -19,7 +19,7 @@ class CancellationPolicyPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<AppContent> content = ref.watch(appContentProvider);
-    final int? hours = content.valueOrNull?.freeCancellationHours;
+    final int? hours = content.value?.freeCancellationHours;
     return Scaffold(
       appBar: HotelAppBar(title: context.l10n.bookingCancellationPolicyHeading),
       body: SafeArea(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotel_guest_app/app/app.dart';
 import 'package:hotel_guest_app/app/router/app_router.dart';
@@ -22,14 +23,14 @@ Future<ProviderContainer> pumpApp(
   List<Override> extraOverrides = const <Override>[],
 }) async {
   final ProviderContainer container = ProviderContainer(
-    overrides: <Override>[
+    overrides: mergeOverrides(<Override>[
       ...authOverrides(
         bootSession: bootSession,
         resendCooldown: resendCooldown,
         languageChosen: languageChosen,
       ),
       ...extraOverrides,
-    ],
+    ]),
   );
   addTearDown(container.dispose);
 
